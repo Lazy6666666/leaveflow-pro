@@ -2,8 +2,22 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import AuthGuard from "@/components/AuthGuard";
+import RoleGuard from "@/components/RoleGuard";
+import AppLayout from "@/components/AppLayout";
+import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
+import Dashboard from "./pages/Dashboard";
+import MyLeave from "./pages/MyLeave";
+import RequestLeave from "./pages/RequestLeave";
+import LeaveHistory from "./pages/LeaveHistory";
+import Approvals from "./pages/manager/Approvals";
+import TeamCalendar from "./pages/manager/TeamCalendar";
+import Employees from "./pages/admin/Employees";
+import Policies from "./pages/admin/Policies";
+import Reports from "./pages/admin/Reports";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -14,11 +28,25 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route element={<AuthGuard><AppLayout /></AuthGuard>}>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/my-leave" element={<MyLeave />} />
+              <Route path="/request-leave" element={<RequestLeave />} />
+              <Route path="/leave-history" element={<LeaveHistory />} />
+              <Route path="/manager/approvals" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><Approvals /></RoleGuard>} />
+              <Route path="/manager/team-calendar" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><TeamCalendar /></RoleGuard>} />
+              <Route path="/admin/employees" element={<RoleGuard allowedRoles={["hr_admin"]}><Employees /></RoleGuard>} />
+              <Route path="/admin/policies" element={<RoleGuard allowedRoles={["hr_admin"]}><Policies /></RoleGuard>} />
+              <Route path="/admin/reports" element={<RoleGuard allowedRoles={["hr_admin"]}><Reports /></RoleGuard>} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
