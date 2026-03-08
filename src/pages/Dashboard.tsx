@@ -11,6 +11,7 @@ import {
   ArrowRight, Users, TrendingUp, Sparkles,
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons";
+import { ClockInOutWidget } from "@/components/attendance/ClockInOutWidget";
 import { format, parseISO, startOfToday, endOfWeek, startOfWeek } from "date-fns";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
