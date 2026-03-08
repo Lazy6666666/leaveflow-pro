@@ -58,19 +58,24 @@ const RequestLeave = () => {
       attachmentUrl = filePath;
     }
 
-    const { error } = await supabase.from("leave_requests").insert({
+    const { data: inserted, error } = await supabase.from("leave_requests").insert({
       employee_id: user.id,
       leave_type_id: leaveTypeId,
       start_date: startDate,
       end_date: endDate,
       reason,
       attachment_url: attachmentUrl,
-    });
+    }).select("id").single();
 
     if (error) {
       toast.error(error.message);
     } else {
       toast.success("Leave request submitted successfully");
+      if (inserted) {
+        supabase.functions.invoke("notify-leave", {
+          body: { type: "submitted", request_id: inserted.id },
+        }).catch(() => {});
+      }
       navigate("/leave-history");
     }
     setIsSubmitting(false);

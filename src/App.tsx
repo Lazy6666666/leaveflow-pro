@@ -18,6 +18,8 @@ import TeamCalendar from "./pages/manager/TeamCalendar";
 import Employees from "./pages/admin/Employees";
 import Policies from "./pages/admin/Policies";
 import Reports from "./pages/admin/Reports";
+import Departments from "./pages/admin/Departments";
+import Balances from "./pages/admin/Balances";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -43,6 +45,8 @@ const App = () => (
               <Route path="/admin/employees" element={<RoleGuard allowedRoles={["hr_admin"]}><Employees /></RoleGuard>} />
               <Route path="/admin/policies" element={<RoleGuard allowedRoles={["hr_admin"]}><Policies /></RoleGuard>} />
               <Route path="/admin/reports" element={<RoleGuard allowedRoles={["hr_admin"]}><Reports /></RoleGuard>} />
+              <Route path="/admin/departments" element={<RoleGuard allowedRoles={["hr_admin"]}><Departments /></RoleGuard>} />
+              <Route path="/admin/balances" element={<RoleGuard allowedRoles={["hr_admin"]}><Balances /></RoleGuard>} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

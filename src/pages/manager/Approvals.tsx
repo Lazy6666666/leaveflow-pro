@@ -48,6 +48,10 @@ const Approvals = () => {
       toast.error(error.message);
     } else {
       toast.success(`Request ${action}`);
+      // Fire-and-forget email notification
+      supabase.functions.invoke("notify-leave", {
+        body: { type: action, request_id: selectedRequest.id },
+      }).catch(() => {});
       setSelectedRequest(null);
       setComment("");
       setAction(null);
