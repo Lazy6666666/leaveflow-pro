@@ -4,6 +4,7 @@ import { Outlet } from "react-router-dom";
 import { CalendarDays, Moon, Sun } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
+import AIChatPanel from "@/components/AIChatPanel";
 
 const AppLayout = () => {
   const { theme, toggleTheme } = useTheme();
@@ -34,6 +35,7 @@ const AppLayout = () => {
           </main>
         </div>
       </div>
+      <AIChatPanel />
     </SidebarProvider>
   );
 };
