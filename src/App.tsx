@@ -26,6 +26,7 @@ import Policies from "./pages/admin/Policies";
 import Reports from "./pages/admin/Reports";
 import Departments from "./pages/admin/Departments";
 import Balances from "./pages/admin/Balances";
+import AttendanceDashboard from "./pages/admin/AttendanceDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
