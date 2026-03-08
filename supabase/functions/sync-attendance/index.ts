@@ -287,7 +287,7 @@ serve(async (req) => {
 
             if (employeeId) {
               inserts.push({
-                employee_id: profile.id,
+                employee_id: employeeId,
                 date: syncDate,
                 clock_in: times.clockIn,
                 clock_out: times.clockOut,
