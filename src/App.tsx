@@ -29,6 +29,7 @@ import Balances from "./pages/admin/Balances";
 import AttendanceDashboard from "./pages/admin/AttendanceDashboard";
 import BiometricsSettings from "./pages/admin/BiometricsSettings";
 import AttendanceSettingsPage from "./pages/admin/AttendanceSettings";
+import BadgeMappings from "./pages/admin/BadgeMappings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
