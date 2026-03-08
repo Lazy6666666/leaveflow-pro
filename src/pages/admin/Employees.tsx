@@ -25,6 +25,7 @@ interface Department { id: string; name: string; }
 
 const Employees = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [allProfiles, setAllProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
