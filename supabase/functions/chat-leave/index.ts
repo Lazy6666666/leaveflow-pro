@@ -233,6 +233,133 @@ async function executeTool(
       return { pending_requests: data };
     }
 
+    case "get_smart_leave_suggestions": {
+      const today = new Date();
+      const todayStr = today.toISOString().split("T")[0];
+      const sixMonthsOut = new Date(today.getTime() + 180 * 86400000).toISOString().split("T")[0];
+
+      // Fetch holidays and balances in parallel
+      const [holidaysRes, balancesRes] = await Promise.all([
+        supabase
+          .from("public_holidays")
+          .select("name, date")
+          .gte("date", todayStr)
+          .lte("date", sixMonthsOut)
+          .order("date", { ascending: true })
+          .limit(20),
+        supabase
+          .from("leave_balances")
+          .select("balance, leave_types(name)")
+          .eq("employee_id", userId)
+          .eq("year", today.getFullYear()),
+      ]);
+
+      if (holidaysRes.error) return { error: holidaysRes.error.message };
+      if (balancesRes.error) return { error: balancesRes.error.message };
+
+      const holidays = holidaysRes.data || [];
+      const balances = balancesRes.data || [];
+
+      // Helper: day of week (0=Sun, 6=Sat)
+      const dow = (d: string) => new Date(d + "T00:00:00").getDay();
+      const addDays = (d: string, n: number) => {
+        const dt = new Date(d + "T00:00:00");
+        dt.setDate(dt.getDate() + n);
+        return dt.toISOString().split("T")[0];
+      };
+      const dayName = (d: string) => {
+        return new Date(d + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+      };
+
+      const holidayDates = new Set(holidays.map((h: any) => h.date));
+      const isWeekend = (d: string) => { const day = dow(d); return day === 0 || day === 6; };
+      const isOff = (d: string) => isWeekend(d) || holidayDates.has(d);
+
+      const suggestions: Array<{
+        holiday: string;
+        holiday_date: string;
+        leave_days_to_take: string[];
+        total_days_off: number;
+        leave_days_used: number;
+        period: string;
+      }> = [];
+
+      for (const holiday of holidays) {
+        const hDate = holiday.date;
+        const hDow = dow(hDate);
+        if (hDow === 0 || hDow === 6) continue; // skip if already on weekend
+
+        // Find the contiguous block around the holiday
+        // Expand outward to find bridge opportunities
+        let start = hDate;
+        let end = hDate;
+
+        // Expand backward: check if taking 1-2 days bridges to a weekend
+        for (let i = 1; i <= 4; i++) {
+          const d = addDays(hDate, -i);
+          if (isOff(d)) { start = d; }
+          else {
+            // Would taking this day bridge to a weekend/holiday?
+            const prev = addDays(d, -1);
+            if (isOff(prev)) { start = prev; break; }
+            else break;
+          }
+        }
+
+        // Expand forward
+        for (let i = 1; i <= 4; i++) {
+          const d = addDays(hDate, i);
+          if (isOff(d)) { end = d; }
+          else {
+            const next = addDays(d, 1);
+            if (isOff(next)) { end = next; break; }
+            else break;
+          }
+        }
+
+        // Collect leave days needed (non-weekend, non-holiday weekdays in range)
+        const leaveDays: string[] = [];
+        let cursor = start;
+        let totalDays = 0;
+        while (cursor <= end) {
+          totalDays++;
+          if (!isOff(cursor)) leaveDays.push(cursor);
+          cursor = addDays(cursor, 1);
+        }
+
+        // Only suggest if we get value (more total days off than leave used)
+        if (leaveDays.length > 0 && leaveDays.length <= 4 && totalDays > leaveDays.length + 1) {
+          suggestions.push({
+            holiday: holiday.name,
+            holiday_date: dayName(hDate),
+            leave_days_to_take: leaveDays.map(dayName),
+            total_days_off: totalDays,
+            leave_days_used: leaveDays.length,
+            period: `${dayName(start)} – ${dayName(end)}`,
+          });
+        }
+      }
+
+      // Deduplicate overlapping suggestions, keep best ratio
+      const unique = suggestions.reduce((acc, s) => {
+        const key = s.holiday;
+        if (!acc[key] || s.total_days_off / s.leave_days_used > acc[key].total_days_off / acc[key].leave_days_used) {
+          acc[key] = s;
+        }
+        return acc;
+      }, {} as Record<string, typeof suggestions[0]>);
+
+      const sorted = Object.values(unique).sort(
+        (a, b) => (b.total_days_off / b.leave_days_used) - (a.total_days_off / a.leave_days_used)
+      );
+
+      return {
+        suggestions: sorted.slice(0, 6),
+        balances: balances,
+        note: "Suggestions maximize consecutive days off relative to leave days used.",
+      };
+    }
+
     default:
       return { error: `Unknown tool: ${toolName}` };
   }
