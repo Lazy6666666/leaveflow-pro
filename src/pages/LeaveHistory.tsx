@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { History, FileX } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 
 interface LeaveRequest {
   id: string;
