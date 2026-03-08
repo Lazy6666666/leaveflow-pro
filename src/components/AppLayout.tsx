@@ -17,12 +17,7 @@ const AppLayout = () => {
           <header className="h-14 flex items-center justify-between border-b bg-card/80 backdrop-blur-sm px-4 sticky top-0 z-10">
             <div className="flex items-center">
               <SidebarTrigger className="mr-4" />
-              <div className="flex items-center gap-2">
-                <div className="h-7 w-7 rounded-md bg-primary flex items-center justify-center lg:hidden">
-                  <CalendarDays className="h-4 w-4 text-primary-foreground" />
-                </div>
-                <h1 className="text-sm font-medium text-foreground">Leave Management System</h1>
-              </div>
+              <h1 className="text-sm font-medium text-foreground">BALANCE</h1>
             </div>
             <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9">
               {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
