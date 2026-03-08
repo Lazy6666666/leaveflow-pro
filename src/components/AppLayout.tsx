@@ -35,6 +35,7 @@ const AppLayout = () => {
           </main>
         </div>
       </div>
+      <AIChatPanel />
     </SidebarProvider>
   );
 };
