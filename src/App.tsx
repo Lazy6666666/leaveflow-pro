@@ -64,6 +64,7 @@ const App = () => (
                 <Route path="/admin/balances" element={<RoleGuard allowedRoles={["hr_admin"]}><Balances /></RoleGuard>} />
                 <Route path="/admin/attendance" element={<RoleGuard allowedRoles={["hr_admin"]}><AttendanceDashboard /></RoleGuard>} />
                 <Route path="/admin/biometrics" element={<RoleGuard allowedRoles={["hr_admin"]}><BiometricsSettings /></RoleGuard>} />
+                <Route path="/admin/attendance-settings" element={<RoleGuard allowedRoles={["hr_admin"]}><AttendanceSettingsPage /></RoleGuard>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
