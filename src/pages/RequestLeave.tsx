@@ -18,6 +18,7 @@ const RequestLeave = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
   const [leaveTypeId, setLeaveTypeId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
