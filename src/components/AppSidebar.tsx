@@ -37,6 +37,7 @@ const adminItems = [
   { title: "Departments", url: "/admin/departments", icon: Building2 },
   { title: "Policies", url: "/admin/policies", icon: Settings },
   { title: "Balances", url: "/admin/balances", icon: Wallet },
+  { title: "Attendance", url: "/admin/attendance", icon: Fingerprint },
   { title: "Reports", url: "/admin/reports", icon: BarChart3 },
 ];
 
