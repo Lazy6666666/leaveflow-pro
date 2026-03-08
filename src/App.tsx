@@ -18,6 +18,8 @@ import TeamCalendar from "./pages/manager/TeamCalendar";
 import Employees from "./pages/admin/Employees";
 import Policies from "./pages/admin/Policies";
 import Reports from "./pages/admin/Reports";
+import Departments from "./pages/admin/Departments";
+import Balances from "./pages/admin/Balances";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
