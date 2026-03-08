@@ -48,6 +48,7 @@ const App = () => (
                 <Route path="/my-leave" element={<MyLeave />} />
                 <Route path="/request-leave" element={<RequestLeave />} />
                 <Route path="/leave-history" element={<LeaveHistory />} />
+                <Route path="/attendance" element={<AttendanceHistory />} />
                 <Route path="/holidays" element={<Holidays />} />
                 <Route path="/profile" element={<ProfileSettings />} />
                 <Route path="/admin-setup" element={<AdminSetup />} />
