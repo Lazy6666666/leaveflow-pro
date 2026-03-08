@@ -33,7 +33,7 @@ const NotificationBell = () => {
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(20);
-    if (data) setNotifications(data as Notification[]);
+    if (data) setNotifications(data as unknown as AppNotification[]);
   };
 
   useEffect(() => {
