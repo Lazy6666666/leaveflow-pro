@@ -29,7 +29,14 @@ const Departments = () => {
     if (data) setDepartments(data);
   };
 
-  useEffect(() => { fetchDepartments(); }, []);
+  useEffect(() => { fetchDepartments().finally(() => setPageLoading(false)); }, []);
+
+  if (pageLoading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <TableSkeleton rows={4} cols={3} />
+    </div>
+  );
 
   const openCreate = () => { setEditingDept(null); setName(""); setDialogOpen(true); };
   const openEdit = (dept: Department) => { setEditingDept(dept); setName(dept.name); setDialogOpen(true); };

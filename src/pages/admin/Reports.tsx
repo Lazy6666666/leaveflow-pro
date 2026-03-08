@@ -37,8 +37,19 @@ const Reports = () => {
         setMonthlyData(Object.entries(monthMap).map(([month, requests]) => ({ month, requests })));
       }
     };
-    fetchReports();
+    fetchReports().finally(() => setPageLoading(false));
   }, []);
+
+  if (pageLoading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <CardSkeleton lines={6} />
+        <CardSkeleton lines={6} />
+      </div>
+      <CardSkeleton lines={8} />
+    </div>
+  );
 
   return (
     <div className="space-y-6">

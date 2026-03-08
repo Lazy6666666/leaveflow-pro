@@ -28,7 +28,16 @@ const Policies = () => {
     if (data) setLeaveTypes(data);
   };
 
-  useEffect(() => { fetchTypes(); }, []);
+  const [pageLoading, setPageLoading] = useState(true);
+
+  useEffect(() => { fetchTypes().finally(() => setPageLoading(false)); }, []);
+
+  if (pageLoading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <TableSkeleton rows={4} cols={5} />
+    </div>
+  );
 
   const openNew = () => { setEditing(null); setName(""); setAllocation(0); setCarryForward(0); setIsActive(true); setDialogOpen(true); };
   const openEdit = (lt: LeaveType) => { setEditing(lt); setName(lt.name); setAllocation(lt.annual_allocation); setCarryForward(lt.carry_forward_limit); setIsActive(lt.is_active); setDialogOpen(true); };

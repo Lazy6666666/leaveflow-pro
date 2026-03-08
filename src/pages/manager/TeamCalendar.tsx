@@ -33,8 +33,15 @@ const TeamCalendar = () => {
         .lte("start_date", monthEnd);
       if (data) setLeaves(data as unknown as TeamLeave[]);
     };
-    fetchLeaves();
+    fetchLeaves().finally(() => setPageLoading(false));
   }, [currentMonth]);
+
+  if (pageLoading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <CardSkeleton lines={10} />
+    </div>
+  );
 
   const days = eachDayOfInterval({ start: startOfMonth(currentMonth), end: endOfMonth(currentMonth) });
 

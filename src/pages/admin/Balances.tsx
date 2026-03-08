@@ -28,6 +28,7 @@ const Balances = () => {
   const [adjustTarget, setAdjustTarget] = useState<Balance | null>(null);
   const [newBalance, setNewBalance] = useState("");
   const [initializing, setInitializing] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
     const fetch = async () => {
@@ -38,8 +39,15 @@ const Balances = () => {
       if (profiles) setEmployees(profiles);
       if (types) setLeaveTypes(types);
     };
-    fetch();
+    fetch().finally(() => setPageLoading(false));
   }, []);
+
+  if (pageLoading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <TableSkeleton rows={4} cols={4} />
+    </div>
+  );
 
   const fetchBalances = async () => {
     if (!selectedEmployee || !year) return;
