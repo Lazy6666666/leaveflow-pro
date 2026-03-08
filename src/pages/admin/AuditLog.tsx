@@ -36,7 +36,7 @@ const AuditLog = () => {
   const [profiles, setProfiles] = useState<Record<string, string>>({});
 
   const filtered = tableFilter === "all" ? logs : logs.filter((l) => l.table_name === tableFilter);
-  const { page, totalPages, paginated, setPage } = usePagination(filtered, 20);
+  const { page, totalPages, paginatedItems: paginated, setPage, totalItems } = usePagination(filtered, 20);
 
   useEffect(() => {
     const fetch = async () => {
