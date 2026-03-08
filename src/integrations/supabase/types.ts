@@ -94,6 +94,66 @@ export type Database = {
         }
         Relationships: []
       }
+      biometrics_config: {
+        Row: {
+          api_key: string | null
+          api_secret: string | null
+          api_url: string | null
+          created_at: string
+          device_serial: string | null
+          extra_config: Json | null
+          id: string
+          is_active: boolean
+          last_sync_at: string | null
+          last_sync_records: number | null
+          last_sync_status: string | null
+          location_name: string | null
+          name: string
+          sync_frequency_minutes: number
+          updated_at: string
+          vendor: Database["public"]["Enums"]["biometrics_vendor"]
+          webhook_secret: string | null
+        }
+        Insert: {
+          api_key?: string | null
+          api_secret?: string | null
+          api_url?: string | null
+          created_at?: string
+          device_serial?: string | null
+          extra_config?: Json | null
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          last_sync_records?: number | null
+          last_sync_status?: string | null
+          location_name?: string | null
+          name: string
+          sync_frequency_minutes?: number
+          updated_at?: string
+          vendor: Database["public"]["Enums"]["biometrics_vendor"]
+          webhook_secret?: string | null
+        }
+        Update: {
+          api_key?: string | null
+          api_secret?: string | null
+          api_url?: string | null
+          created_at?: string
+          device_serial?: string | null
+          extra_config?: Json | null
+          id?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          last_sync_records?: number | null
+          last_sync_status?: string | null
+          location_name?: string | null
+          name?: string
+          sync_frequency_minutes?: number
+          updated_at?: string
+          vendor?: Database["public"]["Enums"]["biometrics_vendor"]
+          webhook_secret?: string | null
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           created_at: string
@@ -341,6 +401,12 @@ export type Database = {
     Enums: {
       app_role: "employee" | "manager" | "hr_admin"
       attendance_status: "present" | "late" | "absent" | "half_day" | "on_leave"
+      biometrics_vendor:
+        | "zkteco"
+        | "biotime"
+        | "suprema"
+        | "hikvision"
+        | "generic_webhook"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -470,6 +536,13 @@ export const Constants = {
     Enums: {
       app_role: ["employee", "manager", "hr_admin"],
       attendance_status: ["present", "late", "absent", "half_day", "on_leave"],
+      biometrics_vendor: [
+        "zkteco",
+        "biotime",
+        "suprema",
+        "hikvision",
+        "generic_webhook",
+      ],
     },
   },
 } as const
