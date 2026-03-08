@@ -71,6 +71,23 @@ const RequestLeave = () => {
       toast.error(error.message);
     } else {
       toast.success("Leave request submitted successfully");
+      // Fire-and-forget email notification
+      supabase.functions.invoke("notify-leave", {
+        body: { type: "submitted", request_id: undefined },
+      }).catch(() => {});
+      // We need the inserted request id — re-fetch the latest
+      const { data: latest } = await supabase
+        .from("leave_requests")
+        .select("id")
+        .eq("employee_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single();
+      if (latest) {
+        supabase.functions.invoke("notify-leave", {
+          body: { type: "submitted", request_id: latest.id },
+        }).catch(() => {});
+      }
       navigate("/leave-history");
     }
     setIsSubmitting(false);

@@ -44,7 +44,9 @@ const managerItems = [
 
 const adminItems = [
   { title: "Employees", url: "/admin/employees", icon: Users },
+  { title: "Departments", url: "/admin/departments", icon: Building2 },
   { title: "Policies", url: "/admin/policies", icon: Settings },
+  { title: "Balances", url: "/admin/balances", icon: Wallet },
   { title: "Reports", url: "/admin/reports", icon: BarChart3 },
 ];
 
