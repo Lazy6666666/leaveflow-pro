@@ -157,7 +157,7 @@ const AuditLog = () => {
               </TableBody>
             </Table>
           </ScrollArea>
-          {totalPages > 1 && <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} />}
+          {totalPages > 1 && <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} />}
         </CardContent>
       </Card>
     </div>
