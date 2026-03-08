@@ -68,7 +68,7 @@ const ProfileSettings = () => {
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
-    const { error } = await supabase.from("profiles").update({ full_name: fullName.trim() || null, department_id: departmentId }).eq("id", user.id);
+    const { error } = await supabase.from("profiles").update({ full_name: fullName.trim() || null }).eq("id", user.id);
     if (error) toast.error(error.message);
     else toast.success("Profile updated successfully");
     setSaving(false);
