@@ -44,7 +44,7 @@ const Auth = () => {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -54,6 +54,8 @@ const Auth = () => {
     });
     if (error) {
       toast.error(error.message);
+    } else if (data.session) {
+      toast.success("Account created successfully!");
     } else {
       toast.success("Check your email to confirm your account");
     }
