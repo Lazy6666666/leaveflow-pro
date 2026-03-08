@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, PlusCircle, CheckSquare, Clock, CalendarHeart, ArrowRight } from "lucide-react";
+import { DashboardSkeleton } from "@/components/skeletons";
 import { format, parseISO, startOfToday } from "date-fns";
 
 interface LeaveBalance {
