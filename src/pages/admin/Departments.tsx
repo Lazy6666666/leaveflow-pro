@@ -22,6 +22,7 @@ const Departments = () => {
   const [name, setName] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Department | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
 
   const fetchDepartments = async () => {
     const { data } = await supabase.from("departments").select("*").order("name");
