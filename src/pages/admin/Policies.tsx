@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Plus, Settings } from "lucide-react";
+import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 
 interface LeaveType { id: string; name: string; annual_allocation: number; carry_forward_limit: number; is_active: boolean; }
 
