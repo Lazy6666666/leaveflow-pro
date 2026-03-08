@@ -34,8 +34,14 @@ const ProfileSettings = () => {
       if (profile) {
         setFullName(profile.full_name || "");
         setEmail(profile.email || "");
-        setAvatarUrl(profile.avatar_url);
         setDepartmentId(profile.department_id);
+        // Generate signed URL for private avatar bucket
+        if (profile.avatar_url) {
+          const { data } = await supabase.storage
+            .from("avatars")
+            .createSignedUrl(profile.avatar_url, 3600);
+          setAvatarUrl(data?.signedUrl || null);
+        }
       }
       if (depts) setDepartments(depts);
     };
