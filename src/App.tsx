@@ -54,6 +54,7 @@ const App = () => (
                 <Route path="/admin-setup" element={<AdminSetup />} />
                 <Route path="/manager/approvals" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><Approvals /></RoleGuard>} />
                 <Route path="/manager/team-calendar" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><TeamCalendar /></RoleGuard>} />
+                <Route path="/manager/team-attendance" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><TeamAttendance /></RoleGuard>} />
                 <Route path="/admin/employees" element={<RoleGuard allowedRoles={["hr_admin"]}><Employees /></RoleGuard>} />
                 <Route path="/admin/policies" element={<RoleGuard allowedRoles={["hr_admin"]}><Policies /></RoleGuard>} />
                 <Route path="/admin/reports" element={<RoleGuard allowedRoles={["hr_admin"]}><Reports /></RoleGuard>} />
