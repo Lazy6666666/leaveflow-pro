@@ -195,7 +195,7 @@ const AIChatPanel = () => {
               <div className="text-center text-muted-foreground text-sm py-8">
                 <Bot className="h-10 w-10 mx-auto mb-3 opacity-40" />
                 <p className="font-medium">Hi! I'm your Leave Assistant.</p>
-                <p className="mt-1">Ask me about your leave balance, holidays, or submit a request.</p>
+                <p className="mt-1">Ask me about your leave balance, holidays, or say <strong>"suggest smart leave days"</strong>.</p>
               </div>
             )}
             <div className="space-y-4">
