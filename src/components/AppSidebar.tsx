@@ -54,7 +54,7 @@ export function AppSidebar() {
       .then(({ data }) => {
         setShowSetup(!data || data.length === 0);
       });
-  }, []);
+  }, [hasRole("hr_admin")]);
 
   const isActive = (path: string) => location.pathname === path;
 
