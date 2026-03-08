@@ -98,7 +98,8 @@ const RequestLeave = () => {
 
     const { data: inserted, error } = await supabase.from("leave_requests").insert({
       employee_id: user.id, leave_type_id: leaveTypeId, start_date: startDate, end_date: endDate, reason, attachment_url: attachmentUrl,
-    }).select("id").single();
+      half_day_type: halfDayType || null,
+    } as any).select("id").single();
 
     if (error) {
       toast.error(error.message);
