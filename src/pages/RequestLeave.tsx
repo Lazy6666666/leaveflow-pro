@@ -58,34 +58,22 @@ const RequestLeave = () => {
       attachmentUrl = filePath;
     }
 
-    const { error } = await supabase.from("leave_requests").insert({
+    const { data: inserted, error } = await supabase.from("leave_requests").insert({
       employee_id: user.id,
       leave_type_id: leaveTypeId,
       start_date: startDate,
       end_date: endDate,
       reason,
       attachment_url: attachmentUrl,
-    });
+    }).select("id").single();
 
     if (error) {
       toast.error(error.message);
     } else {
       toast.success("Leave request submitted successfully");
-      // Fire-and-forget email notification
-      supabase.functions.invoke("notify-leave", {
-        body: { type: "submitted", request_id: undefined },
-      }).catch(() => {});
-      // We need the inserted request id — re-fetch the latest
-      const { data: latest } = await supabase
-        .from("leave_requests")
-        .select("id")
-        .eq("employee_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single();
-      if (latest) {
+      if (inserted) {
         supabase.functions.invoke("notify-leave", {
-          body: { type: "submitted", request_id: latest.id },
+          body: { type: "submitted", request_id: inserted.id },
         }).catch(() => {});
       }
       navigate("/leave-history");
