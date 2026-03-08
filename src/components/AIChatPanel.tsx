@@ -119,8 +119,14 @@ const AIChatPanel = () => {
     }
   }, [messages]);
 
-  const send = async () => {
-    const text = input.trim();
+  const QUICK_ACTIONS = [
+    { label: "📊 Check balance", message: "What's my leave balance?" },
+    { label: "💡 Smart suggestions", message: "Suggest smart leave days" },
+    { label: "📅 Upcoming holidays", message: "When are the upcoming holidays?" },
+  ];
+
+  const send = async (directText?: string) => {
+    const text = (directText ?? input).trim();
     if (!text || isLoading) return;
     setInput("");
     const userMsg: Msg = { role: "user", content: text };
