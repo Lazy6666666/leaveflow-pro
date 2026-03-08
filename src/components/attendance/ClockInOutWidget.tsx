@@ -127,7 +127,6 @@ export function ClockInOutWidget() {
   };
 
   const isClockedIn = todayLog?.clock_in && !todayLog?.clock_out;
-  const isClockedOut = todayLog?.clock_in && todayLog?.clock_out;
 
   const statusColor = (s: string) => {
     switch (s) {
