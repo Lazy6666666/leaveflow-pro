@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, CreditCard, Search } from "lucide-react";
+import CSVBadgeImport from "@/components/admin/CSVBadgeImport";
 
 interface BadgeMapping {
   id: string;
@@ -114,6 +115,7 @@ const BadgeMappings = () => {
           <DialogTrigger asChild>
             <Button><Plus className="h-4 w-4 mr-2" />Add Mapping</Button>
           </DialogTrigger>
+          <CSVBadgeImport profiles={profiles} onImportComplete={fetchData} />
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Add Badge Mapping</DialogTitle>

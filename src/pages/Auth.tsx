@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { CalendarDays, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import balanceLogo from "@/assets/balance-logo.png";
 
 const Auth = () => {
   const { session, loading } = useAuth();
@@ -82,10 +83,8 @@ const Auth = () => {
       {/* Left panel – branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-sidebar text-sidebar-foreground flex-col justify-between p-12">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-sidebar-primary flex items-center justify-center">
-            <CalendarDays className="h-5 w-5 text-sidebar-primary-foreground" />
-          </div>
-          <span className="text-xl font-semibold tracking-tight">Leave Manager</span>
+          <img src={balanceLogo} alt="BALANCE logo" className="h-10 w-10 rounded-lg object-cover" />
+          <span className="text-xl font-semibold tracking-tight">BALANCE</span>
         </div>
         <div className="space-y-6 max-w-md">
           <h1 className="text-4xl font-serif font-bold leading-tight">
@@ -116,10 +115,8 @@ const Auth = () => {
       <div className="flex-1 flex items-center justify-center p-6 bg-background">
         <div className="w-full max-w-md animate-fade-in">
           <div className="lg:hidden flex items-center gap-3 mb-8 justify-center">
-            <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-              <CalendarDays className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <span className="text-xl font-semibold text-foreground tracking-tight">Leave Manager</span>
+            <img src={balanceLogo} alt="BALANCE" className="h-10 w-10 rounded-lg object-cover" />
+            <span className="text-xl font-semibold text-foreground tracking-tight">BALANCE</span>
           </div>
 
           <Card className="border-0 shadow-xl bg-card">

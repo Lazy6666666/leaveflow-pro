@@ -4,6 +4,7 @@ import {
   UserCog, CheckSquare, CalendarRange, Users, Settings,
   BarChart3, Building2, Wallet, LogOut, ShieldCheck, Fingerprint, CreditCard,
 } from "lucide-react";
+import balanceLogo from "@/assets/balance-logo.png";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -86,11 +87,9 @@ export function AppSidebar() {
       <SidebarContent>
         {!collapsed && (
           <div className="px-4 py-5 flex items-center gap-3">
-            <div className="h-9 w-9 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
-              <CalendarDays className="h-4 w-4 text-sidebar-primary-foreground" />
-            </div>
+            <img src={balanceLogo} alt="BALANCE" className="h-9 w-9 rounded-lg object-cover shrink-0" />
             <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-sidebar-foreground leading-tight">Leave Manager</h2>
+              <h2 className="text-sm font-semibold text-sidebar-foreground leading-tight">BALANCE</h2>
               <p className="text-xs text-sidebar-foreground/50 truncate">{user?.email}</p>
             </div>
           </div>
