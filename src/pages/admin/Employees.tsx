@@ -49,15 +49,15 @@ const Employees = () => {
 
   useEffect(() => { fetchAll().finally(() => setPageLoading(false)); }, []);
 
+  const getRoles = (userId: string) => roles.filter((r) => r.user_id === userId).map((r) => r.role);
+  const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(employees, 10);
+
   if (pageLoading) return (
     <div className="space-y-6">
       <PageHeaderSkeleton />
       <TableSkeleton rows={6} cols={5} />
     </div>
   );
-
-  const getRoles = (userId: string) => roles.filter((r) => r.user_id === userId).map((r) => r.role);
-  const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(employees, 10);
 
   const exportCSV = () => {
     const header = "Name,Email,Department,Roles\n";
