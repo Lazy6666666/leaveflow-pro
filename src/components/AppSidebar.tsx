@@ -1,11 +1,13 @@
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard, CalendarDays, PlusCircle, History, CalendarHeart,
   UserCog, CheckSquare, CalendarRange, Users, Settings,
-  BarChart3, Building2, Wallet, LogOut,
+  BarChart3, Building2, Wallet, LogOut, ShieldCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -41,6 +43,19 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { hasRole, signOut, user } = useAuth();
+  const [showSetup, setShowSetup] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("user_roles")
+      .select("id")
+      .eq("role", "hr_admin")
+      .limit(1)
+      .then(({ data }) => {
+        setShowSetup(!data || data.length === 0);
+      });
+  }, []);
+
   const isActive = (path: string) => location.pathname === path;
 
   const renderNavItems = (items: typeof employeeItems) =>
@@ -101,6 +116,32 @@ export function AppSidebar() {
               <SidebarGroupLabel className="text-sidebar-foreground/40 text-[11px] uppercase tracking-wider">HR Admin</SidebarGroupLabel>
               <SidebarGroupContent>
                 <SidebarMenu>{renderNavItems(adminItems)}</SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
+
+        {showSetup && !hasRole("hr_admin") && (
+          <>
+            <Separator className="mx-4 w-auto bg-sidebar-border" />
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-sidebar-foreground/40 text-[11px] uppercase tracking-wider">Setup</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/admin-setup")}>
+                      <NavLink
+                        to="/admin-setup"
+                        end
+                        className="hover:bg-sidebar-accent/60 transition-colors"
+                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      >
+                        <ShieldCheck className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>Admin Setup</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
           </>
