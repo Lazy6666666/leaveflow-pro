@@ -6,6 +6,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const escapeHtml = (str: string) =>
+  str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+     .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -26,14 +30,15 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabaseUser.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) {
+    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
+    if (userError || !user) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const userId = user.id;
 
     const { type, request_id } = await req.json();
     if (!type || !request_id) {
@@ -63,7 +68,23 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Authorization: caller must be the request owner, their manager, or an HR admin
     const employee = request.profiles;
+    const isOwner = request.employee_id === userId;
+    const isManager = employee?.manager_id === userId;
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId);
+    const isHR = roles?.some((r: { role: string }) => r.role === "hr_admin");
+
+    if (!isOwner && !isManager && !isHR) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const leaveType = request.leave_types?.name || "Leave";
 
     let recipientEmail: string | null = null;
@@ -82,10 +103,10 @@ Deno.serve(async (req) => {
         if (manager) {
           recipientEmail = manager.email;
           recipientName = manager.full_name;
-          subject = `New Leave Request from ${employee.full_name || employee.email}`;
-          body = `<p>Hi ${manager.full_name || "Manager"},</p>
-<p><strong>${employee.full_name || employee.email}</strong> has submitted a <strong>${leaveType}</strong> request from <strong>${request.start_date}</strong> to <strong>${request.end_date}</strong>.</p>
-<p>Reason: ${request.reason || "Not specified"}</p>
+          subject = `New Leave Request from ${escapeHtml(employee.full_name || employee.email || "Employee")}`;
+          body = `<p>Hi ${escapeHtml(manager.full_name || "Manager")},</p>
+<p><strong>${escapeHtml(employee.full_name || employee.email || "Employee")}</strong> has submitted a <strong>${escapeHtml(leaveType)}</strong> request from <strong>${escapeHtml(request.start_date)}</strong> to <strong>${escapeHtml(request.end_date)}</strong>.</p>
+<p>Reason: ${escapeHtml(request.reason || "Not specified")}</p>
 <p>Please review and take action.</p>`;
         }
       }
@@ -94,10 +115,10 @@ Deno.serve(async (req) => {
       recipientEmail = employee?.email;
       recipientName = employee?.full_name;
       const status = type === "approved" ? "Approved" : "Rejected";
-      subject = `Your ${leaveType} Request Has Been ${status}`;
-      body = `<p>Hi ${employee?.full_name || "Employee"},</p>
-<p>Your <strong>${leaveType}</strong> request from <strong>${request.start_date}</strong> to <strong>${request.end_date}</strong> has been <strong>${status.toLowerCase()}</strong>.</p>
-${request.manager_comment ? `<p>Comment: ${request.manager_comment}</p>` : ""}`;
+      subject = `Your ${escapeHtml(leaveType)} Request Has Been ${status}`;
+      body = `<p>Hi ${escapeHtml(employee?.full_name || "Employee")},</p>
+<p>Your <strong>${escapeHtml(leaveType)}</strong> request from <strong>${escapeHtml(request.start_date)}</strong> to <strong>${escapeHtml(request.end_date)}</strong> has been <strong>${status.toLowerCase()}</strong>.</p>
+${request.manager_comment ? `<p>Comment: ${escapeHtml(request.manager_comment)}</p>` : ""}`;
     }
 
     if (!recipientEmail) {
@@ -134,7 +155,7 @@ ${request.manager_comment ? `<p>Comment: ${request.manager_comment}</p>` : ""}`;
 
     if (!emailRes.ok) {
       console.error("Resend error:", emailData);
-      return new Response(JSON.stringify({ error: "Failed to send email", details: emailData }), {
+      return new Response(JSON.stringify({ error: "Failed to send email" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -146,7 +167,7 @@ ${request.manager_comment ? `<p>Comment: ${request.manager_comment}</p>` : ""}`;
     });
   } catch (err) {
     console.error("notify-leave error:", err);
-    return new Response(JSON.stringify({ error: err.message }), {
+    return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
