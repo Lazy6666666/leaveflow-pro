@@ -24,6 +24,7 @@ interface LeaveRequest {
 const LeaveHistory = () => {
   const { user } = useAuth();
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchRequests = async () => {
     if (!user) return;
