@@ -17,6 +17,7 @@ const Reports = () => {
   const [statusData, setStatusData] = useState<{ name: string; count: number }[]>([]);
   const [typeData, setTypeData] = useState<{ name: string; count: number }[]>([]);
   const [monthlyData, setMonthlyData] = useState<{ month: string; requests: number }[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
     const fetchReports = async () => {
