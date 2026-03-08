@@ -12,6 +12,8 @@ import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import MyLeave from "./pages/MyLeave";
 import RequestLeave from "./pages/RequestLeave";
+import Holidays from "./pages/Holidays";
+import ProfileSettings from "./pages/ProfileSettings";
 import LeaveHistory from "./pages/LeaveHistory";
 import Approvals from "./pages/manager/Approvals";
 import TeamCalendar from "./pages/manager/TeamCalendar";
@@ -40,6 +42,8 @@ const App = () => (
               <Route path="/my-leave" element={<MyLeave />} />
               <Route path="/request-leave" element={<RequestLeave />} />
               <Route path="/leave-history" element={<LeaveHistory />} />
+              <Route path="/holidays" element={<Holidays />} />
+              <Route path="/profile" element={<ProfileSettings />} />
               <Route path="/manager/approvals" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><Approvals /></RoleGuard>} />
               <Route path="/manager/team-calendar" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><TeamCalendar /></RoleGuard>} />
               <Route path="/admin/employees" element={<RoleGuard allowedRoles={["hr_admin"]}><Employees /></RoleGuard>} />

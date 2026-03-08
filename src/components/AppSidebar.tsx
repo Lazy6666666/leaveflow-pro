@@ -3,6 +3,8 @@ import {
   CalendarDays,
   PlusCircle,
   History,
+  CalendarHeart,
+  UserCog,
   CheckSquare,
   CalendarRange,
   Users,
@@ -35,6 +37,8 @@ const employeeItems = [
   { title: "My Leave", url: "/my-leave", icon: CalendarDays },
   { title: "Request Leave", url: "/request-leave", icon: PlusCircle },
   { title: "Leave History", url: "/leave-history", icon: History },
+  { title: "Holidays", url: "/holidays", icon: CalendarHeart },
+  { title: "Profile", url: "/profile", icon: UserCog },
 ];
 
 const managerItems = [
