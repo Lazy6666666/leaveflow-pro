@@ -128,6 +128,7 @@ const Dashboard = () => {
     { label: "Request Leave", desc: "Submit a new request", icon: PlusCircle, path: "/request-leave" },
     { label: "My Leave", desc: "View balances", icon: CalendarDays, path: "/my-leave" },
     { label: "History", desc: "View past requests", icon: Clock, path: "/leave-history" },
+    { label: "Holidays", desc: "View public holidays", icon: CalendarHeart, path: "/holidays" },
     ...(hasRole("manager") ? [{ label: "Approvals", desc: `${pendingCount} pending`, icon: CheckSquare, path: "/manager/approvals" }] : []),
   ];
 
