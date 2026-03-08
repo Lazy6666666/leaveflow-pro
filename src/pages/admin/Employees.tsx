@@ -123,7 +123,7 @@ const Employees = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map((emp) => (
+              {paginatedItems.map((emp) => (
                 <TableRow key={emp.id}>
                   <TableCell className="font-medium">{emp.full_name || "—"}</TableCell>
                   <TableCell className="text-muted-foreground hidden md:table-cell">{emp.email}</TableCell>
@@ -141,6 +141,7 @@ const Employees = () => {
               ))}
             </TableBody>
           </Table>
+          <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} />
         </CardContent>
       </Card>
 

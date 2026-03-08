@@ -20,9 +20,12 @@ const AppLayout = () => {
               <SidebarTrigger className="mr-4" />
               <h1 className="text-sm font-medium text-foreground">BALANCE</h1>
             </div>
-            <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9">
-              {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-            </Button>
+            <div className="flex items-center gap-1">
+              <NotificationBell />
+              <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9">
+                {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+              </Button>
+            </div>
           </header>
           <main className="flex-1 p-6 overflow-auto">
             <div className="animate-fade-in">
