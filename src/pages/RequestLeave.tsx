@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Send } from "lucide-react";
+import { FormSkeleton } from "@/components/skeletons";
 
 interface LeaveType { id: string; name: string; annual_allocation: number; }
 
