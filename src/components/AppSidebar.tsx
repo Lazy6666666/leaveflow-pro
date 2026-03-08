@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, CalendarDays, PlusCircle, History, CalendarHeart,
   UserCog, CheckSquare, CalendarRange, Users, Settings,
-  BarChart3, Building2, Wallet, LogOut, ShieldCheck, Fingerprint,
+  BarChart3, Building2, Wallet, LogOut, ShieldCheck, Fingerprint, CreditCard,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
