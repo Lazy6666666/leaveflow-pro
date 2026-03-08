@@ -94,6 +94,38 @@ export type Database = {
         }
         Relationships: []
       }
+      badge_mappings: {
+        Row: {
+          badge_id: string
+          created_at: string
+          employee_id: string
+          id: string
+          vendor: string | null
+        }
+        Insert: {
+          badge_id: string
+          created_at?: string
+          employee_id: string
+          id?: string
+          vendor?: string | null
+        }
+        Update: {
+          badge_id?: string
+          created_at?: string
+          employee_id?: string
+          id?: string
+          vendor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "badge_mappings_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       biometrics_config: {
         Row: {
           api_key: string | null
