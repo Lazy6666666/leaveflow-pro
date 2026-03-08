@@ -22,6 +22,7 @@ const ProfileSettings = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
