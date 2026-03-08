@@ -1,33 +1,15 @@
 import {
-  LayoutDashboard,
-  CalendarDays,
-  PlusCircle,
-  History,
-  CalendarHeart,
-  UserCog,
-  CheckSquare,
-  CalendarRange,
-  Users,
-  Settings,
-  BarChart3,
-  Building2,
-  Wallet,
-  LogOut,
+  LayoutDashboard, CalendarDays, PlusCircle, History, CalendarHeart,
+  UserCog, CheckSquare, CalendarRange, Users, Settings,
+  BarChart3, Building2, Wallet, LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  SidebarFooter,
-  useSidebar,
+  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
+  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
+  SidebarFooter, useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -59,55 +41,54 @@ export function AppSidebar() {
   const collapsed = state === "collapsed";
   const location = useLocation();
   const { hasRole, signOut, user } = useAuth();
-
   const isActive = (path: string) => location.pathname === path;
+
+  const renderNavItems = (items: typeof employeeItems) =>
+    items.map((item) => (
+      <SidebarMenuItem key={item.title}>
+        <SidebarMenuButton asChild isActive={isActive(item.url)}>
+          <NavLink
+            to={item.url}
+            end
+            className="hover:bg-sidebar-accent/60 transition-colors"
+            activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+          >
+            <item.icon className="mr-2 h-4 w-4" />
+            {!collapsed && <span>{item.title}</span>}
+          </NavLink>
+        </SidebarMenuButton>
+      </SidebarMenuItem>
+    ));
 
   return (
     <Sidebar collapsible="icon">
       <SidebarContent>
         {!collapsed && (
-          <div className="px-4 py-4">
-            <h2 className="text-lg font-semibold text-sidebar-foreground">Leave Manager</h2>
-            <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+          <div className="px-4 py-5 flex items-center gap-3">
+            <div className="h-9 w-9 rounded-lg bg-sidebar-primary flex items-center justify-center shrink-0">
+              <CalendarDays className="h-4 w-4 text-sidebar-primary-foreground" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-sm font-semibold text-sidebar-foreground leading-tight">Leave Manager</h2>
+              <p className="text-xs text-sidebar-foreground/50 truncate">{user?.email}</p>
+            </div>
           </div>
         )}
 
         <SidebarGroup>
-          <SidebarGroupLabel>Employee</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sidebar-foreground/40 text-[11px] uppercase tracking-wider">Employee</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {employeeItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                    <NavLink to={item.url} end className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
-                      <item.icon className="mr-2 h-4 w-4" />
-                      {!collapsed && <span>{item.title}</span>}
-                    </NavLink>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
+            <SidebarMenu>{renderNavItems(employeeItems)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
         {hasRole("manager") && (
           <>
-            <Separator className="mx-4 w-auto" />
+            <Separator className="mx-4 w-auto bg-sidebar-border" />
             <SidebarGroup>
-              <SidebarGroupLabel>Manager</SidebarGroupLabel>
+              <SidebarGroupLabel className="text-sidebar-foreground/40 text-[11px] uppercase tracking-wider">Manager</SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
-                  {managerItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                        <NavLink to={item.url} end className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
-                          <item.icon className="mr-2 h-4 w-4" />
-                          {!collapsed && <span>{item.title}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
+                <SidebarMenu>{renderNavItems(managerItems)}</SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
           </>
@@ -115,32 +96,21 @@ export function AppSidebar() {
 
         {hasRole("hr_admin") && (
           <>
-            <Separator className="mx-4 w-auto" />
+            <Separator className="mx-4 w-auto bg-sidebar-border" />
             <SidebarGroup>
-              <SidebarGroupLabel>HR Admin</SidebarGroupLabel>
+              <SidebarGroupLabel className="text-sidebar-foreground/40 text-[11px] uppercase tracking-wider">HR Admin</SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
-                  {adminItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton asChild isActive={isActive(item.url)}>
-                        <NavLink to={item.url} end className="hover:bg-sidebar-accent/50" activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium">
-                          <item.icon className="mr-2 h-4 w-4" />
-                          {!collapsed && <span>{item.title}</span>}
-                        </NavLink>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
+                <SidebarMenu>{renderNavItems(adminItems)}</SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
           </>
         )}
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-sidebar-border">
         <Button
           variant="ghost"
-          className="w-full justify-start text-muted-foreground hover:text-destructive"
+          className="w-full justify-start text-sidebar-foreground/60 hover:text-destructive hover:bg-sidebar-accent/50"
           onClick={signOut}
         >
           <LogOut className="mr-2 h-4 w-4" />
