@@ -44,6 +44,7 @@ const Dashboard = () => {
     const today = format(startOfToday(), "yyyy-MM-dd");
 
     const fetchAll = async () => {
+      setLoading(true);
       const [balRes, recRes, holRes] = await Promise.all([
         supabase
           .from("leave_balances")
