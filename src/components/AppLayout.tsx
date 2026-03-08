@@ -5,6 +5,7 @@ import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Button } from "@/components/ui/button";
 import AIChatPanel from "@/components/AIChatPanel";
+import NotificationBell from "@/components/NotificationBell";
 
 const AppLayout = () => {
   const { theme, toggleTheme } = useTheme();
