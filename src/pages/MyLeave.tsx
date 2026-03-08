@@ -15,6 +15,7 @@ interface LeaveBalance {
 const MyLeave = () => {
   const { user } = useAuth();
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
+  const [loading, setLoading] = useState(true);
   const currentYear = new Date().getFullYear();
 
   useEffect(() => {
