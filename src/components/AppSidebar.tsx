@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, CalendarDays, PlusCircle, History, CalendarHeart,
   UserCog, CheckSquare, CalendarRange, Users, Settings,
-  BarChart3, Building2, Wallet, LogOut, ShieldCheck, Fingerprint, CreditCard, ClipboardList,
+  BarChart3, Building2, Wallet, LogOut, ShieldCheck, Fingerprint, CreditCard, ClipboardList, UserCheck,
 } from "lucide-react";
 import balanceLogo from "@/assets/balance-logo.png";
 import { NavLink } from "@/components/NavLink";
@@ -31,6 +31,7 @@ const managerItems = [
   { title: "Approvals", url: "/manager/approvals", icon: CheckSquare },
   { title: "Team Calendar", url: "/manager/team-calendar", icon: CalendarRange },
   { title: "Team Attendance", url: "/manager/team-attendance", icon: Fingerprint },
+  { title: "Delegation", url: "/manager/delegation", icon: UserCheck },
 ];
 
 const adminItems = [
