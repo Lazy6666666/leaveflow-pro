@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { useNavigate } from "react-router-dom";
 import { CalendarDays, PlusCircle, CheckSquare, Clock, CalendarHeart, ArrowRight } from "lucide-react";
+import { DashboardSkeleton } from "@/components/skeletons";
 import { format, parseISO, startOfToday } from "date-fns";
 
 interface LeaveBalance {
@@ -36,6 +37,7 @@ const Dashboard = () => {
   const [recentRequests, setRecentRequests] = useState<RecentRequest[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [upcomingHolidays, setUpcomingHolidays] = useState<Holiday[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -43,6 +45,7 @@ const Dashboard = () => {
     const today = format(startOfToday(), "yyyy-MM-dd");
 
     const fetchAll = async () => {
+      setLoading(true);
       const [balRes, recRes, holRes] = await Promise.all([
         supabase
           .from("leave_balances")
@@ -74,7 +77,7 @@ const Dashboard = () => {
         setPendingCount(count || 0);
       }
     };
-    fetchAll();
+    fetchAll().finally(() => setLoading(false));
   }, [user, hasRole]);
 
   const statusColor = (status: string) => {
@@ -96,6 +99,8 @@ const Dashboard = () => {
     { label: "History", desc: "View past requests", icon: Clock, path: "/leave-history" },
     ...(hasRole("manager") ? [{ label: "Approvals", desc: `${pendingCount} pending`, icon: CheckSquare, path: "/manager/approvals" }] : []),
   ];
+
+  if (loading) return <DashboardSkeleton />;
 
   return (
     <div className="space-y-8">

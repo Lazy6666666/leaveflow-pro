@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { toast } from "sonner";
 import { History, FileX } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 
 interface LeaveRequest {
   id: string;
@@ -23,6 +24,7 @@ interface LeaveRequest {
 const LeaveHistory = () => {
   const { user } = useAuth();
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchRequests = async () => {
     if (!user) return;
@@ -34,7 +36,14 @@ const LeaveHistory = () => {
     if (data) setRequests(data as unknown as LeaveRequest[]);
   };
 
-  useEffect(() => { fetchRequests(); }, [user]);
+  useEffect(() => { fetchRequests().finally(() => setLoading(false)); }, [user]);
+
+  if (loading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <TableSkeleton rows={5} cols={6} />
+    </div>
+  );
 
   const handleCancel = async (id: string) => {
     const { error } = await supabase.from("leave_requests").update({ status: "cancelled" }).eq("id", id);

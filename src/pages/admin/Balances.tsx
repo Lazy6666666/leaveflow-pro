@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Pencil, RefreshCw, Wallet } from "lucide-react";
+import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 
 interface Profile { id: string; full_name: string | null; email: string | null; }
 interface LeaveType { id: string; name: string; annual_allocation: number; }
@@ -27,6 +28,7 @@ const Balances = () => {
   const [adjustTarget, setAdjustTarget] = useState<Balance | null>(null);
   const [newBalance, setNewBalance] = useState("");
   const [initializing, setInitializing] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
     const fetch = async () => {
@@ -37,7 +39,7 @@ const Balances = () => {
       if (profiles) setEmployees(profiles);
       if (types) setLeaveTypes(types);
     };
-    fetch();
+    fetch().finally(() => setPageLoading(false));
   }, []);
 
   const fetchBalances = async () => {
@@ -47,6 +49,13 @@ const Balances = () => {
   };
 
   useEffect(() => { if (selectedEmployee && year) fetchBalances(); }, [selectedEmployee, year]);
+
+  if (pageLoading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <TableSkeleton rows={4} cols={4} />
+    </div>
+  );
 
   const openAdjust = (bal: Balance) => { setAdjustTarget(bal); setNewBalance(bal.balance.toString()); setAdjustDialog(true); };
 

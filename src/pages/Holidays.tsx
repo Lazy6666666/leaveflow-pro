@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, CalendarHeart } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 
 interface Holiday {
   id: string; name: string; date: string; description: string | null; is_recurring: boolean; created_at: string;
@@ -31,6 +32,7 @@ const Holidays = () => {
   const [isRecurring, setIsRecurring] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Holiday | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [yearFilter, setYearFilter] = useState(new Date().getFullYear().toString());
 
   const fetchHolidays = async () => {
@@ -38,7 +40,14 @@ const Holidays = () => {
     if (data) setHolidays(data);
   };
 
-  useEffect(() => { fetchHolidays(); }, [yearFilter]);
+  useEffect(() => { setPageLoading(true); fetchHolidays().finally(() => setPageLoading(false)); }, [yearFilter]);
+
+  if (pageLoading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <TableSkeleton rows={6} cols={4} />
+    </div>
+  );
 
   const openCreate = () => { setEditing(null); setName(""); setDate(""); setDescription(""); setIsRecurring(false); setDialogOpen(true); };
   const openEdit = (h: Holiday) => { setEditing(h); setName(h.name); setDate(h.date); setDescription(h.description || ""); setIsRecurring(h.is_recurring); setDialogOpen(true); };

@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Camera } from "lucide-react";
+import { ProfileSkeleton } from "@/components/skeletons";
 
 interface Department { id: string; name: string; }
 
@@ -21,6 +22,7 @@ const ProfileSettings = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
@@ -37,8 +39,10 @@ const ProfileSettings = () => {
       }
       if (depts) setDepartments(depts);
     };
-    fetchProfile();
+    fetchProfile().finally(() => setPageLoading(false));
   }, [user]);
+
+  if (pageLoading) return <ProfileSkeleton />;
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

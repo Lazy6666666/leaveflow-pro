@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BarChart3 } from "lucide-react";
+import { PageHeaderSkeleton, CardSkeleton } from "@/components/skeletons";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const COLORS = [
@@ -16,6 +17,7 @@ const Reports = () => {
   const [statusData, setStatusData] = useState<{ name: string; count: number }[]>([]);
   const [typeData, setTypeData] = useState<{ name: string; count: number }[]>([]);
   const [monthlyData, setMonthlyData] = useState<{ month: string; requests: number }[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
     const fetchReports = async () => {
@@ -35,8 +37,19 @@ const Reports = () => {
         setMonthlyData(Object.entries(monthMap).map(([month, requests]) => ({ month, requests })));
       }
     };
-    fetchReports();
+    fetchReports().finally(() => setPageLoading(false));
   }, []);
+
+  if (pageLoading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <CardSkeleton lines={6} />
+        <CardSkeleton lines={6} />
+      </div>
+      <CardSkeleton lines={8} />
+    </div>
+  );
 
   return (
     <div className="space-y-6">

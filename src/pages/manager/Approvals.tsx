@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { toast } from "sonner";
 import { CheckSquare, Inbox } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 
 interface PendingRequest {
   id: string;
@@ -23,6 +24,7 @@ interface PendingRequest {
 
 const Approvals = () => {
   const [requests, setRequests] = useState<PendingRequest[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<PendingRequest | null>(null);
   const [comment, setComment] = useState("");
   const [action, setAction] = useState<"approved" | "rejected" | null>(null);
@@ -36,7 +38,14 @@ const Approvals = () => {
     if (data) setRequests(data as unknown as PendingRequest[]);
   };
 
-  useEffect(() => { fetchRequests(); }, []);
+  useEffect(() => { fetchRequests().finally(() => setPageLoading(false)); }, []);
+
+  if (pageLoading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <TableSkeleton rows={4} cols={5} />
+    </div>
+  );
 
   const handleAction = async () => {
     if (!selectedRequest || !action) return;

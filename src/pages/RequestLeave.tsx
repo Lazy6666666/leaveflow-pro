@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Send } from "lucide-react";
+import { FormSkeleton } from "@/components/skeletons";
 
 interface LeaveType { id: string; name: string; annual_allocation: number; }
 
@@ -17,6 +18,7 @@ const RequestLeave = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
   const [leaveTypeId, setLeaveTypeId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -29,8 +31,10 @@ const RequestLeave = () => {
       const { data } = await supabase.from("leave_types").select("id, name, annual_allocation").eq("is_active", true);
       if (data) setLeaveTypes(data);
     };
-    fetchTypes();
+    fetchTypes().finally(() => setPageLoading(false));
   }, []);
+
+  if (pageLoading) return <FormSkeleton />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

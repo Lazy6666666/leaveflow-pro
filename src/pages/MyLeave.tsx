@@ -3,6 +3,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { PageHeaderSkeleton, BalanceCardSkeleton } from "@/components/skeletons";
 
 interface LeaveBalance {
   balance: number;
@@ -14,6 +15,7 @@ interface LeaveBalance {
 const MyLeave = () => {
   const { user } = useAuth();
   const [balances, setBalances] = useState<LeaveBalance[]>([]);
+  const [loading, setLoading] = useState(true);
   const currentYear = new Date().getFullYear();
 
   useEffect(() => {
@@ -26,8 +28,17 @@ const MyLeave = () => {
         .eq("year", currentYear);
       if (data) setBalances(data as unknown as LeaveBalance[]);
     };
-    fetch();
+    fetch().finally(() => setLoading(false));
   }, [user, currentYear]);
+
+  if (loading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <div className="grid gap-5 md:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, i) => <BalanceCardSkeleton key={i} />)}
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">

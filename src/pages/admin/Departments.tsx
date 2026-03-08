@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Building2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 
 interface Department { id: string; name: string; created_at: string; }
 
@@ -21,13 +22,21 @@ const Departments = () => {
   const [name, setName] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Department | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
 
   const fetchDepartments = async () => {
     const { data } = await supabase.from("departments").select("*").order("name");
     if (data) setDepartments(data);
   };
 
-  useEffect(() => { fetchDepartments(); }, []);
+  useEffect(() => { fetchDepartments().finally(() => setPageLoading(false)); }, []);
+
+  if (pageLoading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <TableSkeleton rows={4} cols={3} />
+    </div>
+  );
 
   const openCreate = () => { setEditingDept(null); setName(""); setDialogOpen(true); };
   const openEdit = (dept: Department) => { setEditingDept(dept); setName(dept.name); setDialogOpen(true); };

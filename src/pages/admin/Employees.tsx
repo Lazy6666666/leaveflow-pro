@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Users } from "lucide-react";
+import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 import type { Enums } from "@/integrations/supabase/types";
 
 type AppRole = Enums<"app_role">;
@@ -24,6 +25,7 @@ interface Department { id: string; name: string; }
 
 const Employees = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
   const [allProfiles, setAllProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
@@ -43,7 +45,14 @@ const Employees = () => {
     if (deptRes.data) setDepartments(deptRes.data);
   };
 
-  useEffect(() => { fetchAll(); }, []);
+  useEffect(() => { fetchAll().finally(() => setPageLoading(false)); }, []);
+
+  if (pageLoading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <TableSkeleton rows={6} cols={5} />
+    </div>
+  );
 
   const getRoles = (userId: string) => roles.filter((r) => r.user_id === userId).map((r) => r.role);
 

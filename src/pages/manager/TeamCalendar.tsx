@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, CalendarRange } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isWithinInterval, parseISO, addMonths, subMonths, isToday } from "date-fns";
+import { PageHeaderSkeleton, CardSkeleton } from "@/components/skeletons";
 
 interface TeamLeave {
   id: string;
@@ -18,6 +19,7 @@ interface TeamLeave {
 const TeamCalendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [leaves, setLeaves] = useState<TeamLeave[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
     const fetchLeaves = async () => {
@@ -31,8 +33,15 @@ const TeamCalendar = () => {
         .lte("start_date", monthEnd);
       if (data) setLeaves(data as unknown as TeamLeave[]);
     };
-    fetchLeaves();
+    fetchLeaves().finally(() => setPageLoading(false));
   }, [currentMonth]);
+
+  if (pageLoading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <CardSkeleton lines={10} />
+    </div>
+  );
 
   const days = eachDayOfInterval({ start: startOfMonth(currentMonth), end: endOfMonth(currentMonth) });
 
