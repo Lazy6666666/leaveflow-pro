@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Users } from "lucide-react";
+import { Users, Download } from "lucide-react";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 import type { Enums } from "@/integrations/supabase/types";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 
 type AppRole = Enums<"app_role">;
 
