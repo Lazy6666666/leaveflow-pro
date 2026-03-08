@@ -57,9 +57,10 @@ const ProfileSettings = () => {
     const filePath = `${user.id}/${Date.now()}-${file.name}`;
     const { error: uploadError } = await supabase.storage.from("avatars").upload(filePath, file);
     if (uploadError) { toast.error("Failed to upload avatar"); setUploading(false); return; }
-    const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(filePath);
-    setAvatarUrl(publicUrl);
-    await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", user.id);
+    // Store the path, not a public URL; use signed URLs to display
+    const { data: signedData } = await supabase.storage.from("avatars").createSignedUrl(filePath, 3600);
+    setAvatarUrl(signedData?.signedUrl || null);
+    await supabase.from("profiles").update({ avatar_url: filePath }).eq("id", user.id);
     toast.success("Avatar updated");
     setUploading(false);
   };
