@@ -3,6 +3,8 @@ import {
   CalendarDays,
   PlusCircle,
   History,
+  CalendarHeart,
+  UserCog,
   CheckSquare,
   CalendarRange,
   Users,
