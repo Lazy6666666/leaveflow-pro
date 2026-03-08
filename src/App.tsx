@@ -28,6 +28,7 @@ import Departments from "./pages/admin/Departments";
 import Balances from "./pages/admin/Balances";
 import AttendanceDashboard from "./pages/admin/AttendanceDashboard";
 import BiometricsSettings from "./pages/admin/BiometricsSettings";
+import AttendanceSettingsPage from "./pages/admin/AttendanceSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
