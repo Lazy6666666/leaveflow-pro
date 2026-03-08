@@ -21,6 +21,7 @@ import Approvals from "./pages/manager/Approvals";
 import AdminSetup from "./pages/AdminSetup";
 import TeamCalendar from "./pages/manager/TeamCalendar";
 import TeamAttendance from "./pages/manager/TeamAttendance";
+import ManagerDelegation from "./pages/manager/ManagerDelegation";
 import Employees from "./pages/admin/Employees";
 import Policies from "./pages/admin/Policies";
 import Reports from "./pages/admin/Reports";
