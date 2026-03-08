@@ -29,6 +29,7 @@ const employeeItems = [
 const managerItems = [
   { title: "Approvals", url: "/manager/approvals", icon: CheckSquare },
   { title: "Team Calendar", url: "/manager/team-calendar", icon: CalendarRange },
+  { title: "Team Attendance", url: "/manager/team-attendance", icon: Fingerprint },
 ];
 
 const adminItems = [
