@@ -16,6 +16,7 @@ import RequestLeave from "./pages/RequestLeave";
 import Holidays from "./pages/Holidays";
 import ProfileSettings from "./pages/ProfileSettings";
 import LeaveHistory from "./pages/LeaveHistory";
+import AttendanceHistory from "./pages/AttendanceHistory";
 import Approvals from "./pages/manager/Approvals";
 import AdminSetup from "./pages/AdminSetup";
 import TeamCalendar from "./pages/manager/TeamCalendar";
