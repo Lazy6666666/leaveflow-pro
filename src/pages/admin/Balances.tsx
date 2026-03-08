@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Pencil, RefreshCw, Wallet } from "lucide-react";
+import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 
 interface Profile { id: string; full_name: string | null; email: string | null; }
 interface LeaveType { id: string; name: string; annual_allocation: number; }
