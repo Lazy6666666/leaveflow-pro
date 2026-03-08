@@ -40,6 +40,7 @@ const adminItems = [
   { title: "Attendance", url: "/admin/attendance", icon: Fingerprint },
   { title: "Att. Settings", url: "/admin/attendance-settings", icon: Settings },
   { title: "Biometrics", url: "/admin/biometrics", icon: Fingerprint },
+  { title: "Badge Maps", url: "/admin/badge-mappings", icon: CreditCard },
   { title: "Reports", url: "/admin/reports", icon: BarChart3 },
 ];
 

@@ -438,6 +438,28 @@ serve(async (req) => {
         await supabase.from("attendance_logs").upsert(inserts, {
           onConflict: "employee_id,date",
         });
+
+        // Notify managers about absent employees
+        const absentIds = inserts
+          .filter((i: any) => i.status === "absent")
+          .map((i: any) => i.employee_id);
+
+        if (absentIds.length > 0) {
+          try {
+            const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+            const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+            await fetch(`${supabaseUrl}/functions/v1/notify-absence`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${supabaseServiceKey}`,
+              },
+              body: JSON.stringify({ employee_ids: absentIds, date: today }),
+            });
+          } catch (e) {
+            console.error("Failed to send absence notifications:", e.message);
+          }
+        }
       }
 
       return new Response(

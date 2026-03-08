@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.sync-attendance]
 verify_jwt = false
+
+[functions.notify-absence]
+verify_jwt = false
