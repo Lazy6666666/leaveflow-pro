@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
+import { History, FileX } from "lucide-react";
+import { format, parseISO } from "date-fns";
 
 interface LeaveRequest {
   id: string;
@@ -32,21 +34,12 @@ const LeaveHistory = () => {
     if (data) setRequests(data as unknown as LeaveRequest[]);
   };
 
-  useEffect(() => {
-    fetchRequests();
-  }, [user]);
+  useEffect(() => { fetchRequests(); }, [user]);
 
   const handleCancel = async (id: string) => {
-    const { error } = await supabase
-      .from("leave_requests")
-      .update({ status: "cancelled" })
-      .eq("id", id);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Request cancelled");
-      fetchRequests();
-    }
+    const { error } = await supabase.from("leave_requests").update({ status: "cancelled" }).eq("id", id);
+    if (error) toast.error(error.message);
+    else { toast.success("Request cancelled"); fetchRequests(); }
   };
 
   const statusVariant = (status: string) => {
@@ -61,17 +54,25 @@ const LeaveHistory = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Leave History</h1>
-        <p className="text-muted-foreground">View all your leave requests</p>
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <History className="h-6 w-6 text-primary" /> Leave History
+        </h1>
+        <p className="text-muted-foreground mt-1">View all your leave requests</p>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>All Requests</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            All Requests
+            <Badge variant="secondary" className="text-xs">{requests.length}</Badge>
+          </CardTitle>
         </CardHeader>
         <CardContent>
           {requests.length === 0 ? (
-            <p className="text-muted-foreground">No leave requests found.</p>
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <FileX className="h-10 w-10 mb-3 opacity-40" />
+              <p className="text-sm">No leave requests found.</p>
+            </div>
           ) : (
             <Table>
               <TableHeader>
@@ -79,24 +80,24 @@ const LeaveHistory = () => {
                   <TableHead>Type</TableHead>
                   <TableHead>Start</TableHead>
                   <TableHead>End</TableHead>
-                  <TableHead>Reason</TableHead>
+                  <TableHead className="hidden md:table-cell">Reason</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Comment</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead className="hidden lg:table-cell">Comment</TableHead>
+                  <TableHead className="w-20">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {requests.map((req) => (
                   <TableRow key={req.id}>
                     <TableCell className="font-medium">{req.leave_types?.name}</TableCell>
-                    <TableCell>{req.start_date}</TableCell>
-                    <TableCell>{req.end_date}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{req.reason || "—"}</TableCell>
-                    <TableCell><Badge variant={statusVariant(req.status)}>{req.status}</Badge></TableCell>
-                    <TableCell className="max-w-[200px] truncate">{req.manager_comment || "—"}</TableCell>
+                    <TableCell className="tabular-nums">{format(parseISO(req.start_date), "MMM d, yyyy")}</TableCell>
+                    <TableCell className="tabular-nums">{format(parseISO(req.end_date), "MMM d, yyyy")}</TableCell>
+                    <TableCell className="max-w-[200px] truncate text-muted-foreground hidden md:table-cell">{req.reason || "—"}</TableCell>
+                    <TableCell><Badge variant={statusVariant(req.status)} className="capitalize">{req.status}</Badge></TableCell>
+                    <TableCell className="max-w-[200px] truncate text-muted-foreground hidden lg:table-cell">{req.manager_comment || "—"}</TableCell>
                     <TableCell>
                       {req.status === "pending" && (
-                        <Button variant="ghost" size="sm" className="text-destructive" onClick={() => handleCancel(req.id)}>
+                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive h-8 text-xs" onClick={() => handleCancel(req.id)}>
                           Cancel
                         </Button>
                       )}

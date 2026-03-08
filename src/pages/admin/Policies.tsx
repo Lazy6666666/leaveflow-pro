@@ -5,18 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Plus } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 
-interface LeaveType {
-  id: string;
-  name: string;
-  annual_allocation: number;
-  carry_forward_limit: number;
-  is_active: boolean;
-}
+interface LeaveType { id: string; name: string; annual_allocation: number; carry_forward_limit: number; is_active: boolean; }
 
 const Policies = () => {
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
@@ -32,59 +27,40 @@ const Policies = () => {
     if (data) setLeaveTypes(data);
   };
 
-  useEffect(() => {
-    fetchTypes();
-  }, []);
+  useEffect(() => { fetchTypes(); }, []);
 
-  const openNew = () => {
-    setEditing(null);
-    setName("");
-    setAllocation(0);
-    setCarryForward(0);
-    setIsActive(true);
-    setDialogOpen(true);
-  };
-
-  const openEdit = (lt: LeaveType) => {
-    setEditing(lt);
-    setName(lt.name);
-    setAllocation(lt.annual_allocation);
-    setCarryForward(lt.carry_forward_limit);
-    setIsActive(lt.is_active);
-    setDialogOpen(true);
-  };
+  const openNew = () => { setEditing(null); setName(""); setAllocation(0); setCarryForward(0); setIsActive(true); setDialogOpen(true); };
+  const openEdit = (lt: LeaveType) => { setEditing(lt); setName(lt.name); setAllocation(lt.annual_allocation); setCarryForward(lt.carry_forward_limit); setIsActive(lt.is_active); setDialogOpen(true); };
 
   const handleSave = async () => {
+    const payload = { name, annual_allocation: allocation, carry_forward_limit: carryForward, is_active: isActive };
     if (editing) {
-      const { error } = await supabase.from("leave_types").update({
-        name, annual_allocation: allocation, carry_forward_limit: carryForward, is_active: isActive,
-      }).eq("id", editing.id);
+      const { error } = await supabase.from("leave_types").update(payload).eq("id", editing.id);
       if (error) { toast.error(error.message); return; }
       toast.success("Leave type updated");
     } else {
-      const { error } = await supabase.from("leave_types").insert({
-        name, annual_allocation: allocation, carry_forward_limit: carryForward, is_active: isActive,
-      });
+      const { error } = await supabase.from("leave_types").insert(payload);
       if (error) { toast.error(error.message); return; }
       toast.success("Leave type created");
     }
-    setDialogOpen(false);
-    fetchTypes();
+    setDialogOpen(false); fetchTypes();
   };
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">Leave Policies</h1>
-          <p className="text-muted-foreground">Configure leave types and allocation rules</p>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Settings className="h-6 w-6 text-primary" /> Leave Policies
+          </h1>
+          <p className="text-muted-foreground mt-1">Configure leave types and allocation rules</p>
         </div>
-        <Button onClick={openNew}><Plus className="mr-2 h-4 w-4" /> Add Leave Type</Button>
+        <Button onClick={openNew} className="h-10"><Plus className="mr-2 h-4 w-4" /> Add Leave Type</Button>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>Leave Types</CardTitle>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Leave Types</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -92,20 +68,24 @@ const Policies = () => {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Annual Allocation</TableHead>
-                <TableHead>Carry Forward Limit</TableHead>
+                <TableHead className="hidden md:table-cell">Carry Forward</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead className="w-20">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {leaveTypes.map((lt) => (
-                <TableRow key={lt.id}>
+                <TableRow key={lt.id} className={!lt.is_active ? "opacity-50" : ""}>
                   <TableCell className="font-medium">{lt.name}</TableCell>
-                  <TableCell>{lt.annual_allocation} days</TableCell>
-                  <TableCell>{lt.carry_forward_limit} days</TableCell>
-                  <TableCell>{lt.is_active ? "Active" : "Inactive"}</TableCell>
+                  <TableCell className="tabular-nums">{lt.annual_allocation} days</TableCell>
+                  <TableCell className="tabular-nums hidden md:table-cell">{lt.carry_forward_limit} days</TableCell>
                   <TableCell>
-                    <Button size="sm" variant="outline" onClick={() => openEdit(lt)}>Edit</Button>
+                    <Badge variant={lt.is_active ? "default" : "secondary"} className="text-xs">
+                      {lt.is_active ? "Active" : "Inactive"}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => openEdit(lt)}>Edit</Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -116,26 +96,12 @@ const Policies = () => {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editing ? "Edit" : "Add"} Leave Type</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>{editing ? "Edit" : "Add"} Leave Type</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Name</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
-            <div className="space-y-2">
-              <Label>Annual Allocation (days)</Label>
-              <Input type="number" value={allocation} onChange={(e) => setAllocation(Number(e.target.value))} />
-            </div>
-            <div className="space-y-2">
-              <Label>Carry Forward Limit (days)</Label>
-              <Input type="number" value={carryForward} onChange={(e) => setCarryForward(Number(e.target.value))} />
-            </div>
-            <div className="flex items-center space-x-2">
-              <Switch checked={isActive} onCheckedChange={setIsActive} />
-              <Label>Active</Label>
-            </div>
+            <div className="space-y-2"><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} className="h-11" /></div>
+            <div className="space-y-2"><Label>Annual Allocation (days)</Label><Input type="number" value={allocation} onChange={(e) => setAllocation(Number(e.target.value))} className="h-11" /></div>
+            <div className="space-y-2"><Label>Carry Forward Limit (days)</Label><Input type="number" value={carryForward} onChange={(e) => setCarryForward(Number(e.target.value))} className="h-11" /></div>
+            <div className="flex items-center space-x-2"><Switch checked={isActive} onCheckedChange={setIsActive} /><Label>Active</Label></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>

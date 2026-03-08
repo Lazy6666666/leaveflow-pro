@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { CheckSquare, Inbox } from "lucide-react";
+import { format, parseISO } from "date-fns";
 
 interface PendingRequest {
   id: string;
@@ -34,9 +36,7 @@ const Approvals = () => {
     if (data) setRequests(data as unknown as PendingRequest[]);
   };
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
+  useEffect(() => { fetchRequests(); }, []);
 
   const handleAction = async () => {
     if (!selectedRequest || !action) return;
@@ -48,44 +48,43 @@ const Approvals = () => {
       toast.error(error.message);
     } else {
       toast.success(`Request ${action}`);
-      // Fire-and-forget email notification
-      supabase.functions.invoke("notify-leave", {
-        body: { type: action, request_id: selectedRequest.id },
-      }).catch(() => {});
-      setSelectedRequest(null);
-      setComment("");
-      setAction(null);
-      fetchRequests();
+      supabase.functions.invoke("notify-leave", { body: { type: action, request_id: selectedRequest.id } }).catch(() => {});
+      setSelectedRequest(null); setComment(""); setAction(null); fetchRequests();
     }
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Pending Approvals</h1>
-        <p className="text-muted-foreground">Review and action team leave requests</p>
+        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+          <CheckSquare className="h-6 w-6 text-primary" /> Pending Approvals
+        </h1>
+        <p className="text-muted-foreground mt-1">Review and action team leave requests</p>
       </div>
 
       <Card>
-        <CardHeader>
-          <CardTitle>
-            Pending Requests <Badge variant="outline" className="ml-2">{requests.length}</Badge>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg flex items-center gap-2">
+            Pending Requests
+            <Badge variant="secondary" className="text-xs">{requests.length}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {requests.length === 0 ? (
-            <p className="text-muted-foreground">No pending requests.</p>
+            <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+              <Inbox className="h-10 w-10 mb-3 opacity-40" />
+              <p className="text-sm">No pending requests. All caught up!</p>
+            </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Employee</TableHead>
                   <TableHead>Type</TableHead>
-                  <TableHead>Start</TableHead>
-                  <TableHead>End</TableHead>
-                  <TableHead>Reason</TableHead>
-                  <TableHead>Submitted</TableHead>
-                  <TableHead>Actions</TableHead>
+                  <TableHead>Dates</TableHead>
+                  <TableHead className="hidden md:table-cell">Reason</TableHead>
+                  <TableHead className="hidden lg:table-cell">Submitted</TableHead>
+                  <TableHead className="w-48">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -93,17 +92,14 @@ const Approvals = () => {
                   <TableRow key={req.id}>
                     <TableCell className="font-medium">{req.profiles?.full_name || req.profiles?.email}</TableCell>
                     <TableCell>{req.leave_types?.name}</TableCell>
-                    <TableCell>{req.start_date}</TableCell>
-                    <TableCell>{req.end_date}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{req.reason || "—"}</TableCell>
-                    <TableCell>{new Date(req.created_at).toLocaleDateString()}</TableCell>
+                    <TableCell className="tabular-nums text-sm">
+                      {format(parseISO(req.start_date), "MMM d")} — {format(parseISO(req.end_date), "MMM d")}
+                    </TableCell>
+                    <TableCell className="max-w-[200px] truncate text-muted-foreground hidden md:table-cell">{req.reason || "—"}</TableCell>
+                    <TableCell className="text-muted-foreground hidden lg:table-cell">{format(parseISO(req.created_at), "MMM d, yyyy")}</TableCell>
                     <TableCell className="space-x-2">
-                      <Button size="sm" onClick={() => { setSelectedRequest(req); setAction("approved"); }}>
-                        Approve
-                      </Button>
-                      <Button size="sm" variant="destructive" onClick={() => { setSelectedRequest(req); setAction("rejected"); }}>
-                        Reject
-                      </Button>
+                      <Button size="sm" className="h-8" onClick={() => { setSelectedRequest(req); setAction("approved"); }}>Approve</Button>
+                      <Button size="sm" variant="destructive" className="h-8" onClick={() => { setSelectedRequest(req); setAction("rejected"); }}>Reject</Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -119,10 +115,10 @@ const Approvals = () => {
             <DialogTitle>{action === "approved" ? "Approve" : "Reject"} Leave Request</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <p className="text-sm text-muted-foreground">Employee: {selectedRequest?.profiles?.full_name}</p>
-              <p className="text-sm text-muted-foreground">Type: {selectedRequest?.leave_types?.name}</p>
-              <p className="text-sm text-muted-foreground">Dates: {selectedRequest?.start_date} — {selectedRequest?.end_date}</p>
+            <div className="bg-muted/50 rounded-lg p-4 space-y-1 text-sm">
+              <p><span className="text-muted-foreground">Employee:</span> <span className="font-medium">{selectedRequest?.profiles?.full_name}</span></p>
+              <p><span className="text-muted-foreground">Type:</span> <span className="font-medium">{selectedRequest?.leave_types?.name}</span></p>
+              <p><span className="text-muted-foreground">Dates:</span> <span className="font-medium">{selectedRequest?.start_date} — {selectedRequest?.end_date}</span></p>
             </div>
             <Textarea placeholder="Add a comment (optional)..." value={comment} onChange={(e) => setComment(e.target.value)} rows={3} />
           </div>
