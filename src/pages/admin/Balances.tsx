@@ -42,13 +42,6 @@ const Balances = () => {
     fetch().finally(() => setPageLoading(false));
   }, []);
 
-  if (pageLoading) return (
-    <div className="space-y-6">
-      <PageHeaderSkeleton />
-      <TableSkeleton rows={4} cols={4} />
-    </div>
-  );
-
   const fetchBalances = async () => {
     if (!selectedEmployee || !year) return;
     const { data } = await supabase.from("leave_balances").select("*, leave_types(name)").eq("employee_id", selectedEmployee).eq("year", parseInt(year));
@@ -56,6 +49,13 @@ const Balances = () => {
   };
 
   useEffect(() => { if (selectedEmployee && year) fetchBalances(); }, [selectedEmployee, year]);
+
+  if (pageLoading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <TableSkeleton rows={4} cols={4} />
+    </div>
+  );
 
   const openAdjust = (bal: Balance) => { setAdjustTarget(bal); setNewBalance(bal.balance.toString()); setAdjustDialog(true); };
 
