@@ -19,6 +19,7 @@ interface TeamLeave {
 const TeamCalendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [leaves, setLeaves] = useState<TeamLeave[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
     const fetchLeaves = async () => {
