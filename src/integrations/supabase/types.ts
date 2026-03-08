@@ -363,6 +363,36 @@ export type Database = {
         }
         Relationships: []
       }
+      manager_delegations: {
+        Row: {
+          created_at: string
+          delegate_id: string
+          end_date: string
+          id: string
+          is_active: boolean
+          manager_id: string
+          start_date: string
+        }
+        Insert: {
+          created_at?: string
+          delegate_id: string
+          end_date: string
+          id?: string
+          is_active?: boolean
+          manager_id: string
+          start_date: string
+        }
+        Update: {
+          created_at?: string
+          delegate_id?: string
+          end_date?: string
+          id?: string
+          is_active?: boolean
+          manager_id?: string
+          start_date?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           created_at: string
