@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, CreditCard, Search } from "lucide-react";
+import CSVBadgeImport from "@/components/admin/CSVBadgeImport";
 
 interface BadgeMapping {
   id: string;
