@@ -27,6 +27,7 @@ import Reports from "./pages/admin/Reports";
 import Departments from "./pages/admin/Departments";
 import Balances from "./pages/admin/Balances";
 import AttendanceDashboard from "./pages/admin/AttendanceDashboard";
+import BiometricsSettings from "./pages/admin/BiometricsSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,7 @@ const App = () => (
                 <Route path="/admin/departments" element={<RoleGuard allowedRoles={["hr_admin"]}><Departments /></RoleGuard>} />
                 <Route path="/admin/balances" element={<RoleGuard allowedRoles={["hr_admin"]}><Balances /></RoleGuard>} />
                 <Route path="/admin/attendance" element={<RoleGuard allowedRoles={["hr_admin"]}><AttendanceDashboard /></RoleGuard>} />
+                <Route path="/admin/biometrics" element={<RoleGuard allowedRoles={["hr_admin"]}><BiometricsSettings /></RoleGuard>} />
               </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
