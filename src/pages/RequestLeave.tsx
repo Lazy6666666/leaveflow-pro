@@ -37,6 +37,49 @@ const RequestLeave = () => {
     fetchTypes().finally(() => setPageLoading(false));
   }, []);
 
+  // Check for team conflicts when dates change
+  useEffect(() => {
+    if (!startDate || !endDate || !user) {
+      setConflictWarning(null);
+      return;
+    }
+    const checkConflicts = async () => {
+      setCheckingConflicts(true);
+      try {
+        const { data, error } = await supabase
+          .from("leave_requests")
+          .select("id, profiles(full_name)")
+          .eq("status", "approved")
+          .lte("start_date", endDate)
+          .gte("end_date", startDate);
+        if (!error && data && data.length > 0) {
+          const names = data
+            .map((r: any) => r.profiles?.full_name)
+            .filter(Boolean);
+          const count = data.length;
+          if (count >= 3) {
+            setConflictWarning(
+              `⚠️ ${count} team members are already off during these dates${names.length > 0 ? `: ${names.slice(0, 3).join(", ")}${count > 3 ? ` and ${count - 3} more` : ""}` : ""}. Consider choosing different dates.`
+            );
+          } else if (count > 0) {
+            setConflictWarning(
+              `${count} team member${count > 1 ? "s" : ""} already off during these dates${names.length > 0 ? `: ${names.join(", ")}` : ""}.`
+            );
+          } else {
+            setConflictWarning(null);
+          }
+        } else {
+          setConflictWarning(null);
+        }
+      } catch {
+        setConflictWarning(null);
+      }
+      setCheckingConflicts(false);
+    };
+    const timeout = setTimeout(checkConflicts, 500);
+    return () => clearTimeout(timeout);
+  }, [startDate, endDate, user]);
+
   if (pageLoading) return <FormSkeleton />;
 
   const handleSubmit = async (e: React.FormEvent) => {
