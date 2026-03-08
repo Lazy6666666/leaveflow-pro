@@ -115,6 +115,7 @@ const BadgeMappings = () => {
           <DialogTrigger asChild>
             <Button><Plus className="h-4 w-4 mr-2" />Add Mapping</Button>
           </DialogTrigger>
+          <CSVBadgeImport profiles={profiles} onImportComplete={fetchData} />
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Add Badge Mapping</DialogTitle>
