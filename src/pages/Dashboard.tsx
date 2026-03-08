@@ -100,6 +100,8 @@ const Dashboard = () => {
     ...(hasRole("manager") ? [{ label: "Approvals", desc: `${pendingCount} pending`, icon: CheckSquare, path: "/manager/approvals" }] : []),
   ];
 
+  if (loading) return <DashboardSkeleton />;
+
   return (
     <div className="space-y-8">
       {/* Header */}

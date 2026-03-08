@@ -28,8 +28,17 @@ const MyLeave = () => {
         .eq("year", currentYear);
       if (data) setBalances(data as unknown as LeaveBalance[]);
     };
-    fetch();
+    fetch().finally(() => setLoading(false));
   }, [user, currentYear]);
+
+  if (loading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <div className="grid gap-5 md:grid-cols-2">
+        {Array.from({ length: 4 }).map((_, i) => <BalanceCardSkeleton key={i} />)}
+      </div>
+    </div>
+  );
 
   return (
     <div className="space-y-6">

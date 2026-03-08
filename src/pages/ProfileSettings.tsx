@@ -39,8 +39,10 @@ const ProfileSettings = () => {
       }
       if (depts) setDepartments(depts);
     };
-    fetchProfile();
+    fetchProfile().finally(() => setPageLoading(false));
   }, [user]);
+
+  if (pageLoading) return <ProfileSkeleton />;
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

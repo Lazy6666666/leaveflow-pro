@@ -40,7 +40,14 @@ const Holidays = () => {
     if (data) setHolidays(data);
   };
 
-  useEffect(() => { fetchHolidays(); }, [yearFilter]);
+  useEffect(() => { setPageLoading(true); fetchHolidays().finally(() => setPageLoading(false)); }, [yearFilter]);
+
+  if (pageLoading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <TableSkeleton rows={6} cols={4} />
+    </div>
+  );
 
   const openCreate = () => { setEditing(null); setName(""); setDate(""); setDescription(""); setIsRecurring(false); setDialogOpen(true); };
   const openEdit = (h: Holiday) => { setEditing(h); setName(h.name); setDate(h.date); setDescription(h.description || ""); setIsRecurring(h.is_recurring); setDialogOpen(true); };

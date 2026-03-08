@@ -36,7 +36,14 @@ const LeaveHistory = () => {
     if (data) setRequests(data as unknown as LeaveRequest[]);
   };
 
-  useEffect(() => { fetchRequests(); }, [user]);
+  useEffect(() => { fetchRequests().finally(() => setLoading(false)); }, [user]);
+
+  if (loading) return (
+    <div className="space-y-6">
+      <PageHeaderSkeleton />
+      <TableSkeleton rows={5} cols={6} />
+    </div>
+  );
 
   const handleCancel = async (id: string) => {
     const { error } = await supabase.from("leave_requests").update({ status: "cancelled" }).eq("id", id);

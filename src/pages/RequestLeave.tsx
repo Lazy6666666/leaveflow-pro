@@ -31,8 +31,10 @@ const RequestLeave = () => {
       const { data } = await supabase.from("leave_types").select("id, name, annual_allocation").eq("is_active", true);
       if (data) setLeaveTypes(data);
     };
-    fetchTypes();
+    fetchTypes().finally(() => setPageLoading(false));
   }, []);
+
+  if (pageLoading) return <FormSkeleton />;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
