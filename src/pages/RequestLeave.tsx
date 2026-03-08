@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
-import { Send } from "lucide-react";
+import { Send, AlertTriangle } from "lucide-react";
 import { FormSkeleton } from "@/components/skeletons";
 
 interface LeaveType { id: string; name: string; annual_allocation: number; }
@@ -25,6 +26,8 @@ const RequestLeave = () => {
   const [reason, setReason] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [conflictWarning, setConflictWarning] = useState<string | null>(null);
+  const [checkingConflicts, setCheckingConflicts] = useState(false);
 
   useEffect(() => {
     const fetchTypes = async () => {
@@ -33,6 +36,49 @@ const RequestLeave = () => {
     };
     fetchTypes().finally(() => setPageLoading(false));
   }, []);
+
+  // Check for team conflicts when dates change
+  useEffect(() => {
+    if (!startDate || !endDate || !user) {
+      setConflictWarning(null);
+      return;
+    }
+    const checkConflicts = async () => {
+      setCheckingConflicts(true);
+      try {
+        const { data, error } = await supabase
+          .from("leave_requests")
+          .select("id, profiles(full_name)")
+          .eq("status", "approved")
+          .lte("start_date", endDate)
+          .gte("end_date", startDate);
+        if (!error && data && data.length > 0) {
+          const names = data
+            .map((r: any) => r.profiles?.full_name)
+            .filter(Boolean);
+          const count = data.length;
+          if (count >= 3) {
+            setConflictWarning(
+              `⚠️ ${count} team members are already off during these dates${names.length > 0 ? `: ${names.slice(0, 3).join(", ")}${count > 3 ? ` and ${count - 3} more` : ""}` : ""}. Consider choosing different dates.`
+            );
+          } else if (count > 0) {
+            setConflictWarning(
+              `${count} team member${count > 1 ? "s" : ""} already off during these dates${names.length > 0 ? `: ${names.join(", ")}` : ""}.`
+            );
+          } else {
+            setConflictWarning(null);
+          }
+        } else {
+          setConflictWarning(null);
+        }
+      } catch {
+        setConflictWarning(null);
+      }
+      setCheckingConflicts(false);
+    };
+    const timeout = setTimeout(checkConflicts, 500);
+    return () => clearTimeout(timeout);
+  }, [startDate, endDate, user]);
 
   if (pageLoading) return <FormSkeleton />;
 
@@ -95,6 +141,14 @@ const RequestLeave = () => {
                 <Input id="end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required className="h-11" />
               </div>
             </div>
+            {conflictWarning && (
+              <Alert variant={conflictWarning.startsWith("⚠️") ? "destructive" : "default"} className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
+                <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <AlertDescription className="text-amber-800 dark:text-amber-200 text-sm">
+                  {conflictWarning}
+                </AlertDescription>
+              </Alert>
+            )}
             <div className="space-y-2">
               <Label htmlFor="reason">Reason</Label>
               <Textarea id="reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Describe the reason for your leave..." rows={3} />
