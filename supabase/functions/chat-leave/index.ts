@@ -92,6 +92,15 @@ const tools = [
       parameters: { type: "object", properties: {}, required: [] },
     },
   },
+  {
+    type: "function",
+    function: {
+      name: "get_smart_leave_suggestions",
+      description:
+        "Analyze upcoming public holidays and the user's leave balance to suggest optimal days off that maximize consecutive time away (long weekends, bridge days, etc.).",
+      parameters: { type: "object", properties: {}, required: [] },
+    },
+  },
 ];
 
 const systemPrompt = `You are the Leave Management Assistant. You help employees manage their time off.
