@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Users } from "lucide-react";
+import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 import type { Enums } from "@/integrations/supabase/types";
 
 type AppRole = Enums<"app_role">;
