@@ -132,9 +132,11 @@ const Dashboard = () => {
     { label: "Request Leave", desc: "Submit a new request", icon: PlusCircle, path: "/request-leave" },
     { label: "My Leave", desc: "View balances", icon: CalendarDays, path: "/my-leave" },
     { label: "History", desc: "View past requests", icon: Clock, path: "/leave-history" },
+    { label: "Attendance", desc: "View attendance log", icon: CheckSquare, path: "/attendance" },
     { label: "Holidays", desc: "View public holidays", icon: CalendarHeart, path: "/holidays" },
     ...(hasRole("manager") ? [{ label: "Approvals", desc: `${pendingCount} pending`, icon: CheckSquare, path: "/manager/approvals" }] : []),
     ...(hasRole("manager") ? [{ label: "Team Calendar", desc: "View team schedule", icon: CalendarDays, path: "/manager/team-calendar" }] : []),
+    ...(hasRole("manager") ? [{ label: "Team Attendance", desc: "Daily status", icon: Users, path: "/manager/team-attendance" }] : []),
     ...(hasRole("hr_admin") ? [{ label: "Employees", desc: "Manage staff", icon: Users, path: "/admin/employees" }] : []),
     { label: "Profile", desc: "Edit your details", icon: Users, path: "/profile" },
   ];
