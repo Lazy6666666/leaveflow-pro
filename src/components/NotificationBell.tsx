@@ -8,18 +8,19 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 
-interface Notification {
+interface AppNotification {
   id: string;
   title: string;
   message: string;
   type: string;
   is_read: boolean;
   created_at: string;
+  user_id: string;
 }
 
 const NotificationBell = () => {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [open, setOpen] = useState(false);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
