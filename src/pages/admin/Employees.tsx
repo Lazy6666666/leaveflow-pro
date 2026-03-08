@@ -92,11 +92,16 @@ const Employees = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Users className="h-6 w-6 text-primary" /> Employees
-        </h1>
-        <p className="text-muted-foreground mt-1">Manage employees, roles, and departments</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Users className="h-6 w-6 text-primary" /> Employees
+          </h1>
+          <p className="text-muted-foreground mt-1">Manage employees, roles, and departments</p>
+        </div>
+        <Button variant="outline" size="sm" className="gap-1" onClick={exportCSV}>
+          <Download className="h-4 w-4" /> Export CSV
+        </Button>
       </div>
 
       <Card>
