@@ -8,6 +8,8 @@ import {
   Users,
   Settings,
   BarChart3,
+  Building2,
+  Wallet,
   LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
