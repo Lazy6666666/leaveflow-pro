@@ -32,6 +32,7 @@ const Holidays = () => {
   const [isRecurring, setIsRecurring] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Holiday | null>(null);
   const [loading, setLoading] = useState(false);
+  const [pageLoading, setPageLoading] = useState(true);
   const [yearFilter, setYearFilter] = useState(new Date().getFullYear().toString());
 
   const fetchHolidays = async () => {
