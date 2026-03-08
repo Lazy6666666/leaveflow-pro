@@ -24,6 +24,7 @@ interface PendingRequest {
 
 const Approvals = () => {
   const [requests, setRequests] = useState<PendingRequest[]>([]);
+  const [pageLoading, setPageLoading] = useState(true);
   const [selectedRequest, setSelectedRequest] = useState<PendingRequest | null>(null);
   const [comment, setComment] = useState("");
   const [action, setAction] = useState<"approved" | "rejected" | null>(null);
