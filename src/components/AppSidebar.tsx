@@ -42,7 +42,19 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { hasRole, signOut, user } = useAuth();
+  const [showSetup, setShowSetup] = useState(false);
+
+  useEffect(() => {
+    supabase
+      .from("user_roles")
+      .select("id")
+      .eq("role", "hr_admin")
+      .limit(1)
+      .then(({ data }) => {
+        setShowSetup(!data || data.length === 0);
+      });
+  }, []);
+
   const isActive = (path: string) => location.pathname === path;
 
   const renderNavItems = (items: typeof employeeItems) =>
