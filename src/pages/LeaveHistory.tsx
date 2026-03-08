@@ -62,13 +62,31 @@ const LeaveHistory = () => {
     }
   };
 
+  const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(requests, 10);
+
+  const exportCSV = () => {
+    const header = "Type,Start,End,Reason,Status\n";
+    const rows = requests.map((r) => `"${r.leave_types?.name || ""}","${r.start_date}","${r.end_date}","${r.reason || ""}","${r.status}"`).join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "leave-history.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <History className="h-6 w-6 text-primary" /> Leave History
-        </h1>
-        <p className="text-muted-foreground mt-1">View all your leave requests</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <History className="h-6 w-6 text-primary" /> Leave History
+          </h1>
+          <p className="text-muted-foreground mt-1">View all your leave requests</p>
+        </div>
+        {requests.length > 0 && (
+          <Button variant="outline" size="sm" className="gap-1" onClick={exportCSV}>
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
+        )}
       </div>
 
       <Card>
