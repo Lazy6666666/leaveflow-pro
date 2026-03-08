@@ -21,6 +21,7 @@ const employeeItems = [
   { title: "My Leave", url: "/my-leave", icon: CalendarDays },
   { title: "Request Leave", url: "/request-leave", icon: PlusCircle },
   { title: "Leave History", url: "/leave-history", icon: History },
+  { title: "Attendance", url: "/attendance", icon: Fingerprint },
   { title: "Holidays", url: "/holidays", icon: CalendarHeart },
   { title: "Profile", url: "/profile", icon: UserCog },
 ];
