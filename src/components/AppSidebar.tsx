@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, CalendarDays, PlusCircle, History, CalendarHeart,
   UserCog, CheckSquare, CalendarRange, Users, Settings,
-  BarChart3, Building2, Wallet, LogOut, ShieldCheck, Fingerprint, CreditCard,
+  BarChart3, Building2, Wallet, LogOut, ShieldCheck, Fingerprint, CreditCard, ClipboardList,
 } from "lucide-react";
 import balanceLogo from "@/assets/balance-logo.png";
 import { NavLink } from "@/components/NavLink";
@@ -43,6 +43,7 @@ const adminItems = [
   { title: "Biometrics", url: "/admin/biometrics", icon: Fingerprint },
   { title: "Badge Maps", url: "/admin/badge-mappings", icon: CreditCard },
   { title: "Reports", url: "/admin/reports", icon: BarChart3 },
+  { title: "Audit Log", url: "/admin/audit-log", icon: ClipboardList },
 ];
 
 export function AppSidebar() {

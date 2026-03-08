@@ -94,6 +94,39 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_logs: {
+        Row: {
+          action: string
+          changed_by: string | null
+          created_at: string
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          action: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          action?: string
+          changed_by?: string | null
+          created_at?: string
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       badge_mappings: {
         Row: {
           badge_id: string
@@ -249,6 +282,7 @@ export type Database = {
           created_at: string
           employee_id: string
           end_date: string
+          half_day_type: string | null
           id: string
           leave_type_id: string
           manager_comment: string | null
@@ -262,6 +296,7 @@ export type Database = {
           created_at?: string
           employee_id: string
           end_date: string
+          half_day_type?: string | null
           id?: string
           leave_type_id: string
           manager_comment?: string | null
@@ -275,6 +310,7 @@ export type Database = {
           created_at?: string
           employee_id?: string
           end_date?: string
+          half_day_type?: string | null
           id?: string
           leave_type_id?: string
           manager_comment?: string | null

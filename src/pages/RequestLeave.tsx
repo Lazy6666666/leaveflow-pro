@@ -23,6 +23,7 @@ const RequestLeave = () => {
   const [leaveTypeId, setLeaveTypeId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [halfDayType, setHalfDayType] = useState<string>("");
   const [reason, setReason] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -97,7 +98,8 @@ const RequestLeave = () => {
 
     const { data: inserted, error } = await supabase.from("leave_requests").insert({
       employee_id: user.id, leave_type_id: leaveTypeId, start_date: startDate, end_date: endDate, reason, attachment_url: attachmentUrl,
-    }).select("id").single();
+      half_day_type: halfDayType || null,
+    } as any).select("id").single();
 
     if (error) {
       toast.error(error.message);
@@ -140,6 +142,20 @@ const RequestLeave = () => {
                 <Label htmlFor="end-date">End Date</Label>
                 <Input id="end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required className="h-11" />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Duration</Label>
+              <Select value={halfDayType} onValueChange={setHalfDayType}>
+                <SelectTrigger className="h-11"><SelectValue placeholder="Full day(s)" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full">Full day(s)</SelectItem>
+                  <SelectItem value="start">Half day (morning off on start date)</SelectItem>
+                  <SelectItem value="end">Half day (afternoon off on end date)</SelectItem>
+                  {startDate === endDate && startDate && (
+                    <SelectItem value="single">Half day (single date)</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
             </div>
             {conflictWarning && (
               <Alert variant={conflictWarning.startsWith("⚠️") ? "destructive" : "default"} className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
