@@ -12,6 +12,8 @@ import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import MyLeave from "./pages/MyLeave";
 import RequestLeave from "./pages/RequestLeave";
+import Holidays from "./pages/Holidays";
+import ProfileSettings from "./pages/ProfileSettings";
 import LeaveHistory from "./pages/LeaveHistory";
 import Approvals from "./pages/manager/Approvals";
 import TeamCalendar from "./pages/manager/TeamCalendar";
