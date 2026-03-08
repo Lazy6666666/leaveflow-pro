@@ -258,22 +258,36 @@ serve(async (req) => {
             }
           }
 
-          // Look up employee IDs from profiles (match by email or employee code stored in extra)
-          // For now, we'll try to match by the identifier — this can be customized per deployment
+          // Look up employee IDs via badge_mappings first, fallback to profile match
           const inserts = [];
           for (const [identifier, times] of Object.entries(byEmployee)) {
-            // Try to find employee by matching identifier to profile
-            // This is a simplified lookup — real deployments may use a mapping table
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("id")
-              .or(`email.eq.${identifier},full_name.eq.${identifier}`)
+            let employeeId: string | null = null;
+
+            // Try badge_mappings table first (vendor-specific then universal)
+            const { data: badgeMatch } = await supabase
+              .from("badge_mappings")
+              .select("employee_id")
+              .eq("badge_id", identifier)
+              .or(`vendor.eq.${config.vendor},vendor.is.null`)
               .limit(1)
               .single();
 
-            if (profile) {
+            if (badgeMatch) {
+              employeeId = badgeMatch.employee_id;
+            } else {
+              // Fallback: match by email or name
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("id")
+                .or(`email.eq.${identifier},full_name.eq.${identifier}`)
+                .limit(1)
+                .single();
+              if (profile) employeeId = profile.id;
+            }
+
+            if (employeeId) {
               inserts.push({
-                employee_id: profile.id,
+                employee_id: employeeId,
                 date: syncDate,
                 clock_in: times.clockIn,
                 clock_out: times.clockOut,
@@ -424,6 +438,28 @@ serve(async (req) => {
         await supabase.from("attendance_logs").upsert(inserts, {
           onConflict: "employee_id,date",
         });
+
+        // Notify managers about absent employees
+        const absentIds = inserts
+          .filter((i: any) => i.status === "absent")
+          .map((i: any) => i.employee_id);
+
+        if (absentIds.length > 0) {
+          try {
+            const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+            const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+            await fetch(`${supabaseUrl}/functions/v1/notify-absence`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${supabaseServiceKey}`,
+              },
+              body: JSON.stringify({ employee_ids: absentIds, date: today }),
+            });
+          } catch (e) {
+            console.error("Failed to send absence notifications:", e.message);
+          }
+        }
       }
 
       return new Response(

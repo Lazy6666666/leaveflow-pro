@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, CalendarDays, PlusCircle, History, CalendarHeart,
   UserCog, CheckSquare, CalendarRange, Users, Settings,
-  BarChart3, Building2, Wallet, LogOut, ShieldCheck, Fingerprint,
+  BarChart3, Building2, Wallet, LogOut, ShieldCheck, Fingerprint, CreditCard,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -40,6 +40,7 @@ const adminItems = [
   { title: "Attendance", url: "/admin/attendance", icon: Fingerprint },
   { title: "Att. Settings", url: "/admin/attendance-settings", icon: Settings },
   { title: "Biometrics", url: "/admin/biometrics", icon: Fingerprint },
+  { title: "Badge Maps", url: "/admin/badge-mappings", icon: CreditCard },
   { title: "Reports", url: "/admin/reports", icon: BarChart3 },
 ];
 
