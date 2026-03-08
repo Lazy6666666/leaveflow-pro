@@ -26,6 +26,8 @@ const RequestLeave = () => {
   const [reason, setReason] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [conflictWarning, setConflictWarning] = useState<string | null>(null);
+  const [checkingConflicts, setCheckingConflicts] = useState(false);
 
   useEffect(() => {
     const fetchTypes = async () => {
