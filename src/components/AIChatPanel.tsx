@@ -201,7 +201,20 @@ const AIChatPanel = () => {
               <div className="text-center text-muted-foreground text-sm py-8">
                 <Bot className="h-10 w-10 mx-auto mb-3 opacity-40" />
                 <p className="font-medium">Hi! I'm your Leave Assistant.</p>
-                <p className="mt-1">Ask me about your leave balance, holidays, or say <strong>"suggest smart leave days"</strong>.</p>
+                <p className="mt-1">Ask me anything, or try a quick action:</p>
+                <div className="flex flex-wrap justify-center gap-2 mt-4">
+                  {QUICK_ACTIONS.map((action) => (
+                    <Button
+                      key={action.label}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs rounded-full"
+                      onClick={() => send(action.message)}
+                    >
+                      {action.label}
+                    </Button>
+                  ))}
+                </div>
               </div>
             )}
             <div className="space-y-4">
