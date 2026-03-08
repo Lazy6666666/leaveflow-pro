@@ -4,10 +4,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
-import { CalendarDays, PlusCircle, CheckSquare, Clock, CalendarHeart, ArrowRight } from "lucide-react";
+import { CalendarDays, PlusCircle, CheckSquare, Clock, CalendarHeart, ArrowRight, Users } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons";
-import { format, parseISO, startOfToday } from "date-fns";
+import { format, parseISO, startOfToday, endOfWeek, startOfWeek } from "date-fns";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
 interface LeaveBalance {
   balance: number;
@@ -30,6 +32,19 @@ interface Holiday {
   date: string;
 }
 
+interface TeamAbsence {
+  id: string;
+  start_date: string;
+  end_date: string;
+  profiles: { full_name: string | null; email: string | null } | null;
+  leave_types: { name: string } | null;
+}
+
+const DONUT_COLORS = [
+  "hsl(168, 56%, 34%)", // primary
+  "hsl(210, 14%, 83%)", // muted
+];
+
 const Dashboard = () => {
   const { user, hasRole } = useAuth();
   const navigate = useNavigate();
@@ -37,16 +52,19 @@ const Dashboard = () => {
   const [recentRequests, setRecentRequests] = useState<RecentRequest[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [upcomingHolidays, setUpcomingHolidays] = useState<Holiday[]>([]);
+  const [teamAbsences, setTeamAbsences] = useState<TeamAbsence[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
     const currentYear = new Date().getFullYear();
     const today = format(startOfToday(), "yyyy-MM-dd");
+    const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
+    const weekEnd = format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
 
     const fetchAll = async () => {
       setLoading(true);
-      const [balRes, recRes, holRes] = await Promise.all([
+      const [balRes, recRes, holRes, teamRes] = await Promise.all([
         supabase
           .from("leave_balances")
           .select("balance, leave_type_id, year, leave_types(name, annual_allocation)")
@@ -64,10 +82,18 @@ const Dashboard = () => {
           .gte("date", today)
           .order("date")
           .limit(5),
+        supabase
+          .from("leave_requests")
+          .select("id, start_date, end_date, profiles:employee_id(full_name, email), leave_types(name)")
+          .eq("status", "approved")
+          .lte("start_date", weekEnd)
+          .gte("end_date", weekStart)
+          .limit(20),
       ]);
       if (balRes.data) setBalances(balRes.data as unknown as LeaveBalance[]);
       if (recRes.data) setRecentRequests(recRes.data as unknown as RecentRequest[]);
       if (holRes.data) setUpcomingHolidays(holRes.data);
+      if (teamRes.data) setTeamAbsences(teamRes.data as unknown as TeamAbsence[]);
 
       if (hasRole("manager")) {
         const { count } = await supabase
@@ -93,12 +119,22 @@ const Dashboard = () => {
   const totalRemaining = balances.reduce((sum, b) => sum + b.balance, 0);
   const totalUsed = totalAllocation - totalRemaining;
 
+  const donutData = [
+    { name: "Remaining", value: totalRemaining },
+    { name: "Used", value: totalUsed },
+  ];
+
   const quickActions = [
     { label: "Request Leave", desc: "Submit a new request", icon: PlusCircle, path: "/request-leave" },
     { label: "My Leave", desc: "View balances", icon: CalendarDays, path: "/my-leave" },
     { label: "History", desc: "View past requests", icon: Clock, path: "/leave-history" },
     ...(hasRole("manager") ? [{ label: "Approvals", desc: `${pendingCount} pending`, icon: CheckSquare, path: "/manager/approvals" }] : []),
   ];
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return "?";
+    return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  };
 
   if (loading) return <DashboardSkeleton />;
 
@@ -145,16 +181,48 @@ const Dashboard = () => {
               <p className="text-muted-foreground text-sm">No leave balances found for this year.</p>
             ) : (
               <>
-                <div className="flex items-baseline gap-6">
-                  <div>
-                    <p className="text-4xl font-bold text-foreground">{totalRemaining}</p>
-                    <p className="text-xs text-muted-foreground mt-1">days remaining</p>
+                {/* Donut Chart + Summary */}
+                <div className="flex items-center gap-6">
+                  <div className="relative w-28 h-28 shrink-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={donutData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={32}
+                          outerRadius={50}
+                          dataKey="value"
+                          strokeWidth={0}
+                        >
+                          {donutData.map((_, idx) => (
+                            <Cell key={idx} fill={DONUT_COLORS[idx]} />
+                          ))}
+                        </Pie>
+                        <Tooltip
+                          formatter={(value: number, name: string) => [`${value} days`, name]}
+                          contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
+                        />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-xl font-bold text-foreground leading-none">{totalRemaining}</span>
+                      <span className="text-[10px] text-muted-foreground">left</span>
+                    </div>
                   </div>
-                  <div className="text-muted-foreground">
-                    <p className="text-xl font-semibold">{totalUsed}</p>
-                    <p className="text-xs">used of {totalAllocation}</p>
+                  <div className="flex-1 space-y-1">
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: DONUT_COLORS[0] }} />
+                      <span className="text-foreground font-medium">{totalRemaining} remaining</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: DONUT_COLORS[1] }} />
+                      <span className="text-muted-foreground">{totalUsed} used of {totalAllocation}</span>
+                    </div>
                   </div>
                 </div>
+
+                {/* Per-type breakdown */}
                 <div className="space-y-3">
                   {balances.map((b) => {
                     const total = b.leave_types?.annual_allocation || 0;
@@ -214,6 +282,44 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Team Availability */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Users className="h-5 w-5 text-primary" /> Team Availability
+          </CardTitle>
+          <CardDescription>Who's off this week ({format(startOfWeek(new Date(), { weekStartsOn: 1 }), "MMM d")} – {format(endOfWeek(new Date(), { weekStartsOn: 1 }), "MMM d")})</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {teamAbsences.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+              <Users className="h-8 w-8 mb-2 opacity-40" />
+              <p className="text-sm">Everyone's in this week! 🎉</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {teamAbsences.map((a) => (
+                <div key={a.id} className="flex items-center gap-3 rounded-lg border p-3 bg-muted/30">
+                  <Avatar className="h-9 w-9">
+                    <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+                      {getInitials(a.profiles?.full_name)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {a.profiles?.full_name || a.profiles?.email || "Unknown"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {a.leave_types?.name} · {format(parseISO(a.start_date), "MMM d")} – {format(parseISO(a.end_date), "MMM d")}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Recent Requests */}
       <div>
