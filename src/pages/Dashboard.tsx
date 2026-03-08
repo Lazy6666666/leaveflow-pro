@@ -133,6 +133,9 @@ const Dashboard = () => {
     { label: "History", desc: "View past requests", icon: Clock, path: "/leave-history" },
     { label: "Holidays", desc: "View public holidays", icon: CalendarHeart, path: "/holidays" },
     ...(hasRole("manager") ? [{ label: "Approvals", desc: `${pendingCount} pending`, icon: CheckSquare, path: "/manager/approvals" }] : []),
+    ...(hasRole("manager") ? [{ label: "Team Calendar", desc: "View team schedule", icon: CalendarDays, path: "/manager/team-calendar" }] : []),
+    ...(hasRole("hr_admin") ? [{ label: "Employees", desc: "Manage staff", icon: Users, path: "/admin/employees" }] : []),
+    { label: "Profile", desc: "Edit your details", icon: Users, path: "/profile" },
   ];
 
   const getInitials = (name: string | null | undefined) => {
