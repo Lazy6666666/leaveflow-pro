@@ -11,6 +11,7 @@ import {
   ArrowRight, Users, TrendingUp, Sparkles,
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons";
+import { ClockInOutWidget } from "@/components/attendance/ClockInOutWidget";
 import { format, parseISO, startOfToday, endOfWeek, startOfWeek } from "date-fns";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
@@ -131,9 +132,11 @@ const Dashboard = () => {
     { label: "Request Leave", desc: "Submit a new request", icon: PlusCircle, path: "/request-leave" },
     { label: "My Leave", desc: "View balances", icon: CalendarDays, path: "/my-leave" },
     { label: "History", desc: "View past requests", icon: Clock, path: "/leave-history" },
+    { label: "Attendance", desc: "View attendance log", icon: CheckSquare, path: "/attendance" },
     { label: "Holidays", desc: "View public holidays", icon: CalendarHeart, path: "/holidays" },
     ...(hasRole("manager") ? [{ label: "Approvals", desc: `${pendingCount} pending`, icon: CheckSquare, path: "/manager/approvals" }] : []),
     ...(hasRole("manager") ? [{ label: "Team Calendar", desc: "View team schedule", icon: CalendarDays, path: "/manager/team-calendar" }] : []),
+    ...(hasRole("manager") ? [{ label: "Team Attendance", desc: "Daily status", icon: Users, path: "/manager/team-attendance" }] : []),
     ...(hasRole("hr_admin") ? [{ label: "Employees", desc: "Manage staff", icon: Users, path: "/admin/employees" }] : []),
     { label: "Profile", desc: "Edit your details", icon: Users, path: "/profile" },
   ];
@@ -163,7 +166,8 @@ const Dashboard = () => {
       </div>
 
       {/* Summary Stats Row */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
+        <ClockInOutWidget />
         <Card className="border-0 shadow-sm bg-card">
           <CardContent className="p-5">
             <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Total Balance</p>

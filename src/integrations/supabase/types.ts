@@ -14,6 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
+      attendance_logs: {
+        Row: {
+          clock_in: string | null
+          clock_out: string | null
+          created_at: string
+          date: string
+          employee_id: string
+          id: string
+          notes: string | null
+          source: string
+          status: Database["public"]["Enums"]["attendance_status"]
+          updated_at: string
+        }
+        Insert: {
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          date?: string
+          employee_id: string
+          id?: string
+          notes?: string | null
+          source?: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          updated_at?: string
+        }
+        Update: {
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          date?: string
+          employee_id?: string
+          id?: string
+          notes?: string | null
+          source?: string
+          status?: Database["public"]["Enums"]["attendance_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attendance_logs_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attendance_settings: {
+        Row: {
+          auto_mark_absent: boolean
+          created_at: string
+          half_day_hours: number
+          id: string
+          late_threshold_minutes: number
+          updated_at: string
+          work_end_time: string
+          work_start_time: string
+        }
+        Insert: {
+          auto_mark_absent?: boolean
+          created_at?: string
+          half_day_hours?: number
+          id?: string
+          late_threshold_minutes?: number
+          updated_at?: string
+          work_end_time?: string
+          work_start_time?: string
+        }
+        Update: {
+          auto_mark_absent?: boolean
+          created_at?: string
+          half_day_hours?: number
+          id?: string
+          late_threshold_minutes?: number
+          updated_at?: string
+          work_end_time?: string
+          work_start_time?: string
+        }
+        Relationships: []
+      }
       departments: {
         Row: {
           created_at: string
@@ -260,6 +340,7 @@ export type Database = {
     }
     Enums: {
       app_role: "employee" | "manager" | "hr_admin"
+      attendance_status: "present" | "late" | "absent" | "half_day" | "on_leave"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -388,6 +469,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["employee", "manager", "hr_admin"],
+      attendance_status: ["present", "late", "absent", "half_day", "on_leave"],
     },
   },
 } as const

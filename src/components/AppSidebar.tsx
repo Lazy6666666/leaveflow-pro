@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   LayoutDashboard, CalendarDays, PlusCircle, History, CalendarHeart,
   UserCog, CheckSquare, CalendarRange, Users, Settings,
-  BarChart3, Building2, Wallet, LogOut, ShieldCheck,
+  BarChart3, Building2, Wallet, LogOut, ShieldCheck, Fingerprint,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -21,6 +21,7 @@ const employeeItems = [
   { title: "My Leave", url: "/my-leave", icon: CalendarDays },
   { title: "Request Leave", url: "/request-leave", icon: PlusCircle },
   { title: "Leave History", url: "/leave-history", icon: History },
+  { title: "Attendance", url: "/attendance", icon: Fingerprint },
   { title: "Holidays", url: "/holidays", icon: CalendarHeart },
   { title: "Profile", url: "/profile", icon: UserCog },
 ];
@@ -28,6 +29,7 @@ const employeeItems = [
 const managerItems = [
   { title: "Approvals", url: "/manager/approvals", icon: CheckSquare },
   { title: "Team Calendar", url: "/manager/team-calendar", icon: CalendarRange },
+  { title: "Team Attendance", url: "/manager/team-attendance", icon: Fingerprint },
 ];
 
 const adminItems = [
@@ -35,6 +37,7 @@ const adminItems = [
   { title: "Departments", url: "/admin/departments", icon: Building2 },
   { title: "Policies", url: "/admin/policies", icon: Settings },
   { title: "Balances", url: "/admin/balances", icon: Wallet },
+  { title: "Attendance", url: "/admin/attendance", icon: Fingerprint },
   { title: "Reports", url: "/admin/reports", icon: BarChart3 },
 ];
 
