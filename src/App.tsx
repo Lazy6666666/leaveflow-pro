@@ -29,35 +29,37 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <Routes>
-            <Route path="/auth" element={<Auth />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route element={<AuthGuard><AppLayout /></AuthGuard>}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/my-leave" element={<MyLeave />} />
-              <Route path="/request-leave" element={<RequestLeave />} />
-              <Route path="/leave-history" element={<LeaveHistory />} />
-              <Route path="/holidays" element={<Holidays />} />
-              <Route path="/profile" element={<ProfileSettings />} />
-              <Route path="/manager/approvals" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><Approvals /></RoleGuard>} />
-              <Route path="/manager/team-calendar" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><TeamCalendar /></RoleGuard>} />
-              <Route path="/admin/employees" element={<RoleGuard allowedRoles={["hr_admin"]}><Employees /></RoleGuard>} />
-              <Route path="/admin/policies" element={<RoleGuard allowedRoles={["hr_admin"]}><Policies /></RoleGuard>} />
-              <Route path="/admin/reports" element={<RoleGuard allowedRoles={["hr_admin"]}><Reports /></RoleGuard>} />
-              <Route path="/admin/departments" element={<RoleGuard allowedRoles={["hr_admin"]}><Departments /></RoleGuard>} />
-              <Route path="/admin/balances" element={<RoleGuard allowedRoles={["hr_admin"]}><Balances /></RoleGuard>} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <Routes>
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route element={<AuthGuard><AppLayout /></AuthGuard>}>
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/my-leave" element={<MyLeave />} />
+                <Route path="/request-leave" element={<RequestLeave />} />
+                <Route path="/leave-history" element={<LeaveHistory />} />
+                <Route path="/holidays" element={<Holidays />} />
+                <Route path="/profile" element={<ProfileSettings />} />
+                <Route path="/manager/approvals" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><Approvals /></RoleGuard>} />
+                <Route path="/manager/team-calendar" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><TeamCalendar /></RoleGuard>} />
+                <Route path="/admin/employees" element={<RoleGuard allowedRoles={["hr_admin"]}><Employees /></RoleGuard>} />
+                <Route path="/admin/policies" element={<RoleGuard allowedRoles={["hr_admin"]}><Policies /></RoleGuard>} />
+                <Route path="/admin/reports" element={<RoleGuard allowedRoles={["hr_admin"]}><Reports /></RoleGuard>} />
+                <Route path="/admin/departments" element={<RoleGuard allowedRoles={["hr_admin"]}><Departments /></RoleGuard>} />
+                <Route path="/admin/balances" element={<RoleGuard allowedRoles={["hr_admin"]}><Balances /></RoleGuard>} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
