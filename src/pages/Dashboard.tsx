@@ -36,6 +36,7 @@ const Dashboard = () => {
   const [recentRequests, setRecentRequests] = useState<RecentRequest[]>([]);
   const [pendingCount, setPendingCount] = useState(0);
   const [upcomingHolidays, setUpcomingHolidays] = useState<Holiday[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!user) return;
