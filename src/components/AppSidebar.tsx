@@ -43,6 +43,7 @@ const adminItems = [
   { title: "Biometrics", url: "/admin/biometrics", icon: Fingerprint },
   { title: "Badge Maps", url: "/admin/badge-mappings", icon: CreditCard },
   { title: "Reports", url: "/admin/reports", icon: BarChart3 },
+  { title: "Audit Log", url: "/admin/audit-log", icon: ClipboardList },
 ];
 
 export function AppSidebar() {
