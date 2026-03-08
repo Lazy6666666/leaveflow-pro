@@ -6,9 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { History, FileX } from "lucide-react";
+import { History, FileX, Download } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 
 interface LeaveRequest {
   id: string;
