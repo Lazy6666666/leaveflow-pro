@@ -83,10 +83,8 @@ const Auth = () => {
       {/* Left panel – branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-sidebar text-sidebar-foreground flex-col justify-between p-12">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-sidebar-primary flex items-center justify-center">
-            <CalendarDays className="h-5 w-5 text-sidebar-primary-foreground" />
-          </div>
-          <span className="text-xl font-semibold tracking-tight">Leave Manager</span>
+          <img src={balanceLogo} alt="BALANCE logo" className="h-10 w-10 rounded-lg object-cover" />
+          <span className="text-xl font-semibold tracking-tight">BALANCE</span>
         </div>
         <div className="space-y-6 max-w-md">
           <h1 className="text-4xl font-serif font-bold leading-tight">
