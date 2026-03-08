@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { Camera } from "lucide-react";
+import { ProfileSkeleton } from "@/components/skeletons";
 
 interface Department { id: string; name: string; }
 
