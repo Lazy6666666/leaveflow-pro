@@ -6,9 +6,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { History, FileX } from "lucide-react";
+import { History, FileX, Download } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 
 interface LeaveRequest {
   id: string;
@@ -60,13 +62,31 @@ const LeaveHistory = () => {
     }
   };
 
+  const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(requests, 10);
+
+  const exportCSV = () => {
+    const header = "Type,Start,End,Reason,Status\n";
+    const rows = requests.map((r) => `"${r.leave_types?.name || ""}","${r.start_date}","${r.end_date}","${r.reason || ""}","${r.status}"`).join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "leave-history.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <History className="h-6 w-6 text-primary" /> Leave History
-        </h1>
-        <p className="text-muted-foreground mt-1">View all your leave requests</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <History className="h-6 w-6 text-primary" /> Leave History
+          </h1>
+          <p className="text-muted-foreground mt-1">View all your leave requests</p>
+        </div>
+        {requests.length > 0 && (
+          <Button variant="outline" size="sm" className="gap-1" onClick={exportCSV}>
+            <Download className="h-4 w-4" /> Export CSV
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -83,38 +103,41 @@ const LeaveHistory = () => {
               <p className="text-sm">No leave requests found.</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Start</TableHead>
-                  <TableHead>End</TableHead>
-                  <TableHead className="hidden md:table-cell">Reason</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="hidden lg:table-cell">Comment</TableHead>
-                  <TableHead className="w-20">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {requests.map((req) => (
-                  <TableRow key={req.id}>
-                    <TableCell className="font-medium">{req.leave_types?.name}</TableCell>
-                    <TableCell className="tabular-nums">{format(parseISO(req.start_date), "MMM d, yyyy")}</TableCell>
-                    <TableCell className="tabular-nums">{format(parseISO(req.end_date), "MMM d, yyyy")}</TableCell>
-                    <TableCell className="max-w-[200px] truncate text-muted-foreground hidden md:table-cell">{req.reason || "—"}</TableCell>
-                    <TableCell><Badge variant={statusVariant(req.status)} className="capitalize">{req.status}</Badge></TableCell>
-                    <TableCell className="max-w-[200px] truncate text-muted-foreground hidden lg:table-cell">{req.manager_comment || "—"}</TableCell>
-                    <TableCell>
-                      {req.status === "pending" && (
-                        <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive h-8 text-xs" onClick={() => handleCancel(req.id)}>
-                          Cancel
-                        </Button>
-                      )}
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Start</TableHead>
+                    <TableHead>End</TableHead>
+                    <TableHead className="hidden md:table-cell">Reason</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="hidden lg:table-cell">Comment</TableHead>
+                    <TableHead className="w-20">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedItems.map((req) => (
+                    <TableRow key={req.id}>
+                      <TableCell className="font-medium">{req.leave_types?.name}</TableCell>
+                      <TableCell className="tabular-nums">{format(parseISO(req.start_date), "MMM d, yyyy")}</TableCell>
+                      <TableCell className="tabular-nums">{format(parseISO(req.end_date), "MMM d, yyyy")}</TableCell>
+                      <TableCell className="max-w-[200px] truncate text-muted-foreground hidden md:table-cell">{req.reason || "—"}</TableCell>
+                      <TableCell><Badge variant={statusVariant(req.status)} className="capitalize">{req.status}</Badge></TableCell>
+                      <TableCell className="max-w-[200px] truncate text-muted-foreground hidden lg:table-cell">{req.manager_comment || "—"}</TableCell>
+                      <TableCell>
+                        {req.status === "pending" && (
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive h-8 text-xs" onClick={() => handleCancel(req.id)}>
+                            Cancel
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} />
+            </>
           )}
         </CardContent>
       </Card>

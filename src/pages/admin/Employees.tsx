@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { Users } from "lucide-react";
+import { Users, Download } from "lucide-react";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 import type { Enums } from "@/integrations/supabase/types";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 
 type AppRole = Enums<"app_role">;
 
@@ -55,6 +57,16 @@ const Employees = () => {
   );
 
   const getRoles = (userId: string) => roles.filter((r) => r.user_id === userId).map((r) => r.role);
+  const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(employees, 10);
+
+  const exportCSV = () => {
+    const header = "Name,Email,Department,Roles\n";
+    const rows = employees.map((e) => `"${e.full_name || ""}","${e.email || ""}","${e.departments?.name || ""}","${getRoles(e.id).join(", ")}"`).join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "employees.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const openEdit = (emp: Employee) => {
     setEditEmployee(emp); setEditDeptId(emp.department_id || ""); setEditManagerId(emp.manager_id || "");
@@ -80,11 +92,16 @@ const Employees = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Users className="h-6 w-6 text-primary" /> Employees
-        </h1>
-        <p className="text-muted-foreground mt-1">Manage employees, roles, and departments</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Users className="h-6 w-6 text-primary" /> Employees
+          </h1>
+          <p className="text-muted-foreground mt-1">Manage employees, roles, and departments</p>
+        </div>
+        <Button variant="outline" size="sm" className="gap-1" onClick={exportCSV}>
+          <Download className="h-4 w-4" /> Export CSV
+        </Button>
       </div>
 
       <Card>
@@ -106,7 +123,7 @@ const Employees = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {employees.map((emp) => (
+              {paginatedItems.map((emp) => (
                 <TableRow key={emp.id}>
                   <TableCell className="font-medium">{emp.full_name || "—"}</TableCell>
                   <TableCell className="text-muted-foreground hidden md:table-cell">{emp.email}</TableCell>
@@ -124,6 +141,7 @@ const Employees = () => {
               ))}
             </TableBody>
           </Table>
+          <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} />
         </CardContent>
       </Card>
 

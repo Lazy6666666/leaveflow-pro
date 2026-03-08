@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { CalendarDays, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import balanceLogo from "@/assets/balance-logo.png";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -36,10 +37,8 @@ const ResetPassword = () => {
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <div className="w-full max-w-md animate-fade-in">
         <div className="flex items-center gap-3 mb-8 justify-center">
-          <div className="h-10 w-10 rounded-lg bg-primary flex items-center justify-center">
-            <CalendarDays className="h-5 w-5 text-primary-foreground" />
-          </div>
-          <span className="text-xl font-semibold text-foreground tracking-tight">Leave Manager</span>
+          <img src={balanceLogo} alt="BALANCE logo" className="h-10 w-10 rounded-lg object-cover" />
+          <span className="text-xl font-semibold text-foreground tracking-tight">BALANCE</span>
         </div>
 
         <Card className="border-0 shadow-xl">

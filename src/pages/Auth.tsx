@@ -108,7 +108,7 @@ const Auth = () => {
             </div>
           </div>
         </div>
-        <p className="text-sm text-sidebar-foreground/40">© 2026 Leave Manager. All rights reserved.</p>
+        <p className="text-sm text-sidebar-foreground/40">© 2026 BALANCE. All rights reserved.</p>
       </div>
 
       {/* Right panel – auth form */}
