@@ -116,7 +116,7 @@ const LeaveHistory = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {requests.map((req) => (
+              {paginatedItems.map((req) => (
                   <TableRow key={req.id}>
                     <TableCell className="font-medium">{req.leave_types?.name}</TableCell>
                     <TableCell className="tabular-nums">{format(parseISO(req.start_date), "MMM d, yyyy")}</TableCell>
@@ -135,6 +135,7 @@ const LeaveHistory = () => {
                 ))}
               </TableBody>
             </Table>
+            <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} />
           )}
         </CardContent>
       </Card>
