@@ -47,6 +47,7 @@ const App = () => (
                 <Route path="/leave-history" element={<LeaveHistory />} />
                 <Route path="/holidays" element={<Holidays />} />
                 <Route path="/profile" element={<ProfileSettings />} />
+                <Route path="/admin-setup" element={<AdminSetup />} />
                 <Route path="/manager/approvals" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><Approvals /></RoleGuard>} />
                 <Route path="/manager/team-calendar" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><TeamCalendar /></RoleGuard>} />
                 <Route path="/admin/employees" element={<RoleGuard allowedRoles={["hr_admin"]}><Employees /></RoleGuard>} />
