@@ -9,7 +9,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { CalendarDays, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import balanceLogo from "@/assets/balance-logo.png";
 
 const Auth = () => {
   const { session, loading } = useAuth();
