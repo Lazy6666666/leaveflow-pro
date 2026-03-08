@@ -143,6 +143,20 @@ const RequestLeave = () => {
                 <Input id="end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required className="h-11" />
               </div>
             </div>
+            <div className="space-y-2">
+              <Label>Duration</Label>
+              <Select value={halfDayType} onValueChange={setHalfDayType}>
+                <SelectTrigger className="h-11"><SelectValue placeholder="Full day(s)" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="full">Full day(s)</SelectItem>
+                  <SelectItem value="start">Half day (morning off on start date)</SelectItem>
+                  <SelectItem value="end">Half day (afternoon off on end date)</SelectItem>
+                  {startDate === endDate && startDate && (
+                    <SelectItem value="single">Half day (single date)</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
             {conflictWarning && (
               <Alert variant={conflictWarning.startsWith("⚠️") ? "destructive" : "default"} className="border-amber-500/50 bg-amber-50 dark:bg-amber-950/20">
                 <AlertTriangle className="h-4 w-4 text-amber-600" />
