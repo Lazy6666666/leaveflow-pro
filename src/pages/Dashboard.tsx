@@ -166,7 +166,8 @@ const Dashboard = () => {
       </div>
 
       {/* Summary Stats Row */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
+        <ClockInOutWidget />
         <Card className="border-0 shadow-sm bg-card">
           <CardContent className="p-5">
             <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Total Balance</p>
