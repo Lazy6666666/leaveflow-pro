@@ -91,12 +91,12 @@ export function ClockInOutWidget() {
         if (now > startTime) status = "late";
       }
 
-      const { error } = await supabase.from("attendance_logs").insert({
+      const { error } = await supabase.from("attendance_logs").insert([{
         employee_id: user.id,
         clock_in: now.toISOString(),
-        status,
+        status: status as "present" | "late",
         date: format(now, "yyyy-MM-dd"),
-      });
+      }]);
 
       if (error) throw error;
       toast.success(status === "late" ? "Clocked in (late)" : "Clocked in successfully");
