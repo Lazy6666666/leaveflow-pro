@@ -1,11 +1,13 @@
+import { useEffect, useState } from "react";
 import {
   LayoutDashboard, CalendarDays, PlusCircle, History, CalendarHeart,
   UserCog, CheckSquare, CalendarRange, Users, Settings,
-  BarChart3, Building2, Wallet, LogOut,
+  BarChart3, Building2, Wallet, LogOut, ShieldCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
