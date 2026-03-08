@@ -228,6 +228,7 @@ const AIChatPanel = () => {
                   </div>
                 </div>
               )}
+              <div ref={scrollRef} />
             </div>
           </ScrollArea>
 
