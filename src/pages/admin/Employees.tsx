@@ -57,6 +57,16 @@ const Employees = () => {
   );
 
   const getRoles = (userId: string) => roles.filter((r) => r.user_id === userId).map((r) => r.role);
+  const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(employees, 10);
+
+  const exportCSV = () => {
+    const header = "Name,Email,Department,Roles\n";
+    const rows = employees.map((e) => `"${e.full_name || ""}","${e.email || ""}","${e.departments?.name || ""}","${getRoles(e.id).join(", ")}"`).join("\n");
+    const blob = new Blob([header + rows], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = "employees.csv"; a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const openEdit = (emp: Employee) => {
     setEditEmployee(emp); setEditDeptId(emp.department_id || ""); setEditManagerId(emp.manager_id || "");
