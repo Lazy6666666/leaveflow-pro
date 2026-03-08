@@ -4,6 +4,7 @@ import {
   UserCog, CheckSquare, CalendarRange, Users, Settings,
   BarChart3, Building2, Wallet, LogOut, ShieldCheck, Fingerprint, CreditCard,
 } from "lucide-react";
+import balanceLogo from "@/assets/balance-logo.png";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
