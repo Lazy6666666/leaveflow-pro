@@ -76,7 +76,7 @@ const Dashboard = () => {
         setPendingCount(count || 0);
       }
     };
-    fetchAll();
+    fetchAll().finally(() => setLoading(false));
   }, [user, hasRole]);
 
   const statusColor = (status: string) => {
