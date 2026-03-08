@@ -120,6 +120,32 @@ export function AppSidebar() {
             </SidebarGroup>
           </>
         )}
+
+        {showSetup && !hasRole("hr_admin") && (
+          <>
+            <Separator className="mx-4 w-auto bg-sidebar-border" />
+            <SidebarGroup>
+              <SidebarGroupLabel className="text-sidebar-foreground/40 text-[11px] uppercase tracking-wider">Setup</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild isActive={isActive("/admin-setup")}>
+                      <NavLink
+                        to="/admin-setup"
+                        end
+                        className="hover:bg-sidebar-accent/60 transition-colors"
+                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                      >
+                        <ShieldCheck className="mr-2 h-4 w-4" />
+                        {!collapsed && <span>Admin Setup</span>}
+                      </NavLink>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
       </SidebarContent>
 
       <SidebarFooter className="border-t border-sidebar-border">
