@@ -27,6 +27,7 @@ const LeaveHistory = () => {
   const { user } = useAuth();
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(requests, 10);
 
   const fetchRequests = async () => {
     if (!user) return;
