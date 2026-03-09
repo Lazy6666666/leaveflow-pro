@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { History, FileX, Download } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import { buildCSV, downloadCSV } from "@/lib/csv";
 
 interface LeaveRequest {
   id: string;
@@ -63,14 +65,12 @@ const LeaveHistory = () => {
     }
   };
 
-
   const exportCSV = () => {
-    const header = "Type,Start,End,Reason,Status\n";
-    const rows = requests.map((r) => `"${r.leave_types?.name || ""}","${r.start_date}","${r.end_date}","${r.reason || ""}","${r.status}"`).join("\n");
-    const blob = new Blob([header + rows], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "leave-history.csv"; a.click();
-    URL.revokeObjectURL(url);
+    const csv = buildCSV(
+      ["Type", "Start", "End", "Reason", "Status"],
+      requests.map((r) => [r.leave_types?.name, r.start_date, r.end_date, r.reason, r.status])
+    );
+    downloadCSV(csv, "leave-history.csv");
   };
 
   return (
@@ -127,9 +127,27 @@ const LeaveHistory = () => {
                       <TableCell className="max-w-[200px] truncate text-muted-foreground hidden lg:table-cell">{req.manager_comment || "—"}</TableCell>
                       <TableCell>
                         {req.status === "pending" && (
-                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive h-8 text-xs" onClick={() => handleCancel(req.id)}>
-                            Cancel
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive h-8 text-xs">
+                                Cancel
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Cancel Leave Request</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to cancel this {req.leave_types?.name} request ({format(parseISO(req.start_date), "MMM d")} — {format(parseISO(req.end_date), "MMM d")})? This action cannot be undone.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Keep Request</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleCancel(req.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Cancel Request
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         )}
                       </TableCell>
                     </TableRow>

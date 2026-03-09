@@ -10,6 +10,8 @@ import { toast } from "sonner";
 import { CheckSquare, Inbox } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 
 interface PendingRequest {
   id: string;
@@ -28,6 +30,8 @@ const Approvals = () => {
   const [selectedRequest, setSelectedRequest] = useState<PendingRequest | null>(null);
   const [comment, setComment] = useState("");
   const [action, setAction] = useState<"approved" | "rejected" | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(requests, 10);
 
   const fetchRequests = async () => {
     const { data } = await supabase
@@ -49,6 +53,7 @@ const Approvals = () => {
 
   const handleAction = async () => {
     if (!selectedRequest || !action) return;
+    setSubmitting(true);
     const { error } = await supabase
       .from("leave_requests")
       .update({ status: action, manager_comment: comment || null })
@@ -60,6 +65,7 @@ const Approvals = () => {
       supabase.functions.invoke("notify-leave", { body: { type: action, request_id: selectedRequest.id } }).catch(() => {});
       setSelectedRequest(null); setComment(""); setAction(null); fetchRequests();
     }
+    setSubmitting(false);
   };
 
   return (
@@ -85,35 +91,38 @@ const Approvals = () => {
               <p className="text-sm">No pending requests. All caught up!</p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Employee</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Dates</TableHead>
-                  <TableHead className="hidden md:table-cell">Reason</TableHead>
-                  <TableHead className="hidden lg:table-cell">Submitted</TableHead>
-                  <TableHead className="w-48">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {requests.map((req) => (
-                  <TableRow key={req.id}>
-                    <TableCell className="font-medium">{req.profiles?.full_name || req.profiles?.email}</TableCell>
-                    <TableCell>{req.leave_types?.name}</TableCell>
-                    <TableCell className="tabular-nums text-sm">
-                      {format(parseISO(req.start_date), "MMM d")} — {format(parseISO(req.end_date), "MMM d")}
-                    </TableCell>
-                    <TableCell className="max-w-[200px] truncate text-muted-foreground hidden md:table-cell">{req.reason || "—"}</TableCell>
-                    <TableCell className="text-muted-foreground hidden lg:table-cell">{format(parseISO(req.created_at), "MMM d, yyyy")}</TableCell>
-                    <TableCell className="space-x-2">
-                      <Button size="sm" className="h-8" onClick={() => { setSelectedRequest(req); setAction("approved"); }}>Approve</Button>
-                      <Button size="sm" variant="destructive" className="h-8" onClick={() => { setSelectedRequest(req); setAction("rejected"); }}>Reject</Button>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Employee</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Dates</TableHead>
+                    <TableHead className="hidden md:table-cell">Reason</TableHead>
+                    <TableHead className="hidden lg:table-cell">Submitted</TableHead>
+                    <TableHead className="w-48">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {paginatedItems.map((req) => (
+                    <TableRow key={req.id}>
+                      <TableCell className="font-medium">{req.profiles?.full_name || req.profiles?.email}</TableCell>
+                      <TableCell>{req.leave_types?.name}</TableCell>
+                      <TableCell className="tabular-nums text-sm">
+                        {format(parseISO(req.start_date), "MMM d")} — {format(parseISO(req.end_date), "MMM d")}
+                      </TableCell>
+                      <TableCell className="max-w-[200px] truncate text-muted-foreground hidden md:table-cell">{req.reason || "—"}</TableCell>
+                      <TableCell className="text-muted-foreground hidden lg:table-cell">{format(parseISO(req.created_at), "MMM d, yyyy")}</TableCell>
+                      <TableCell className="space-x-2">
+                        <Button size="sm" className="h-8" onClick={() => { setSelectedRequest(req); setAction("approved"); }}>Approve</Button>
+                        <Button size="sm" variant="destructive" className="h-8" onClick={() => { setSelectedRequest(req); setAction("rejected"); }}>Reject</Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} />
+            </>
           )}
         </CardContent>
       </Card>
@@ -133,8 +142,8 @@ const Approvals = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setSelectedRequest(null); setComment(""); setAction(null); }}>Cancel</Button>
-            <Button variant={action === "rejected" ? "destructive" : "default"} onClick={handleAction}>
-              {action === "approved" ? "Approve" : "Reject"}
+            <Button variant={action === "rejected" ? "destructive" : "default"} onClick={handleAction} disabled={submitting}>
+              {submitting ? "Processing..." : action === "approved" ? "Approve" : "Reject"}
             </Button>
           </DialogFooter>
         </DialogContent>

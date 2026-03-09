@@ -13,6 +13,7 @@ import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 import type { Enums } from "@/integrations/supabase/types";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import { buildCSV, downloadCSV } from "@/lib/csv";
 
 type AppRole = Enums<"app_role">;
 
@@ -35,6 +36,7 @@ const Employees = () => {
   const [editDeptId, setEditDeptId] = useState("");
   const [editManagerId, setEditManagerId] = useState("");
   const [editRole, setEditRole] = useState<AppRole>("employee");
+  const [saving, setSaving] = useState(false);
 
   const fetchAll = async () => {
     const [empRes, roleRes, deptRes] = await Promise.all([
@@ -60,12 +62,11 @@ const Employees = () => {
   );
 
   const exportCSV = () => {
-    const header = "Name,Email,Department,Roles\n";
-    const rows = employees.map((e) => `"${e.full_name || ""}","${e.email || ""}","${e.departments?.name || ""}","${getRoles(e.id).join(", ")}"`).join("\n");
-    const blob = new Blob([header + rows], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "employees.csv"; a.click();
-    URL.revokeObjectURL(url);
+    const csv = buildCSV(
+      ["Name", "Email", "Department", "Roles"],
+      employees.map((e) => [e.full_name, e.email, e.departments?.name, getRoles(e.id).join(", ")])
+    );
+    downloadCSV(csv, "employees.csv");
   };
 
   const openEdit = (emp: Employee) => {
@@ -76,14 +77,17 @@ const Employees = () => {
 
   const handleSave = async () => {
     if (!editEmployee) return;
+    setSaving(true);
     const { error } = await supabase.from("profiles").update({ department_id: editDeptId || null, manager_id: editManagerId || null }).eq("id", editEmployee.id);
-    if (error) { toast.error(error.message); return; }
-    await supabase.from("user_roles").delete().eq("user_id", editEmployee.id);
+    if (error) { toast.error(error.message); setSaving(false); return; }
+    const { error: delError } = await supabase.from("user_roles").delete().eq("user_id", editEmployee.id);
+    if (delError) { toast.error("Failed to update roles: " + delError.message); setSaving(false); return; }
     const rolesToInsert: { user_id: string; role: AppRole }[] = [{ user_id: editEmployee.id, role: "employee" }];
     if (editRole === "manager") rolesToInsert.push({ user_id: editEmployee.id, role: "manager" });
     if (editRole === "hr_admin") { rolesToInsert.push({ user_id: editEmployee.id, role: "manager" }); rolesToInsert.push({ user_id: editEmployee.id, role: "hr_admin" }); }
-    await supabase.from("user_roles").insert(rolesToInsert);
-    toast.success("Employee updated"); setEditEmployee(null); fetchAll();
+    const { error: insertError } = await supabase.from("user_roles").insert(rolesToInsert);
+    if (insertError) { toast.error("Failed to assign roles: " + insertError.message); setSaving(false); return; }
+    toast.success("Employee updated"); setEditEmployee(null); setSaving(false); fetchAll();
   };
 
   const roleColor = (role: AppRole) => {
@@ -177,7 +181,7 @@ const Employees = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditEmployee(null)}>Cancel</Button>
-            <Button onClick={handleSave}>Save</Button>
+            <Button onClick={handleSave} disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

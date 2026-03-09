@@ -13,6 +13,10 @@ import { toast } from "sonner";
 import { Send, AlertTriangle } from "lucide-react";
 import { FormSkeleton } from "@/components/skeletons";
 
+const MAX_REASON_LENGTH = 1000;
+const MAX_FILE_SIZE_MB = 10;
+const ALLOWED_FILE_TYPES = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
+
 interface LeaveType { id: string; name: string; annual_allocation: number; }
 
 const RequestLeave = () => {
@@ -83,9 +87,30 @@ const RequestLeave = () => {
 
   if (pageLoading) return <FormSkeleton />;
 
+  const dateError = startDate && endDate && endDate < startDate ? "End date must be on or after start date" : null;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0] || null;
+    if (file) {
+      if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+        toast.error(`File too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.`);
+        e.target.value = "";
+        return;
+      }
+      if (!ALLOWED_FILE_TYPES.includes(file.type)) {
+        toast.error("Invalid file type. Allowed: PDF, JPEG, PNG, WebP.");
+        e.target.value = "";
+        return;
+      }
+    }
+    setAttachment(file);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user) return;
+    if (dateError) { toast.error(dateError); return; }
+    if (reason.length > MAX_REASON_LENGTH) { toast.error(`Reason must be under ${MAX_REASON_LENGTH} characters`); return; }
     setIsSubmitting(true);
 
     let attachmentUrl: string | null = null;
@@ -97,7 +122,7 @@ const RequestLeave = () => {
     }
 
     const { data: inserted, error } = await supabase.from("leave_requests").insert({
-      employee_id: user.id, leave_type_id: leaveTypeId, start_date: startDate, end_date: endDate, reason, attachment_url: attachmentUrl,
+      employee_id: user.id, leave_type_id: leaveTypeId, start_date: startDate, end_date: endDate, reason: reason.trim() || null, attachment_url: attachmentUrl,
       half_day_type: halfDayType || null,
     } as any).select("id").single();
 
@@ -141,6 +166,7 @@ const RequestLeave = () => {
               <div className="space-y-2">
                 <Label htmlFor="end-date">End Date</Label>
                 <Input id="end-date" type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} required className="h-11" />
+                {dateError && <p className="text-xs text-destructive">{dateError}</p>}
               </div>
             </div>
             <div className="space-y-2">
@@ -166,15 +192,25 @@ const RequestLeave = () => {
               </Alert>
             )}
             <div className="space-y-2">
-              <Label htmlFor="reason">Reason</Label>
-              <Textarea id="reason" value={reason} onChange={(e) => setReason(e.target.value)} placeholder="Describe the reason for your leave..." rows={3} />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="reason">Reason</Label>
+                <span className="text-xs text-muted-foreground">{reason.length}/{MAX_REASON_LENGTH}</span>
+              </div>
+              <Textarea
+                id="reason"
+                value={reason}
+                onChange={(e) => setReason(e.target.value.slice(0, MAX_REASON_LENGTH))}
+                placeholder="Describe the reason for your leave..."
+                rows={3}
+                maxLength={MAX_REASON_LENGTH}
+              />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="attachment">Attachment (optional)</Label>
-              <Input id="attachment" type="file" onChange={(e) => setAttachment(e.target.files?.[0] || null)} className="h-11" />
+              <Label htmlFor="attachment">Attachment (optional, max {MAX_FILE_SIZE_MB}MB — PDF, JPEG, PNG)</Label>
+              <Input id="attachment" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" onChange={handleFileChange} className="h-11" />
             </div>
             <div className="flex gap-3 pt-2">
-              <Button type="submit" disabled={isSubmitting || !leaveTypeId} className="h-11">
+              <Button type="submit" disabled={isSubmitting || !leaveTypeId || !!dateError} className="h-11">
                 <Send className="mr-2 h-4 w-4" /> {isSubmitting ? "Submitting..." : "Submit Request"}
               </Button>
               <Button type="button" variant="outline" onClick={() => navigate(-1)} className="h-11">Cancel</Button>

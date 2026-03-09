@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO, startOfMonth, endOfMonth, subMonths } from "date-fns";
 import { Clock, CalendarDays } from "lucide-react";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 
 interface AttendanceLog {
   id: string;
@@ -22,6 +24,7 @@ const AttendanceHistory = () => {
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [monthOffset, setMonthOffset] = useState("0");
+  const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(logs, 20);
 
   useEffect(() => {
     if (!user) return;
@@ -131,6 +134,7 @@ const AttendanceHistory = () => {
           <CardTitle className="text-base font-medium text-foreground flex items-center gap-2">
             <CalendarDays className="h-4 w-4" />
             Daily Log
+            <Badge variant="secondary" className="text-xs ml-1">{totalItems}</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -139,41 +143,44 @@ const AttendanceHistory = () => {
           ) : logs.length === 0 ? (
             <p className="text-sm text-muted-foreground py-8 text-center">No attendance records for this month.</p>
           ) : (
-            <div className="space-y-1">
-              {logs.map((log) => (
-                <div key={log.id} className="flex items-center justify-between py-3 border-b border-border/40 last:border-0">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 text-center">
-                      <p className="text-sm font-medium text-foreground">
-                        {format(parseISO(log.date), "EEE")}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(parseISO(log.date), "MMM d")}
-                      </p>
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 text-sm text-foreground">
-                        <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                        {log.clock_in ? format(new Date(log.clock_in), "h:mm a") : "—"}
-                        <span className="text-muted-foreground">→</span>
-                        {log.clock_out ? format(new Date(log.clock_out), "h:mm a") : "—"}
+            <>
+              <div className="space-y-1">
+                {paginatedItems.map((log) => (
+                  <div key={log.id} className="flex items-center justify-between py-3 border-b border-border/40 last:border-0">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 text-center">
+                        <p className="text-sm font-medium text-foreground">
+                          {format(parseISO(log.date), "EEE")}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {format(parseISO(log.date), "MMM d")}
+                        </p>
                       </div>
-                      {log.notes && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{log.notes}</p>
-                      )}
+                      <div>
+                        <div className="flex items-center gap-2 text-sm text-foreground">
+                          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                          {log.clock_in ? format(new Date(log.clock_in), "h:mm a") : "—"}
+                          <span className="text-muted-foreground">→</span>
+                          {log.clock_out ? format(new Date(log.clock_out), "h:mm a") : "—"}
+                        </div>
+                        {log.notes && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{log.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground tabular-nums">
+                        {formatDuration(log.clock_in, log.clock_out)}
+                      </span>
+                      <Badge variant={statusColor(log.status)} className="capitalize text-xs">
+                        {log.status.replace("_", " ")}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground tabular-nums">
-                      {formatDuration(log.clock_in, log.clock_out)}
-                    </span>
-                    <Badge variant={statusColor(log.status)} className="capitalize text-xs">
-                      {log.status.replace("_", " ")}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+              <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} />
+            </>
           )}
         </CardContent>
       </Card>

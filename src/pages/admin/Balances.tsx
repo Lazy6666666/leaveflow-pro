@@ -61,7 +61,9 @@ const Balances = () => {
 
   const handleAdjust = async () => {
     if (!adjustTarget) return;
-    const { error } = await supabase.from("leave_balances").update({ balance: parseFloat(newBalance) }).eq("id", adjustTarget.id);
+    const val = parseFloat(newBalance);
+    if (isNaN(val) || val < 0) { toast.error("Balance must be a non-negative number"); return; }
+    const { error } = await supabase.from("leave_balances").update({ balance: val }).eq("id", adjustTarget.id);
     if (error) toast.error(error.message);
     else { toast.success("Balance updated"); setAdjustDialog(false); fetchBalances(); }
   };
@@ -79,13 +81,38 @@ const Balances = () => {
   const bulkInitialize = async () => {
     setInitializing(true);
     const y = parseInt(year);
+    
+    // Fetch all existing balances for this year in one query
+    const { data: existingBalances } = await supabase
+      .from("leave_balances")
+      .select("employee_id, leave_type_id")
+      .eq("year", y);
+    
+    const existingSet = new Set(
+      (existingBalances || []).map((b) => `${b.employee_id}:${b.leave_type_id}`)
+    );
+    
+    // Build batch of missing balances
+    const toInsert: { employee_id: string; leave_type_id: string; year: number; balance: number }[] = [];
     for (const emp of employees) {
       for (const lt of leaveTypes) {
-        const { data: existing } = await supabase.from("leave_balances").select("id").eq("employee_id", emp.id).eq("leave_type_id", lt.id).eq("year", y).maybeSingle();
-        if (!existing) await supabase.from("leave_balances").insert({ employee_id: emp.id, leave_type_id: lt.id, year: y, balance: lt.annual_allocation });
+        if (!existingSet.has(`${emp.id}:${lt.id}`)) {
+          toInsert.push({ employee_id: emp.id, leave_type_id: lt.id, year: y, balance: lt.annual_allocation });
+        }
       }
     }
-    toast.success(`Balances initialized for all ${employees.length} employees`); setInitializing(false);
+    
+    if (toInsert.length > 0) {
+      // Insert in batches of 500
+      for (let i = 0; i < toInsert.length; i += 500) {
+        const batch = toInsert.slice(i, i + 500);
+        const { error } = await supabase.from("leave_balances").insert(batch);
+        if (error) { toast.error(error.message); setInitializing(false); return; }
+      }
+    }
+    
+    toast.success(`Balances initialized for all ${employees.length} employees (${toInsert.length} new records)`);
+    setInitializing(false);
     if (selectedEmployee) fetchBalances();
   };
 
@@ -167,11 +194,15 @@ const Balances = () => {
         <DialogContent>
           <DialogHeader><DialogTitle>Adjust Balance — {adjustTarget?.leave_types?.name}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2"><Label>New Balance (days)</Label><Input type="number" step="0.5" value={newBalance} onChange={(e) => setNewBalance(e.target.value)} className="h-11" /></div>
+            <div className="space-y-2">
+              <Label>New Balance (days)</Label>
+              <Input type="number" step="0.5" min="0" value={newBalance} onChange={(e) => setNewBalance(e.target.value)} className="h-11" />
+              {newBalance && parseFloat(newBalance) < 0 && <p className="text-xs text-destructive">Balance cannot be negative</p>}
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAdjustDialog(false)}>Cancel</Button>
-            <Button onClick={handleAdjust}>Save</Button>
+            <Button onClick={handleAdjust} disabled={!newBalance || parseFloat(newBalance) < 0}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
