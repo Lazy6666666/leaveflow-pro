@@ -63,7 +63,6 @@ const LeaveHistory = () => {
     }
   };
 
-  const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(requests, 10);
 
   const exportCSV = () => {
     const header = "Type,Start,End,Reason,Status\n";
