@@ -37,18 +37,22 @@ const NotificationBell = () => {
   };
 
   useEffect(() => {
+    if (!user) return;
     fetchNotifications();
 
     const channel = supabase
       .channel("notifications-realtime")
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "notifications" },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `user_id=eq.${user.id}`,
+        },
         (payload) => {
-        const newNotif = payload.new as AppNotification;
-          if (newNotif.user_id === user?.id) {
-            setNotifications((prev) => [newNotif, ...prev].slice(0, 20));
-          }
+          const newNotif = payload.new as AppNotification;
+          setNotifications((prev) => [newNotif, ...prev].slice(0, 20));
         }
       )
       .subscribe();

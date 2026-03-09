@@ -11,6 +11,7 @@ import { format, parseISO } from "date-fns";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import { buildCSV, downloadCSV } from "@/lib/csv";
 
 interface AuditEntry {
   id: string;
@@ -72,14 +73,11 @@ const AuditLog = () => {
   };
 
   const exportCSV = () => {
-    let csv = "Timestamp,Table,Action,Changed By,Summary\n";
-    filtered.forEach((l) => {
-      csv += `"${l.created_at}","${l.table_name}","${l.action}","${profiles[l.changed_by || ""] || l.changed_by || "System"}","${summarizeChange(l)}"\n`;
-    });
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a"); a.href = url; a.download = "audit-log.csv"; a.click();
-    URL.revokeObjectURL(url);
+    const csv = buildCSV(
+      ["Timestamp", "Table", "Action", "Changed By", "Summary"],
+      filtered.map((l) => [l.created_at, l.table_name, l.action, profiles[l.changed_by || ""] || l.changed_by || "System", summarizeChange(l)])
+    );
+    downloadCSV(csv, "audit-log.csv");
   };
 
   if (loading) return <div className="space-y-6"><PageHeaderSkeleton /><TableSkeleton rows={8} cols={5} /></div>;

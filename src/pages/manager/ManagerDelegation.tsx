@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { UserCheck, Plus, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -55,8 +56,11 @@ const ManagerDelegation = () => {
     return p?.full_name || p?.email || id.slice(0, 8);
   };
 
+  const dateError = startDate && endDate && endDate < startDate ? "End date must be on or after start date" : null;
+
   const handleCreate = async () => {
     if (!user || !delegateId || !startDate || !endDate) return;
+    if (dateError) { toast.error(dateError); return; }
     setSubmitting(true);
     const { error } = await (supabase.from("manager_delegations" as any) as any).insert({
       manager_id: user.id,
@@ -75,7 +79,8 @@ const ManagerDelegation = () => {
   };
 
   const handleDeactivate = async (id: string) => {
-    await (supabase.from("manager_delegations" as any) as any).update({ is_active: false }).eq("id", id);
+    const { error } = await (supabase.from("manager_delegations" as any) as any).update({ is_active: false }).eq("id", id);
+    if (error) { toast.error(error.message); return; }
     toast.success("Delegation deactivated");
     fetchData();
   };
@@ -99,7 +104,7 @@ const ManagerDelegation = () => {
           <CardDescription>Your delegate will be able to approve/reject leave requests on your behalf during the specified period.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
               <Label>Delegate</Label>
               <Select value={delegateId} onValueChange={setDelegateId}>
@@ -118,9 +123,10 @@ const ManagerDelegation = () => {
             <div className="space-y-2">
               <Label>End Date</Label>
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-11" />
+              {dateError && <p className="text-xs text-destructive">{dateError}</p>}
             </div>
             <div className="flex items-end">
-              <Button onClick={handleCreate} disabled={submitting || !delegateId || !startDate || !endDate} className="h-11 w-full">
+              <Button onClick={handleCreate} disabled={submitting || !delegateId || !startDate || !endDate || !!dateError} className="h-11 w-full">
                 {submitting ? "Creating..." : "Create"}
               </Button>
             </div>
@@ -165,9 +171,25 @@ const ManagerDelegation = () => {
                       </TableCell>
                       <TableCell>
                         {isManager && d.is_active && (
-                          <Button size="sm" variant="ghost" className="h-8 text-destructive" onClick={() => handleDeactivate(d.id)}>
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="ghost" className="h-8 text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Deactivate Delegation</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Are you sure you want to deactivate this delegation to {profileName(d.delegate_id)}? They will no longer be able to approve requests on your behalf.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeactivate(d.id)}>Deactivate</AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         )}
                       </TableCell>
                     </TableRow>

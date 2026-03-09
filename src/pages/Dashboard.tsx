@@ -166,7 +166,7 @@ const Dashboard = () => {
       </div>
 
       {/* Summary Stats Row */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
         <ClockInOutWidget />
         <Card className="border-0 shadow-sm bg-card">
           <CardContent className="p-5">
