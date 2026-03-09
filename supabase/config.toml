@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.notify-absence]
 verify_jwt = false
+
+[functions.digest-pending-approvals]
+verify_jwt = false
