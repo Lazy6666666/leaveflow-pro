@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,47 +26,59 @@ interface PendingRequest {
 }
 
 const Approvals = () => {
-  const [requests, setRequests] = useState<PendingRequest[]>([]);
-  const [pageLoading, setPageLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [selectedRequest, setSelectedRequest] = useState<PendingRequest | null>(null);
   const [comment, setComment] = useState("");
   const [action, setAction] = useState<"approved" | "rejected" | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+
+  const { data: requests = [], isLoading } = useQuery({
+    queryKey: ["pending-approvals"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("leave_requests")
+        .select("id, start_date, end_date, reason, status, created_at, profiles:employee_id(full_name, email), leave_types(name)")
+        .eq("status", "pending")
+        .order("created_at", { ascending: true });
+      return (data as unknown as PendingRequest[]) || [];
+    },
+    staleTime: 60 * 1000,
+  });
+
   const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(requests, 10);
 
-  const fetchRequests = async () => {
-    const { data } = await supabase
-      .from("leave_requests")
-      .select("id, start_date, end_date, reason, status, created_at, profiles:employee_id(full_name, email), leave_types(name)")
-      .eq("status", "pending")
-      .order("created_at", { ascending: true });
-    if (data) setRequests(data as unknown as PendingRequest[]);
-  };
+  const actionMutation = useMutation({
+    mutationFn: async ({ id, status, comment }: { id: string; status: string; comment: string | null }) => {
+      const { error } = await supabase
+        .from("leave_requests")
+        .update({ status, manager_comment: comment })
+        .eq("id", id);
+      if (error) throw error;
+      return { id, status };
+    },
+    onSuccess: ({ id, status }) => {
+      toast.success(`Request ${status}`);
+      supabase.functions.invoke("notify-leave", { body: { type: status, request_id: id } }).catch(() => {});
+      setSelectedRequest(null);
+      setComment("");
+      setAction(null);
+      queryClient.invalidateQueries({ queryKey: ["pending-approvals"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-pending-count"] });
+      queryClient.invalidateQueries({ queryKey: ["leave-balances"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-balances"] });
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
 
-  useEffect(() => { fetchRequests().finally(() => setPageLoading(false)); }, []);
-
-  if (pageLoading) return (
+  if (isLoading) return (
     <div className="space-y-6">
       <PageHeaderSkeleton />
       <TableSkeleton rows={4} cols={5} />
     </div>
   );
 
-  const handleAction = async () => {
+  const handleAction = () => {
     if (!selectedRequest || !action) return;
-    setSubmitting(true);
-    const { error } = await supabase
-      .from("leave_requests")
-      .update({ status: action, manager_comment: comment || null })
-      .eq("id", selectedRequest.id);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success(`Request ${action}`);
-      supabase.functions.invoke("notify-leave", { body: { type: action, request_id: selectedRequest.id } }).catch(() => {});
-      setSelectedRequest(null); setComment(""); setAction(null); fetchRequests();
-    }
-    setSubmitting(false);
+    actionMutation.mutate({ id: selectedRequest.id, status: action, comment: comment || null });
   };
 
   return (
@@ -142,8 +155,8 @@ const Approvals = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => { setSelectedRequest(null); setComment(""); setAction(null); }}>Cancel</Button>
-            <Button variant={action === "rejected" ? "destructive" : "default"} onClick={handleAction} disabled={submitting}>
-              {submitting ? "Processing..." : action === "approved" ? "Approve" : "Reject"}
+            <Button variant={action === "rejected" ? "destructive" : "default"} onClick={handleAction} disabled={actionMutation.isPending}>
+              {actionMutation.isPending ? "Processing..." : action === "approved" ? "Approve" : "Reject"}
             </Button>
           </DialogFooter>
         </DialogContent>

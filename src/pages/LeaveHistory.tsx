@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -27,34 +27,45 @@ interface LeaveRequest {
 
 const LeaveHistory = () => {
   const { user } = useAuth();
-  const [requests, setRequests] = useState<LeaveRequest[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  const { data: requests = [], isLoading } = useQuery({
+    queryKey: ["leave-history", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("leave_requests")
+        .select("id, start_date, end_date, reason, status, manager_comment, created_at, leave_types(name)")
+        .eq("employee_id", user!.id)
+        .order("created_at", { ascending: false });
+      return (data as unknown as LeaveRequest[]) || [];
+    },
+    enabled: !!user,
+    staleTime: 2 * 60 * 1000,
+  });
+
   const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(requests, 10);
 
-  const fetchRequests = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("leave_requests")
-      .select("id, start_date, end_date, reason, status, manager_comment, created_at, leave_types(name)")
-      .eq("employee_id", user.id)
-      .order("created_at", { ascending: false });
-    if (data) setRequests(data as unknown as LeaveRequest[]);
-  };
+  const cancelMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("leave_requests").update({ status: "cancelled" }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Request cancelled");
+      queryClient.invalidateQueries({ queryKey: ["leave-history"] });
+      queryClient.invalidateQueries({ queryKey: ["leave-balances"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-balances"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-recent"] });
+    },
+    onError: (err: any) => toast.error(err.message),
+  });
 
-  useEffect(() => { fetchRequests().finally(() => setLoading(false)); }, [user]);
-
-  if (loading) return (
+  if (isLoading) return (
     <div className="space-y-6">
       <PageHeaderSkeleton />
       <TableSkeleton rows={5} cols={6} />
     </div>
   );
-
-  const handleCancel = async (id: string) => {
-    const { error } = await supabase.from("leave_requests").update({ status: "cancelled" }).eq("id", id);
-    if (error) toast.error(error.message);
-    else { toast.success("Request cancelled"); fetchRequests(); }
-  };
 
   const statusVariant = (status: string) => {
     switch (status) {
@@ -142,8 +153,12 @@ const LeaveHistory = () => {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Keep Request</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleCancel(req.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                  Cancel Request
+                                <AlertDialogAction
+                                  onClick={() => cancelMutation.mutate(req.id)}
+                                  disabled={cancelMutation.isPending}
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                  {cancelMutation.isPending ? "Cancelling..." : "Cancel Request"}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>

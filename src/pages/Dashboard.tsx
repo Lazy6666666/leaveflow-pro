@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import {
   CalendarDays, PlusCircle, CheckSquare, Clock, CalendarHeart,
   ArrowRight, Users, TrendingUp, Sparkles,
@@ -49,66 +49,90 @@ const DONUT_COLORS = [
   "hsl(220, 14%, 83%)",
 ];
 
+const STALE_TIME = 5 * 60 * 1000; // 5 minutes
+
 const Dashboard = () => {
   const { user, hasRole } = useAuth();
   const navigate = useNavigate();
-  const [balances, setBalances] = useState<LeaveBalance[]>([]);
-  const [recentRequests, setRecentRequests] = useState<RecentRequest[]>([]);
-  const [pendingCount, setPendingCount] = useState(0);
-  const [upcomingHolidays, setUpcomingHolidays] = useState<Holiday[]>([]);
-  const [teamAbsences, setTeamAbsences] = useState<TeamAbsence[]>([]);
-  const [loading, setLoading] = useState(true);
+  const currentYear = new Date().getFullYear();
+  const today = format(startOfToday(), "yyyy-MM-dd");
+  const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const weekEnd = format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
 
-  useEffect(() => {
-    if (!user) return;
-    const currentYear = new Date().getFullYear();
-    const today = format(startOfToday(), "yyyy-MM-dd");
-    const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
-    const weekEnd = format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
+  const { data: balances = [], isLoading: balLoading } = useQuery({
+    queryKey: ["dashboard-balances", user?.id, currentYear],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("leave_balances")
+        .select("balance, leave_type_id, year, leave_types(name, annual_allocation)")
+        .eq("employee_id", user!.id)
+        .eq("year", currentYear);
+      return (data as unknown as LeaveBalance[]) || [];
+    },
+    enabled: !!user,
+    staleTime: STALE_TIME,
+  });
 
-    const fetchAll = async () => {
-      setLoading(true);
-      const [balRes, recRes, holRes, teamRes] = await Promise.all([
-        supabase
-          .from("leave_balances")
-          .select("balance, leave_type_id, year, leave_types(name, annual_allocation)")
-          .eq("employee_id", user.id)
-          .eq("year", currentYear),
-        supabase
-          .from("leave_requests")
-          .select("id, start_date, end_date, status, leave_types(name)")
-          .eq("employee_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(5),
-        supabase
-          .from("public_holidays")
-          .select("id, name, date")
-          .gte("date", today)
-          .order("date")
-          .limit(5),
-        supabase
-          .from("leave_requests")
-          .select("id, start_date, end_date, profiles:employee_id(full_name, email), leave_types(name)")
-          .eq("status", "approved")
-          .lte("start_date", weekEnd)
-          .gte("end_date", weekStart)
-          .limit(20),
-      ]);
-      if (balRes.data) setBalances(balRes.data as unknown as LeaveBalance[]);
-      if (recRes.data) setRecentRequests(recRes.data as unknown as RecentRequest[]);
-      if (holRes.data) setUpcomingHolidays(holRes.data);
-      if (teamRes.data) setTeamAbsences(teamRes.data as unknown as TeamAbsence[]);
+  const { data: recentRequests = [], isLoading: recLoading } = useQuery({
+    queryKey: ["dashboard-recent", user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("leave_requests")
+        .select("id, start_date, end_date, status, leave_types(name)")
+        .eq("employee_id", user!.id)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      return (data as unknown as RecentRequest[]) || [];
+    },
+    enabled: !!user,
+    staleTime: STALE_TIME,
+  });
 
-      if (hasRole("manager")) {
-        const { count } = await supabase
-          .from("leave_requests")
-          .select("*", { count: "exact", head: true })
-          .eq("status", "pending");
-        setPendingCount(count || 0);
-      }
-    };
-    fetchAll().finally(() => setLoading(false));
-  }, [user, hasRole]);
+  const { data: upcomingHolidays = [], isLoading: holLoading } = useQuery({
+    queryKey: ["dashboard-holidays", today],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("public_holidays")
+        .select("id, name, date")
+        .gte("date", today)
+        .order("date")
+        .limit(5);
+      return data || [];
+    },
+    enabled: !!user,
+    staleTime: STALE_TIME,
+  });
+
+  const { data: teamAbsences = [], isLoading: teamLoading } = useQuery({
+    queryKey: ["dashboard-team", weekStart, weekEnd],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("leave_requests")
+        .select("id, start_date, end_date, profiles:employee_id(full_name, email), leave_types(name)")
+        .eq("status", "approved")
+        .lte("start_date", weekEnd)
+        .gte("end_date", weekStart)
+        .limit(20);
+      return (data as unknown as TeamAbsence[]) || [];
+    },
+    enabled: !!user,
+    staleTime: STALE_TIME,
+  });
+
+  const { data: pendingCount = 0 } = useQuery({
+    queryKey: ["dashboard-pending-count"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("leave_requests")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "pending");
+      return count || 0;
+    },
+    enabled: !!user && hasRole("manager"),
+    staleTime: STALE_TIME,
+  });
+
+  const loading = balLoading || recLoading || holLoading || teamLoading;
 
   const statusColor = (status: string) => {
     switch (status) {

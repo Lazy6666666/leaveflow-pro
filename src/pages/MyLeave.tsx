@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { PageHeaderSkeleton, BalanceCardSkeleton } from "@/components/skeletons";
@@ -14,24 +14,23 @@ interface LeaveBalance {
 
 const MyLeave = () => {
   const { user } = useAuth();
-  const [balances, setBalances] = useState<LeaveBalance[]>([]);
-  const [loading, setLoading] = useState(true);
   const currentYear = new Date().getFullYear();
 
-  useEffect(() => {
-    if (!user) return;
-    const fetch = async () => {
+  const { data: balances = [], isLoading } = useQuery({
+    queryKey: ["leave-balances", user?.id, currentYear],
+    queryFn: async () => {
       const { data } = await supabase
         .from("leave_balances")
         .select("balance, leave_type_id, year, leave_types(name, annual_allocation, carry_forward_limit)")
-        .eq("employee_id", user.id)
+        .eq("employee_id", user!.id)
         .eq("year", currentYear);
-      if (data) setBalances(data as unknown as LeaveBalance[]);
-    };
-    fetch().finally(() => setLoading(false));
-  }, [user, currentYear]);
+      return (data as unknown as LeaveBalance[]) || [];
+    },
+    enabled: !!user,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  if (loading) return (
+  if (isLoading) return (
     <div className="space-y-6">
       <PageHeaderSkeleton />
       <div className="grid gap-5 md:grid-cols-2">
