@@ -15,6 +15,7 @@ interface AttendanceSettings {
   late_threshold_minutes: number;
   half_day_hours: number;
   auto_mark_absent: boolean;
+  require_selfie: boolean;
 }
 
 const AttendanceSettingsPage = () => {
@@ -29,6 +30,7 @@ const AttendanceSettingsPage = () => {
   const [lateThreshold, setLateThreshold] = useState(15);
   const [halfDayHours, setHalfDayHours] = useState(4);
   const [autoMarkAbsent, setAutoMarkAbsent] = useState(true);
+  const [requireSelfie, setRequireSelfie] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
@@ -47,6 +49,7 @@ const AttendanceSettingsPage = () => {
         setLateThreshold(s.late_threshold_minutes);
         setHalfDayHours(s.half_day_hours);
         setAutoMarkAbsent(s.auto_mark_absent);
+        setRequireSelfie(s.require_selfie || false);
       }
       setLoading(false);
     };
@@ -61,6 +64,7 @@ const AttendanceSettingsPage = () => {
       late_threshold_minutes: lateThreshold,
       half_day_hours: halfDayHours,
       auto_mark_absent: autoMarkAbsent,
+      require_selfie: requireSelfie,
     };
 
     let error;
@@ -92,6 +96,7 @@ const AttendanceSettingsPage = () => {
     setLateThreshold(15);
     setHalfDayHours(4);
     setAutoMarkAbsent(true);
+    setRequireSelfie(false);
   };
 
   if (loading) return <p className="text-sm text-muted-foreground p-8">Loading settings...</p>;
@@ -174,6 +179,15 @@ const AttendanceSettingsPage = () => {
           <CardDescription>Configure automatic attendance marking policies</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="flex items-center justify-between rounded-lg border border-border/60 p-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">Require selfie on clock in/out</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Employees must take a selfie when clocking in and out for identity verification
+              </p>
+            </div>
+            <Switch checked={requireSelfie} onCheckedChange={setRequireSelfie} />
+          </div>
           <div className="flex items-center justify-between rounded-lg border border-border/60 p-4">
             <div>
               <p className="text-sm font-medium text-foreground">Auto-mark absent</p>

@@ -5,15 +5,18 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO, startOfMonth, endOfMonth, subMonths } from "date-fns";
-import { Clock, CalendarDays } from "lucide-react";
+import { Clock, CalendarDays, Camera } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import { SelfieLightbox } from "@/components/attendance/SelfieLightbox";
 
 interface AttendanceLog {
   id: string;
   date: string;
   clock_in: string | null;
   clock_out: string | null;
+  selfie_clock_in: string | null;
+  selfie_clock_out: string | null;
   status: string;
   source: string;
   notes: string | null;
@@ -24,6 +27,7 @@ const AttendanceHistory = () => {
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [monthOffset, setMonthOffset] = useState("0");
+  const [lightboxPath, setLightboxPath] = useState<string | null>(null);
   const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(logs, 20);
 
   useEffect(() => {
@@ -36,7 +40,7 @@ const AttendanceHistory = () => {
 
       const { data } = await supabase
         .from("attendance_logs")
-        .select("id, date, clock_in, clock_out, status, source, notes")
+        .select("id, date, clock_in, clock_out, selfie_clock_in, selfie_clock_out, status, source, notes")
         .eq("employee_id", user.id)
         .gte("date", start)
         .lte("date", end)
@@ -159,9 +163,29 @@ const AttendanceHistory = () => {
                       <div>
                         <div className="flex items-center gap-2 text-sm text-foreground">
                           <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                          {log.clock_in ? format(new Date(log.clock_in), "h:mm a") : "—"}
+                          <div className="flex items-center gap-1">
+                            {log.clock_in ? format(new Date(log.clock_in), "h:mm a") : "—"}
+                            {log.selfie_clock_in && (
+                              <div title="View clock-in selfie" className="inline-flex items-center">
+                                <Camera
+                                  className="h-3 w-3 text-primary cursor-pointer hover:opacity-80"
+                                  onClick={() => setLightboxPath(log.selfie_clock_in)}
+                                />
+                              </div>
+                            )}
+                          </div>
                           <span className="text-muted-foreground">→</span>
-                          {log.clock_out ? format(new Date(log.clock_out), "h:mm a") : "—"}
+                          <div className="flex items-center gap-1">
+                            {log.clock_out ? format(new Date(log.clock_out), "h:mm a") : "—"}
+                            {log.selfie_clock_out && (
+                              <div title="View clock-out selfie" className="inline-flex items-center">
+                                <Camera
+                                  className="h-3 w-3 text-primary cursor-pointer hover:opacity-80"
+                                  onClick={() => setLightboxPath(log.selfie_clock_out)}
+                                />
+                              </div>
+                            )}
+                          </div>
                         </div>
                         {log.notes && (
                           <p className="text-xs text-muted-foreground mt-0.5">{log.notes}</p>
@@ -184,6 +208,11 @@ const AttendanceHistory = () => {
           )}
         </CardContent>
       </Card>
+
+      <SelfieLightbox
+        path={lightboxPath}
+        onClose={() => setLightboxPath(null)}
+      />
     </div>
   );
 };

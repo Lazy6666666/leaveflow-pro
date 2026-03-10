@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { LogIn, LogOut, Clock } from "lucide-react";
 import { format, differenceInMinutes } from "date-fns";
 import { toast } from "sonner";
+import { SelfieCaptureDialog } from "./SelfieCaptureDialog";
 
 interface AttendanceLog {
   id: string;
@@ -23,16 +24,35 @@ export function ClockInOutWidget() {
   const [acting, setActing] = useState(false);
   const [elapsed, setElapsed] = useState("");
 
+  const [requireSelfie, setRequireSelfie] = useState(false);
+  const [selfieOpen, setSelfieOpen] = useState(false);
+  const [selfieType, setSelfieType] = useState<"clock_in" | "clock_out">("clock_in");
+
   const fetchToday = async () => {
     if (!user) return;
     const today = format(new Date(), "yyyy-MM-dd");
-    const { data } = await supabase
+
+    // Fetch logs
+    const { data: logData } = await supabase
       .from("attendance_logs")
       .select("id, clock_in, clock_out, status, date")
       .eq("employee_id", user.id)
       .eq("date", today)
       .maybeSingle();
-    setTodayLog(data as AttendanceLog | null);
+
+    setTodayLog(logData);
+
+    // Fetch requirement setting
+    const { data: settings } = await supabase
+      .from("attendance_settings")
+      .select("require_selfie")
+      .limit(1)
+      .maybeSingle();
+
+    if (settings) {
+      setRequireSelfie(!!settings.require_selfie);
+    }
+
     setLoading(false);
   };
 
@@ -70,7 +90,7 @@ export function ClockInOutWidget() {
     return () => clearInterval(interval);
   }, [todayLog?.clock_in, todayLog?.clock_out]);
 
-  const handleClockIn = async () => {
+  const processClockIn = async (selfiePath?: string) => {
     if (!user) return;
     setActing(true);
     try {
@@ -84,7 +104,7 @@ export function ClockInOutWidget() {
       const now = new Date();
       let status: string = "present";
 
-      if (settings) {
+      if (settings && settings.work_start_time) {
         const [h, m] = settings.work_start_time.split(":").map(Number);
         const startTime = new Date();
         startTime.setHours(h, m + (settings.late_threshold_minutes || 15), 0, 0);
@@ -96,6 +116,7 @@ export function ClockInOutWidget() {
         clock_in: now.toISOString(),
         status: status as "present" | "late",
         date: format(now, "yyyy-MM-dd"),
+        selfie_clock_in: selfiePath || null,
       }]);
 
       if (error) throw error;
@@ -108,13 +129,16 @@ export function ClockInOutWidget() {
     }
   };
 
-  const handleClockOut = async () => {
+  const processClockOut = async (selfiePath?: string) => {
     if (!todayLog) return;
     setActing(true);
     try {
       const { error } = await supabase
         .from("attendance_logs")
-        .update({ clock_out: new Date().toISOString() })
+        .update({
+          clock_out: new Date().toISOString(),
+          selfie_clock_out: selfiePath || null
+        })
         .eq("id", todayLog.id);
       if (error) throw error;
       toast.success("Clocked out successfully");
@@ -123,6 +147,24 @@ export function ClockInOutWidget() {
       toast.error(e.message || "Failed to clock out");
     } finally {
       setActing(false);
+    }
+  };
+
+  const handleClockInClick = () => {
+    if (requireSelfie) {
+      setSelfieType("clock_in");
+      setSelfieOpen(true);
+    } else {
+      processClockIn();
+    }
+  };
+
+  const handleClockOutClick = () => {
+    if (requireSelfie) {
+      setSelfieType("clock_out");
+      setSelfieOpen(true);
+    } else {
+      processClockOut();
     }
   };
 
@@ -155,7 +197,7 @@ export function ClockInOutWidget() {
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">Not clocked in yet</p>
             <Button
-              onClick={handleClockIn}
+              onClick={handleClockInClick}
               disabled={acting}
               className="w-full gap-2"
               size="sm"
@@ -178,7 +220,7 @@ export function ClockInOutWidget() {
               )}
             </div>
             <Button
-              onClick={handleClockOut}
+              onClick={handleClockOutClick}
               disabled={acting}
               variant="outline"
               className="w-full gap-2"
@@ -201,6 +243,13 @@ export function ClockInOutWidget() {
             </p>
           </div>
         )}
+
+        <SelfieCaptureDialog
+          open={selfieOpen}
+          onOpenChange={setSelfieOpen}
+          type={selfieType}
+          onCaptureComplete={(path) => selfieType === "clock_in" ? processClockIn(path) : processClockOut(path)}
+        />
       </CardContent>
     </Card>
   );

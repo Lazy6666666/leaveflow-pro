@@ -5,14 +5,17 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { BarChart3, Users, Clock, AlertTriangle } from "lucide-react";
+import { BarChart3, Users, Clock, AlertTriangle, Camera } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from "recharts";
+import { SelfieLightbox } from "@/components/attendance/SelfieLightbox";
 
 interface AttendanceLog {
   id: string;
   date: string;
   clock_in: string | null;
   clock_out: string | null;
+  selfie_clock_in: string | null;
+  selfie_clock_out: string | null;
   status: string;
   employee_id: string;
   profiles: { full_name: string | null; email: string | null; department_id: string | null } | null;
@@ -29,6 +32,7 @@ const AttendanceDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"today" | "month">("today");
   const [deptFilter, setDeptFilter] = useState("all");
+  const [lightboxPath, setLightboxPath] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchDepts = async () => {
@@ -43,7 +47,7 @@ const AttendanceDashboard = () => {
       setLoading(true);
       let query = supabase
         .from("attendance_logs")
-        .select("id, date, clock_in, clock_out, status, employee_id, profiles:employee_id(full_name, email, department_id)")
+        .select("id, date, clock_in, clock_out, selfie_clock_in, selfie_clock_out, status, employee_id, profiles:employee_id(full_name, email, department_id)")
         .order("date", { ascending: false });
 
       if (view === "today") {
@@ -55,7 +59,7 @@ const AttendanceDashboard = () => {
       }
 
       const { data } = await query.limit(500);
-      setLogs((data as unknown as AttendanceLog[]) || []);
+      setLogs((data as AttendanceLog[]) || []);
       setLoading(false);
     };
     fetchLogs();
@@ -226,11 +230,35 @@ const AttendanceDashboard = () => {
                       <p className="text-sm text-foreground truncate">
                         {log.profiles?.full_name || log.profiles?.email || "Unknown"}
                       </p>
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground flex-wrap mt-1">
                         <Clock className="h-3 w-3" />
-                        {log.clock_in ? format(new Date(log.clock_in), "h:mm a") : "—"}
+                        <span>In: {log.clock_in ? format(new Date(log.clock_in), "h:mm a") : "—"}</span>
+                        {log.selfie_clock_in && (
+                          <div title="View clock-in selfie" className="ml-0.5 inline-flex items-center">
+                            <Camera
+                              className="h-3 w-3 text-primary cursor-pointer hover:opacity-80"
+                              onClick={() => setLightboxPath(log.selfie_clock_in)}
+                            />
+                          </div>
+                        )}
+
+                        {log.clock_out && (
+                          <>
+                            <span className="mx-1 opacity-50">|</span>
+                            <span>Out: {format(new Date(log.clock_out), "h:mm a")}</span>
+                            {log.selfie_clock_out && (
+                              <div title="View clock-out selfie" className="ml-0.5 inline-flex items-center">
+                                <Camera
+                                  className="h-3 w-3 text-primary cursor-pointer hover:opacity-80"
+                                  onClick={() => setLightboxPath(log.selfie_clock_out)}
+                                />
+                              </div>
+                            )}
+                          </>
+                        )}
+
                         {view === "month" && (
-                          <span className="ml-2">{format(new Date(log.date + "T00:00:00"), "MMM d")}</span>
+                          <span className="ml-2 font-medium">{format(new Date(log.date + "T00:00:00"), "MMM d")}</span>
                         )}
                       </div>
                     </div>
@@ -244,6 +272,11 @@ const AttendanceDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      <SelfieLightbox
+        path={lightboxPath}
+        onClose={() => setLightboxPath(null)}
+      />
     </div>
   );
 };
