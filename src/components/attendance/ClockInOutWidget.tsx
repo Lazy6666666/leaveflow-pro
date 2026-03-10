@@ -25,6 +25,7 @@ export function ClockInOutWidget() {
   const [elapsed, setElapsed] = useState("");
 
   const [requireSelfie, setRequireSelfie] = useState(false);
+  const [requireLocation, setRequireLocation] = useState(false);
   const [selfieOpen, setSelfieOpen] = useState(false);
   const [selfieType, setSelfieType] = useState<"clock_in" | "clock_out">("clock_in");
 
@@ -45,12 +46,13 @@ export function ClockInOutWidget() {
     // Fetch requirement setting
     const { data: settings } = await supabase
       .from("attendance_settings")
-      .select("require_selfie")
+      .select("require_selfie, require_location")
       .limit(1)
       .maybeSingle();
 
     if (settings) {
       setRequireSelfie(!!settings.require_selfie);
+      setRequireLocation(!!settings.require_location);
     }
 
     setLoading(false);
@@ -90,10 +92,44 @@ export function ClockInOutWidget() {
     return () => clearInterval(interval);
   }, [todayLog?.clock_in, todayLog?.clock_out]);
 
+  const getLocation = (): Promise<{ lat: number, lng: number } | null> => {
+    return new Promise((resolve, reject) => {
+      if (!requireLocation) {
+        resolve(null);
+        return;
+      }
+
+      if (!navigator.geolocation) {
+        toast.error("Geolocation is not supported by your browser");
+        reject(new Error("Geolocation not supported"));
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude
+          });
+        },
+        (error) => {
+          toast.error("Location access denied. Please enable location permissions to clock in/out.");
+          reject(error);
+        },
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+      );
+    });
+  };
+
   const processClockIn = async (selfiePath?: string) => {
     if (!user) return;
     setActing(true);
     try {
+      let location = null;
+      if (requireLocation) {
+        location = await getLocation();
+      }
+
       // Fetch settings for late threshold
       const { data: settings } = await supabase
         .from("attendance_settings")
@@ -117,6 +153,7 @@ export function ClockInOutWidget() {
         status: status as "present" | "late",
         date: format(now, "yyyy-MM-dd"),
         selfie_clock_in: selfiePath || null,
+        location_clock_in: location,
       }]);
 
       if (error) throw error;
@@ -133,11 +170,17 @@ export function ClockInOutWidget() {
     if (!todayLog) return;
     setActing(true);
     try {
+      let location = null;
+      if (requireLocation) {
+        location = await getLocation();
+      }
+
       const { error } = await supabase
         .from("attendance_logs")
         .update({
           clock_out: new Date().toISOString(),
-          selfie_clock_out: selfiePath || null
+          selfie_clock_out: selfiePath || null,
+          location_clock_out: location
         })
         .eq("id", todayLog.id);
       if (error) throw error;

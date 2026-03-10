@@ -22,6 +22,8 @@ export type Database = {
           date: string
           employee_id: string
           id: string
+          location_clock_in: Json | null
+          location_clock_out: Json | null
           notes: string | null
           selfie_clock_in: string | null
           selfie_clock_out: string | null
@@ -36,6 +38,8 @@ export type Database = {
           date?: string
           employee_id: string
           id?: string
+          location_clock_in?: Json | null
+          location_clock_out?: Json | null
           notes?: string | null
           selfie_clock_in?: string | null
           selfie_clock_out?: string | null
@@ -50,6 +54,8 @@ export type Database = {
           date?: string
           employee_id?: string
           id?: string
+          location_clock_in?: Json | null
+          location_clock_out?: Json | null
           notes?: string | null
           selfie_clock_in?: string | null
           selfie_clock_out?: string | null
@@ -74,6 +80,7 @@ export type Database = {
           half_day_hours: number
           id: string
           late_threshold_minutes: number
+          require_location: boolean
           require_selfie: boolean
           updated_at: string
           work_end_time: string
@@ -85,6 +92,7 @@ export type Database = {
           half_day_hours?: number
           id?: string
           late_threshold_minutes?: number
+          require_location?: boolean
           require_selfie?: boolean
           updated_at?: string
           work_end_time?: string
@@ -96,6 +104,7 @@ export type Database = {
           half_day_hours?: number
           id?: string
           late_threshold_minutes?: number
+          require_location?: boolean
           require_selfie?: boolean
           updated_at?: string
           work_end_time?: string

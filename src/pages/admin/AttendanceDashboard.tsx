@@ -5,9 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, startOfMonth, endOfMonth } from "date-fns";
-import { BarChart3, Users, Clock, AlertTriangle, Camera } from "lucide-react";
+import { BarChart3, Users, Clock, AlertTriangle, Camera, MapPin } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from "recharts";
 import { SelfieLightbox } from "@/components/attendance/SelfieLightbox";
+import { Json } from "@/integrations/supabase/types";
 
 interface AttendanceLog {
   id: string;
@@ -16,6 +17,8 @@ interface AttendanceLog {
   clock_out: string | null;
   selfie_clock_in: string | null;
   selfie_clock_out: string | null;
+  location_clock_in: Json | null;
+  location_clock_out: Json | null;
   status: string;
   employee_id: string;
   profiles: { full_name: string | null; email: string | null; department_id: string | null } | null;
@@ -47,7 +50,7 @@ const AttendanceDashboard = () => {
       setLoading(true);
       let query = supabase
         .from("attendance_logs")
-        .select("id, date, clock_in, clock_out, selfie_clock_in, selfie_clock_out, status, employee_id, profiles:employee_id(full_name, email, department_id)")
+        .select("id, date, clock_in, clock_out, selfie_clock_in, selfie_clock_out, location_clock_in, location_clock_out, status, employee_id, profiles:employee_id(full_name, email, department_id)")
         .order("date", { ascending: false });
 
       if (view === "today") {
@@ -242,6 +245,18 @@ const AttendanceDashboard = () => {
                           </div>
                         )}
 
+                        {log.location_clock_in && typeof log.location_clock_in === 'object' && (
+                          <a
+                            href={`https://www.google.com/maps?q=${(log.location_clock_in as any).lat},${(log.location_clock_in as any).lng}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="View clock-in location"
+                            className="ml-0.5 inline-flex items-center text-primary hover:opacity-80"
+                          >
+                            <MapPin className="h-3 w-3" />
+                          </a>
+                        )}
+
                         {log.clock_out && (
                           <>
                             <span className="mx-1 opacity-50">|</span>
@@ -253,6 +268,18 @@ const AttendanceDashboard = () => {
                                   onClick={() => setLightboxPath(log.selfie_clock_out)}
                                 />
                               </div>
+                            )}
+
+                            {log.location_clock_out && typeof log.location_clock_out === 'object' && (
+                              <a
+                                href={`https://www.google.com/maps?q=${(log.location_clock_out as any).lat},${(log.location_clock_out as any).lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="View clock-out location"
+                                className="ml-0.5 inline-flex items-center text-primary hover:opacity-80"
+                              >
+                                <MapPin className="h-3 w-3" />
+                              </a>
                             )}
                           </>
                         )}

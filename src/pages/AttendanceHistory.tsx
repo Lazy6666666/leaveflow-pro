@@ -5,10 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO, startOfMonth, endOfMonth, subMonths } from "date-fns";
-import { Clock, CalendarDays, Camera } from "lucide-react";
+import { Clock, CalendarDays, Camera, MapPin } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { SelfieLightbox } from "@/components/attendance/SelfieLightbox";
+import { Json } from "@/integrations/supabase/types";
 
 interface AttendanceLog {
   id: string;
@@ -17,6 +18,8 @@ interface AttendanceLog {
   clock_out: string | null;
   selfie_clock_in: string | null;
   selfie_clock_out: string | null;
+  location_clock_in: Json | null;
+  location_clock_out: Json | null;
   status: string;
   source: string;
   notes: string | null;
@@ -40,7 +43,7 @@ const AttendanceHistory = () => {
 
       const { data } = await supabase
         .from("attendance_logs")
-        .select("id, date, clock_in, clock_out, selfie_clock_in, selfie_clock_out, status, source, notes")
+        .select("id, date, clock_in, clock_out, selfie_clock_in, selfie_clock_out, location_clock_in, location_clock_out, status, source, notes")
         .eq("employee_id", user.id)
         .gte("date", start)
         .lte("date", end)
@@ -173,6 +176,17 @@ const AttendanceHistory = () => {
                                 />
                               </div>
                             )}
+                            {log.location_clock_in && typeof log.location_clock_in === 'object' && (
+                              <a
+                                href={`https://www.google.com/maps?q=${(log.location_clock_in as any).lat},${(log.location_clock_in as any).lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="View clock-in location"
+                                className="inline-flex items-center text-primary hover:opacity-80"
+                              >
+                                <MapPin className="h-3 w-3" />
+                              </a>
+                            )}
                           </div>
                           <span className="text-muted-foreground">→</span>
                           <div className="flex items-center gap-1">
@@ -184,6 +198,17 @@ const AttendanceHistory = () => {
                                   onClick={() => setLightboxPath(log.selfie_clock_out)}
                                 />
                               </div>
+                            )}
+                            {log.location_clock_out && typeof log.location_clock_out === 'object' && (
+                              <a
+                                href={`https://www.google.com/maps?q=${(log.location_clock_out as any).lat},${(log.location_clock_out as any).lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="View clock-out location"
+                                className="inline-flex items-center text-primary hover:opacity-80"
+                              >
+                                <MapPin className="h-3 w-3" />
+                              </a>
                             )}
                           </div>
                         </div>

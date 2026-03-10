@@ -16,6 +16,7 @@ interface AttendanceSettings {
   half_day_hours: number;
   auto_mark_absent: boolean;
   require_selfie: boolean;
+  require_location: boolean;
 }
 
 const AttendanceSettingsPage = () => {
@@ -31,6 +32,7 @@ const AttendanceSettingsPage = () => {
   const [halfDayHours, setHalfDayHours] = useState(4);
   const [autoMarkAbsent, setAutoMarkAbsent] = useState(true);
   const [requireSelfie, setRequireSelfie] = useState(false);
+  const [requireLocation, setRequireLocation] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
@@ -50,6 +52,7 @@ const AttendanceSettingsPage = () => {
         setHalfDayHours(s.half_day_hours);
         setAutoMarkAbsent(s.auto_mark_absent);
         setRequireSelfie(s.require_selfie || false);
+        setRequireLocation(s.require_location || false);
       }
       setLoading(false);
     };
@@ -65,6 +68,7 @@ const AttendanceSettingsPage = () => {
       half_day_hours: halfDayHours,
       auto_mark_absent: autoMarkAbsent,
       require_selfie: requireSelfie,
+      require_location: requireLocation,
     };
 
     let error;
@@ -97,6 +101,7 @@ const AttendanceSettingsPage = () => {
     setHalfDayHours(4);
     setAutoMarkAbsent(true);
     setRequireSelfie(false);
+    setRequireLocation(false);
   };
 
   if (loading) return <p className="text-sm text-muted-foreground p-8">Loading settings...</p>;
@@ -187,6 +192,15 @@ const AttendanceSettingsPage = () => {
               </p>
             </div>
             <Switch checked={requireSelfie} onCheckedChange={setRequireSelfie} />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border border-border/60 p-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">Require location on clock in/out</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Record GPS coordinates when employees clock in and out to verify physical location
+              </p>
+            </div>
+            <Switch checked={requireLocation} onCheckedChange={setRequireLocation} />
           </div>
           <div className="flex items-center justify-between rounded-lg border border-border/60 p-4">
             <div>
