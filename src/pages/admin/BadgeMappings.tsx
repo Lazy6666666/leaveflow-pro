@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,9 +11,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, CreditCard, Search } from "lucide-react";
 import CSVBadgeImport from "@/components/admin/CSVBadgeImport";
+import { getErrorMessage } from "@/lib/errors";
+import type { BadgeMappingId } from "@/lib/convexTypes";
 
 interface BadgeMapping {
-  id: string;
+  id: BadgeMappingId;
   employee_id: string;
   badge_id: string;
   vendor: string | null;
@@ -43,20 +46,9 @@ const BadgeMappings = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [{ data: maps }, { data: profs }] = await Promise.all([
-      supabase.from("badge_mappings").select("*").order("created_at", { ascending: false }),
-      supabase.from("profiles").select("id, full_name, email").order("full_name"),
-    ]);
-
-    const profileMap = new Map((profs || []).map((p: Profile) => [p.id, p]));
-    const enriched = (maps || []).map((m: any) => ({
-      ...m,
-      employee_name: profileMap.get(m.employee_id)?.full_name || "Unknown",
-      employee_email: profileMap.get(m.employee_id)?.email || "",
-    }));
-
-    setMappings(enriched);
-    setProfiles((profs as Profile[]) || []);
+    const data = await convex.query(api.admin.getBadgeMappingsData, {});
+    setMappings(data.mappings as BadgeMapping[]);
+    setProfiles(data.profiles as Profile[]);
     setLoading(false);
   };
 
@@ -68,27 +60,26 @@ const BadgeMappings = () => {
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from("badge_mappings").insert({
-      employee_id: formEmployeeId,
-      badge_id: formBadgeId.trim(),
-      vendor: formVendor === "all" ? null : formVendor,
-    } as any);
-    setSaving(false);
-
-    if (error) {
-      toast({ title: "Failed to add mapping", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await convex.mutation(api.admin.saveBadgeMapping, {
+        employeeId: formEmployeeId,
+        badgeId: formBadgeId.trim(),
+        vendor: formVendor === "all" ? undefined : formVendor,
+      });
       toast({ title: "Badge mapping added" });
       setFormBadgeId("");
       setFormEmployeeId("");
       setFormVendor("all");
       setDialogOpen(false);
       fetchData();
+    } catch (error) {
+      toast({ title: "Failed to add mapping", description: getErrorMessage(error, "Failed to add mapping"), variant: "destructive" });
     }
+    setSaving(false);
   };
 
-  const handleDelete = async (id: string) => {
-    await supabase.from("badge_mappings").delete().eq("id", id);
+  const handleDelete = async (id: BadgeMappingId) => {
+    await convex.mutation(api.admin.deleteBadgeMapping, { mappingId: id });
     toast({ title: "Mapping removed" });
     fetchData();
   };

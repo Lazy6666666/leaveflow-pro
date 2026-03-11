@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +14,11 @@ import { format, parseISO } from "date-fns";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import { getErrorMessage } from "@/lib/errors";
+import type { LeaveRequestId } from "@/lib/convexTypes";
 
 interface PendingRequest {
-  id: string;
+  id: LeaveRequestId;
   start_date: string;
   end_date: string;
   reason: string | null;
@@ -33,31 +36,23 @@ const Approvals = () => {
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["pending-approvals"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("leave_requests")
-        .select("id, start_date, end_date, reason, status, created_at, profiles:employee_id(full_name, email), leave_types(name)")
-        .eq("status", "pending")
-        .order("created_at", { ascending: true });
-      return (data as unknown as PendingRequest[]) || [];
-    },
+    queryFn: async () => (await convex.query(api.leave.getPendingApprovals, {})) as PendingRequest[],
     staleTime: 60 * 1000,
   });
 
   const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(requests, 10);
 
   const actionMutation = useMutation({
-    mutationFn: async ({ id, status, comment }: { id: string; status: string; comment: string | null }) => {
-      const { error } = await supabase
-        .from("leave_requests")
-        .update({ status, manager_comment: comment })
-        .eq("id", id);
-      if (error) throw error;
+    mutationFn: async ({ id, status, comment }: { id: LeaveRequestId; status: "approved" | "rejected"; comment: string | null }) => {
+      await convex.mutation(api.leave.updateRequestStatus, {
+        requestId: id,
+        status,
+        managerComment: comment || undefined,
+      });
       return { id, status };
     },
     onSuccess: ({ id, status }) => {
       toast.success(`Request ${status}`);
-      supabase.functions.invoke("notify-leave", { body: { type: status, request_id: id } }).catch(() => {});
       setSelectedRequest(null);
       setComment("");
       setAction(null);
@@ -66,7 +61,7 @@ const Approvals = () => {
       queryClient.invalidateQueries({ queryKey: ["leave-balances"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-balances"] });
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err) => toast.error(getErrorMessage(err, "Failed to update request")),
   });
 
   if (isLoading) return (

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -24,14 +25,7 @@ const TeamAttendance = () => {
   useEffect(() => {
     const fetchTeam = async () => {
       setLoading(true);
-      const date = format(subDays(new Date(), parseInt(selectedDate)), "yyyy-MM-dd");
-
-      const { data } = await supabase
-        .from("attendance_logs")
-        .select("id, date, clock_in, clock_out, status, profiles:employee_id(full_name, email)")
-        .eq("date", date)
-        .order("clock_in", { ascending: true });
-
+      const data = await convex.query(api.attendance.getTeamAttendance, { dayOffset: parseInt(selectedDate) });
       setLogs((data as unknown as TeamLog[]) || []);
       setLoading(false);
     };

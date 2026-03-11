@@ -271,7 +271,7 @@ async function executeTool(
         return new Date(d + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
       };
 
-      const holidayDates = new Set(holidays.map((h: any) => h.date));
+      const holidayDates = new Set(holidays.map((h) => h.date));
       const isWeekend = (d: string) => { const day = dow(d); return day === 0 || day === 6; };
       const isOff = (d: string) => isWeekend(d) || holidayDates.has(d);
 
@@ -407,7 +407,7 @@ serve(async (req) => {
     const { messages } = await req.json();
 
     // Build messages for AI
-    let aiMessages = [
+    const aiMessages: Array<Record<string, unknown>> = [
       { role: "system", content: systemPrompt },
       ...messages,
     ];
@@ -457,7 +457,7 @@ serve(async (req) => {
       const reader = aiResponse.body!.getReader();
       const decoder = new TextDecoder();
       let fullContent = "";
-      let toolCalls: Array<{ id: string; function: { name: string; arguments: string } }> = [];
+      const toolCalls: Array<{ id: string; function: { name: string; arguments: string } }> = [];
       let buffer = "";
 
       while (true) {
@@ -537,7 +537,7 @@ serve(async (req) => {
           type: "function",
           function: tc.function,
         })),
-      } as any);
+      } as Record<string, unknown>);
 
       for (const tc of toolCalls) {
         if (!tc.function.name) continue;
@@ -552,7 +552,7 @@ serve(async (req) => {
           role: "tool",
           tool_call_id: tc.id,
           content: JSON.stringify(result),
-        } as any);
+        } as Record<string, unknown>);
       }
       // Continue loop to get AI's final response with tool results
     }

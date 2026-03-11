@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +14,11 @@ import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { buildCSV, downloadCSV } from "@/lib/csv";
+import { getErrorMessage } from "@/lib/errors";
+import type { LeaveRequestId } from "@/lib/convexTypes";
 
 interface LeaveRequest {
-  id: string;
+  id: LeaveRequestId;
   start_date: string;
   end_date: string;
   reason: string | null;
@@ -31,14 +34,7 @@ const LeaveHistory = () => {
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["leave-history", user?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("leave_requests")
-        .select("id, start_date, end_date, reason, status, manager_comment, created_at, leave_types(name)")
-        .eq("employee_id", user!.id)
-        .order("created_at", { ascending: false });
-      return (data as unknown as LeaveRequest[]) || [];
-    },
+    queryFn: async () => (await convex.query(api.leave.getLeaveHistory, {})) as LeaveRequest[],
     enabled: !!user,
     staleTime: 2 * 60 * 1000,
   });
@@ -46,9 +42,8 @@ const LeaveHistory = () => {
   const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(requests, 10);
 
   const cancelMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("leave_requests").update({ status: "cancelled" }).eq("id", id);
-      if (error) throw error;
+    mutationFn: async (id: LeaveRequestId) => {
+      await convex.mutation(api.leave.cancelRequest, { requestId: id });
     },
     onSuccess: () => {
       toast.success("Request cancelled");
@@ -57,7 +52,7 @@ const LeaveHistory = () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard-balances"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-recent"] });
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err) => toast.error(getErrorMessage(err, "Failed to cancel request")),
   });
 
   if (isLoading) return (

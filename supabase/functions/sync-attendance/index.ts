@@ -16,9 +16,26 @@ interface AttendanceRecord {
   device_serial?: string;
 }
 
+type VendorConfig = {
+  id: string;
+  vendor: string;
+  name: string;
+  api_url: string;
+  api_key: string;
+  api_secret?: string | null;
+};
+
+type RawRecord = Record<string, unknown>;
+
+const isRecord = (value: unknown): value is RawRecord =>
+  typeof value === "object" && value !== null;
+
+const getErrorMessage = (error: unknown) =>
+  error instanceof Error ? error.message : String(error);
+
 interface VendorAdapter {
-  testConnection(config: any): Promise<{ success: boolean; message: string }>;
-  fetchLogs(config: any, date: string): Promise<AttendanceRecord[]>;
+  testConnection(config: VendorConfig): Promise<{ success: boolean; message: string }>;
+  fetchLogs(config: VendorConfig, date: string): Promise<AttendanceRecord[]>;
 }
 
 const zktecoAdapter: VendorAdapter = {
@@ -30,7 +47,7 @@ const zktecoAdapter: VendorAdapter = {
       if (res.ok) return { success: true, message: `Connected. Found ZKTeco server at ${config.api_url}` };
       return { success: false, message: `ZKTeco responded with status ${res.status}` };
     } catch (e) {
-      return { success: false, message: `Cannot reach ZKTeco server: ${e.message}` };
+      return { success: false, message: `Cannot reach ZKTeco server: ${getErrorMessage(e)}` };
     }
   },
   async fetchLogs(config, date) {
@@ -40,12 +57,16 @@ const zktecoAdapter: VendorAdapter = {
     );
     if (!res.ok) throw new Error(`ZKTeco API error: ${res.status}`);
     const data = await res.json();
-    return (data.data || data.results || []).map((r: any) => ({
-      employee_identifier: r.emp_code || r.pin,
-      timestamp: r.punch_time || r.att_date,
-      type: (r.punch_state === "0" || r.punch_state === 0) ? "in" : "out",
-      device_serial: r.terminal_sn,
-    }));
+    const records = Array.isArray(data.data) ? data.data : Array.isArray(data.results) ? data.results : [];
+    return records.flatMap((record: unknown) => {
+      if (!isRecord(record)) return [];
+      return [{
+        employee_identifier: String(record.emp_code ?? record.pin ?? ""),
+        timestamp: String(record.punch_time ?? record.att_date ?? ""),
+        type: (record.punch_state === "0" || record.punch_state === 0) ? "in" : "out",
+        device_serial: typeof record.terminal_sn === "string" ? record.terminal_sn : undefined,
+      }];
+    });
   },
 };
 
@@ -58,7 +79,7 @@ const biotimeAdapter: VendorAdapter = {
       if (res.ok) return { success: true, message: `Connected to BioTime Cloud at ${config.api_url}` };
       return { success: false, message: `BioTime responded with status ${res.status}` };
     } catch (e) {
-      return { success: false, message: `Cannot reach BioTime: ${e.message}` };
+      return { success: false, message: `Cannot reach BioTime: ${getErrorMessage(e)}` };
     }
   },
   async fetchLogs(config, date) {
@@ -68,12 +89,18 @@ const biotimeAdapter: VendorAdapter = {
     );
     if (!res.ok) throw new Error(`BioTime API error: ${res.status}`);
     const data = await res.json();
-    return (data.data || []).map((r: any) => ({
-      employee_identifier: r.emp_code,
-      timestamp: r.punch_time,
-      type: r.punch_state === "0" ? "in" : "out",
-      device_serial: r.terminal_sn,
-    }));
+    const records = Array.isArray(data.data) ? data.data : [];
+    return records.flatMap((record: unknown) => {
+      if (!isRecord(record) || typeof record.emp_code !== "string" || typeof record.punch_time !== "string") {
+        return [];
+      }
+      return [{
+        employee_identifier: record.emp_code,
+        timestamp: record.punch_time,
+        type: record.punch_state === "0" ? "in" : "out",
+        device_serial: typeof record.terminal_sn === "string" ? record.terminal_sn : undefined,
+      }];
+    });
   },
 };
 
@@ -86,7 +113,7 @@ const supremaAdapter: VendorAdapter = {
       if (res.ok) return { success: true, message: `Connected to Suprema BioStar 2` };
       return { success: false, message: `Suprema responded with status ${res.status}` };
     } catch (e) {
-      return { success: false, message: `Cannot reach Suprema: ${e.message}` };
+      return { success: false, message: `Cannot reach Suprema: ${getErrorMessage(e)}` };
     }
   },
   async fetchLogs(config, date) {
@@ -102,12 +129,22 @@ const supremaAdapter: VendorAdapter = {
     });
     if (!res.ok) throw new Error(`Suprema API error: ${res.status}`);
     const data = await res.json();
-    return (data.EventCollection?.rows || []).map((r: any) => ({
-      employee_identifier: r.user_id?.user_id || r.user_id,
-      timestamp: r.datetime,
-      type: r.event_type_id?.code?.includes("ENTRY") ? "in" : "out",
-      device_serial: r.device_id?.id,
-    }));
+    const rows = Array.isArray(data.EventCollection?.rows) ? data.EventCollection.rows : [];
+    return rows.flatMap((record: unknown) => {
+      if (!isRecord(record)) return [];
+      const userId = isRecord(record.user_id) ? record.user_id.user_id : record.user_id;
+      if ((typeof userId !== "string" && typeof userId !== "number") || typeof record.datetime !== "string") {
+        return [];
+      }
+      const code = isRecord(record.event_type_id) ? record.event_type_id.code : undefined;
+      const deviceId = isRecord(record.device_id) ? record.device_id.id : undefined;
+      return [{
+        employee_identifier: String(userId),
+        timestamp: record.datetime,
+        type: typeof code === "string" && code.includes("ENTRY") ? "in" : "out",
+        device_serial: typeof deviceId === "string" || typeof deviceId === "number" ? String(deviceId) : undefined,
+      }];
+    });
   },
 };
 
@@ -120,7 +157,7 @@ const hikvisionAdapter: VendorAdapter = {
       if (res.ok) return { success: true, message: `Connected to HikVision device` };
       return { success: false, message: `HikVision responded with status ${res.status}` };
     } catch (e) {
-      return { success: false, message: `Cannot reach HikVision: ${e.message}` };
+      return { success: false, message: `Cannot reach HikVision: ${getErrorMessage(e)}` };
     }
   },
   async fetchLogs(config, date) {
@@ -142,12 +179,18 @@ const hikvisionAdapter: VendorAdapter = {
     });
     if (!res.ok) throw new Error(`HikVision API error: ${res.status}`);
     const data = await res.json();
-    return (data.AcsEvent?.InfoList || []).map((r: any) => ({
-      employee_identifier: r.employeeNoString || r.cardNo,
-      timestamp: r.time,
-      type: r.currentEvent?.includes("Entry") ? "in" : "out",
-      device_serial: r.deviceName,
-    }));
+    const records = Array.isArray(data.AcsEvent?.InfoList) ? data.AcsEvent.InfoList : [];
+    return records.flatMap((record: unknown) => {
+      if (!isRecord(record) || typeof record.time !== "string") return [];
+      const employeeIdentifier = record.employeeNoString ?? record.cardNo;
+      if (typeof employeeIdentifier !== "string" && typeof employeeIdentifier !== "number") return [];
+      return [{
+        employee_identifier: String(employeeIdentifier),
+        timestamp: record.time,
+        type: typeof record.currentEvent === "string" && record.currentEvent.includes("Entry") ? "in" : "out",
+        device_serial: typeof record.deviceName === "string" ? record.deviceName : undefined,
+      }];
+    });
   },
 };
 
@@ -230,7 +273,7 @@ serve(async (req) => {
       }
 
       let totalSynced = 0;
-      const results: any[] = [];
+      const results: Array<Record<string, string | number>> = [];
 
       for (const config of configs) {
         const adapter = adapters[config.vendor];
@@ -316,11 +359,11 @@ serve(async (req) => {
         } catch (e) {
           await supabase.from("biometrics_config").update({
             last_sync_at: new Date().toISOString(),
-            last_sync_status: `error: ${e.message}`,
+            last_sync_status: `error: ${getErrorMessage(e)}`,
             last_sync_records: 0,
           }).eq("id", config.id);
 
-          results.push({ config_id: config.id, vendor: config.vendor, error: e.message });
+          results.push({ config_id: config.id, vendor: config.vendor, error: getErrorMessage(e) });
         }
       }
 
@@ -414,7 +457,7 @@ serve(async (req) => {
         .select("employee_id")
         .eq("date", today);
 
-      const loggedIds = new Set((todayLogs || []).map((l: any) => l.employee_id));
+      const loggedIds = new Set((todayLogs || []).map((l) => l.employee_id));
 
       const { data: onLeave } = await supabase
         .from("leave_requests")
@@ -423,14 +466,14 @@ serve(async (req) => {
         .lte("start_date", today)
         .gte("end_date", today);
 
-      const leaveIds = new Set((onLeave || []).map((l: any) => l.employee_id));
+      const leaveIds = new Set((onLeave || []).map((l) => l.employee_id));
 
       const inserts = employees
-        .filter((e: any) => !loggedIds.has(e.id))
-        .map((e: any) => ({
-          employee_id: e.id,
+        .filter((employee) => !loggedIds.has(employee.id))
+        .map((employee) => ({
+          employee_id: employee.id,
           date: today,
-          status: leaveIds.has(e.id) ? "on_leave" : "absent",
+          status: leaveIds.has(employee.id) ? "on_leave" : "absent",
           source: "system",
         }));
 
@@ -441,8 +484,8 @@ serve(async (req) => {
 
         // Notify managers about absent employees
         const absentIds = inserts
-          .filter((i: any) => i.status === "absent")
-          .map((i: any) => i.employee_id);
+          .filter((insert) => insert.status === "absent")
+          .map((insert) => insert.employee_id);
 
         if (absentIds.length > 0) {
           try {
@@ -457,7 +500,7 @@ serve(async (req) => {
               body: JSON.stringify({ employee_ids: absentIds, date: today }),
             });
           } catch (e) {
-            console.error("Failed to send absence notifications:", e.message);
+            console.error("Failed to send absence notifications:", getErrorMessage(e));
           }
         }
       }
@@ -474,7 +517,7 @@ serve(async (req) => {
     );
   } catch (error) {
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: getErrorMessage(error) }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

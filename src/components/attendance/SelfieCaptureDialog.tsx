@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import {
     Dialog,
     DialogContent,
@@ -11,13 +10,15 @@ import {
 import { Button } from "@/components/ui/button";
 import { Camera, RefreshCcw, Check } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { uploadFileToConvex } from "@/lib/convexUpload";
+import { getErrorMessage } from "@/lib/errors";
+import type { StorageId } from "@/lib/convexTypes";
 
 interface SelfieCaptureDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     type: "clock_in" | "clock_out";
-    onCaptureComplete: (imagePath: string) => void;
+    onCaptureComplete: (imagePath: StorageId) => void;
 }
 
 export function SelfieCaptureDialog({
@@ -45,7 +46,7 @@ export function SelfieCaptureDialog({
             if (videoRef.current) {
                 videoRef.current.srcObject = mediaStream;
             }
-        } catch (err: any) {
+        } catch (err) {
             console.error("Camera access error:", err);
             setErrorMsg("Camera access denied or unavailable. Please enable camera permissions.");
         }
@@ -109,27 +110,12 @@ export function SelfieCaptureDialog({
         setUploading(true);
 
         try {
-            const dateStr = format(new Date(), "yyyy-MM-dd");
-            // Use time to ensure uniqueness if multiple attempts
-            const timestamp = new Date().getTime();
-            const fileName = `${user.id}/${dateStr}_${type}_${timestamp}.jpg`;
-
-            const { data, error } = await supabase.storage
-                .from("attendance-selfies")
-                .upload(fileName, blob, {
-                    contentType: "image/jpeg",
-                    upsert: true,
-                });
-
-            if (error) {
-                throw error;
-            }
-
-            onCaptureComplete(data.path);
+            const data = await uploadFileToConvex(blob);
+            onCaptureComplete(data.storageId);
             onOpenChange(false);
-        } catch (error: any) {
+        } catch (error) {
             console.error("Selfie upload error:", error);
-            toast.error(error.message || "Failed to upload selfie.");
+            toast.error(getErrorMessage(error, "Failed to upload selfie."));
         } finally {
             setUploading(false);
         }

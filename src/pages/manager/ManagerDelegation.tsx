@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +13,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { UserCheck, Plus, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { getErrorMessage } from "@/lib/errors";
+import type { ManagerDelegationId } from "@/lib/convexTypes";
 
 interface Delegation {
-  id: string;
+  id: ManagerDelegationId;
   manager_id: string;
   delegate_id: string;
   start_date: string;
@@ -37,16 +40,9 @@ const ManagerDelegation = () => {
 
   const fetchData = async () => {
     if (!user) return;
-    const [delRes, profRes] = await Promise.all([
-      supabase
-        .from("manager_delegations" as any)
-        .select("*")
-        .or(`manager_id.eq.${user.id},delegate_id.eq.${user.id}`)
-        .order("created_at", { ascending: false }),
-      supabase.from("profiles").select("id, full_name, email"),
-    ]);
-    if (delRes.data) setDelegations(delRes.data as unknown as Delegation[]);
-    if (profRes.data) setProfiles(profRes.data);
+    const data = await convex.query(api.manager.getDelegationsPageData, {});
+    setDelegations(data.delegations as Delegation[]);
+    setProfiles(data.profiles as ProfileMin[]);
   };
 
   useEffect(() => { fetchData().finally(() => setLoading(false)); }, [user]);
@@ -62,27 +58,29 @@ const ManagerDelegation = () => {
     if (!user || !delegateId || !startDate || !endDate) return;
     if (dateError) { toast.error(dateError); return; }
     setSubmitting(true);
-    const { error } = await (supabase.from("manager_delegations" as any) as any).insert({
-      manager_id: user.id,
-      delegate_id: delegateId,
-      start_date: startDate,
-      end_date: endDate,
-    });
-    if (error) {
-      toast.error(error.message);
-    } else {
+    try {
+      await convex.mutation(api.manager.createDelegation, {
+        delegateId,
+        startDate,
+        endDate,
+      });
       toast.success("Delegation created");
       setDelegateId(""); setStartDate(""); setEndDate("");
       fetchData();
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to create delegation"));
     }
     setSubmitting(false);
   };
 
-  const handleDeactivate = async (id: string) => {
-    const { error } = await (supabase.from("manager_delegations" as any) as any).update({ is_active: false }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Delegation deactivated");
-    fetchData();
+  const handleDeactivate = async (id: ManagerDelegationId) => {
+    try {
+      await convex.mutation(api.manager.deactivateDelegation, { delegationId: id });
+      toast.success("Delegation deactivated");
+      fetchData();
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to deactivate delegation"));
+    }
   };
 
   const otherProfiles = profiles.filter((p) => p.id !== user?.id);

@@ -10,6 +10,21 @@ const escapeHtml = (str: string) =>
   str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
      .replace(/"/g, '&quot;').replace(/'/g, '&#039;');
 
+type PendingRequestRow = {
+  id: string;
+  start_date: string;
+  end_date: string;
+  created_at: string;
+  profiles: {
+    full_name: string | null;
+    email: string | null;
+    manager_id: string | null;
+  } | null;
+  leave_types: {
+    name: string | null;
+  } | null;
+};
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -35,9 +50,9 @@ Deno.serve(async (req) => {
     }
 
     // Group by manager
-    const managerRequests: Record<string, { managerId: string; requests: any[] }> = {};
+    const managerRequests: Record<string, { managerId: string; requests: PendingRequestRow[] }> = {};
     for (const req of pendingRequests) {
-      const managerId = (req as any).profiles?.manager_id;
+      const managerId = (req as PendingRequestRow).profiles?.manager_id;
       if (!managerId) continue;
       if (!managerRequests[managerId]) {
         managerRequests[managerId] = { managerId, requests: [] };
@@ -80,7 +95,7 @@ Deno.serve(async (req) => {
       const count = group.requests.length;
 
       // Build email body
-      const requestRows = group.requests.map((r: any) => {
+      const requestRows = group.requests.map((r) => {
         const emp = r.profiles;
         return `<tr>
           <td style="padding:8px 12px;border-bottom:1px solid #eee;">${escapeHtml(emp?.full_name || emp?.email || "Employee")}</td>

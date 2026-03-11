@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import {
   LayoutDashboard, CalendarDays, PlusCircle, History, CalendarHeart,
   UserCog, CheckSquare, CalendarRange, Users, Settings,
@@ -8,7 +7,6 @@ import balanceLogo from "@/assets/balance-logo.png";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -27,9 +25,12 @@ const employeeItems = [
   { title: "Profile", url: "/profile", icon: UserCog },
 ];
 
-const managerItems = [
+const delegateManagerItems = [
   { title: "Approvals", url: "/manager/approvals", icon: CheckSquare },
   { title: "Team Calendar", url: "/manager/team-calendar", icon: CalendarRange },
+];
+
+const managerOnlyItems = [
   { title: "Team Attendance", url: "/manager/team-attendance", icon: Fingerprint },
   { title: "Delegation", url: "/manager/delegation", icon: UserCheck },
 ];
@@ -51,19 +52,11 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { hasRole, signOut, user } = useAuth();
-  const [showSetup, setShowSetup] = useState(false);
-
-  useEffect(() => {
-    supabase
-      .from("user_roles")
-      .select("id")
-      .eq("role", "hr_admin")
-      .limit(1)
-      .then(({ data }) => {
-        setShowSetup(!data || data.length === 0);
-      });
-  }, [hasRole("hr_admin")]);
+  const { hasExplicitRole, hasManagerAccess, hasRole, signOut, user, needsAdminSetup } = useAuth();
+  const canAccessManagerOnlyTools = hasExplicitRole("manager") || hasExplicitRole("hr_admin");
+  const managerItems = canAccessManagerOnlyTools
+    ? [...delegateManagerItems, ...managerOnlyItems]
+    : delegateManagerItems;
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -104,7 +97,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {hasRole("manager") && (
+        {hasManagerAccess && (
           <>
             <Separator className="mx-4 w-auto bg-sidebar-border" />
             <SidebarGroup>
@@ -128,7 +121,7 @@ export function AppSidebar() {
           </>
         )}
 
-        {showSetup && !hasRole("hr_admin") && (
+        {needsAdminSetup && !hasRole("hr_admin") && (
           <>
             <Separator className="mx-4 w-auto bg-sidebar-border" />
             <SidebarGroup>

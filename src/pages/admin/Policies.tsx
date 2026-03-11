@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,8 +12,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { toast } from "sonner";
 import { Plus, Settings } from "lucide-react";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
+import { getErrorMessage } from "@/lib/errors";
+import type { LeaveTypeId } from "@/lib/convexTypes";
 
-interface LeaveType { id: string; name: string; annual_allocation: number; carry_forward_limit: number; is_active: boolean; }
+interface LeaveType { id: LeaveTypeId; name: string; annual_allocation: number; carry_forward_limit: number; is_active: boolean; }
 
 const Policies = () => {
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
@@ -24,8 +27,8 @@ const Policies = () => {
   const [isActive, setIsActive] = useState(true);
 
   const fetchTypes = async () => {
-    const { data } = await supabase.from("leave_types").select("*").order("name");
-    if (data) setLeaveTypes(data);
+    const data = await convex.query(api.admin.getLeavePolicies, {});
+    setLeaveTypes(data as LeaveType[]);
   };
 
   const [pageLoading, setPageLoading] = useState(true);
@@ -43,15 +46,18 @@ const Policies = () => {
   const openEdit = (lt: LeaveType) => { setEditing(lt); setName(lt.name); setAllocation(lt.annual_allocation); setCarryForward(lt.carry_forward_limit); setIsActive(lt.is_active); setDialogOpen(true); };
 
   const handleSave = async () => {
-    const payload = { name, annual_allocation: allocation, carry_forward_limit: carryForward, is_active: isActive };
-    if (editing) {
-      const { error } = await supabase.from("leave_types").update(payload).eq("id", editing.id);
-      if (error) { toast.error(error.message); return; }
-      toast.success("Leave type updated");
-    } else {
-      const { error } = await supabase.from("leave_types").insert(payload);
-      if (error) { toast.error(error.message); return; }
-      toast.success("Leave type created");
+    try {
+      await convex.mutation(api.admin.saveLeaveType, {
+        leaveTypeId: editing?.id,
+        name,
+        annualAllocation: allocation,
+        carryForwardLimit: carryForward,
+        isActive,
+      });
+      toast.success(editing ? "Leave type updated" : "Leave type created");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to save leave type"));
+      return;
     }
     setDialogOpen(false); fetchTypes();
   };

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Clock, Save, RotateCcw } from "lucide-react";
+import { getErrorMessage } from "@/lib/errors";
 
 interface AttendanceSettings {
   id: string;
@@ -37,11 +39,7 @@ const AttendanceSettingsPage = () => {
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
-      const { data } = await supabase
-        .from("attendance_settings")
-        .select("*")
-        .limit(1)
-        .maybeSingle();
+      const data = await convex.query(api.attendance.getAttendanceSettings, {});
 
       if (data) {
         const s = data as unknown as AttendanceSettings;
@@ -62,35 +60,24 @@ const AttendanceSettingsPage = () => {
   const handleSave = async () => {
     setSaving(true);
     const payload = {
-      work_start_time: workStart + ":00",
-      work_end_time: workEnd + ":00",
-      late_threshold_minutes: lateThreshold,
-      half_day_hours: halfDayHours,
-      auto_mark_absent: autoMarkAbsent,
-      require_selfie: requireSelfie,
-      require_location: requireLocation,
+      workStartTime: workStart + ":00",
+      workEndTime: workEnd + ":00",
+      lateThresholdMinutes: lateThreshold,
+      halfDayHours: halfDayHours,
+      autoMarkAbsent: autoMarkAbsent,
+      requireSelfie: requireSelfie,
+      requireLocation: requireLocation,
     };
 
-    let error;
-    if (settings) {
-      ({ error } = await supabase
-        .from("attendance_settings")
-        .update(payload)
-        .eq("id", settings.id));
-    } else {
-      ({ error } = await supabase
-        .from("attendance_settings")
-        .insert(payload as any));
-    }
-    setSaving(false);
-
-    if (error) {
-      toast({ title: "Failed to save", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await convex.mutation(api.attendance.saveAttendanceSettings, payload);
       toast({ title: "Settings saved" });
-      // Refetch
-      const { data } = await supabase.from("attendance_settings").select("*").limit(1).maybeSingle();
+      const data = await convex.query(api.attendance.getAttendanceSettings, {});
       if (data) setSettings(data as unknown as AttendanceSettings);
+    } catch (error) {
+      toast({ title: "Failed to save", description: getErrorMessage(error, "Failed to save settings"), variant: "destructive" });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -213,7 +200,7 @@ const AttendanceSettingsPage = () => {
             <Switch checked={autoMarkAbsent} onCheckedChange={setAutoMarkAbsent} />
           </div>
           <p className="text-xs text-muted-foreground">
-            The auto-mark job runs daily at 8:00 PM. It cross-references attendance logs with approved leave requests.
+            The auto-mark job runs daily at 16:00 UTC. It cross-references attendance logs with approved leave requests.
           </p>
         </CardContent>
       </Card>

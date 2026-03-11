@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -18,14 +19,7 @@ const MyLeave = () => {
 
   const { data: balances = [], isLoading } = useQuery({
     queryKey: ["leave-balances", user?.id, currentYear],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("leave_balances")
-        .select("balance, leave_type_id, year, leave_types(name, annual_allocation, carry_forward_limit)")
-        .eq("employee_id", user!.id)
-        .eq("year", currentYear);
-      return (data as unknown as LeaveBalance[]) || [];
-    },
+    queryFn: async () => (await convex.query(api.leave.getMyBalances, { year: currentYear })) as LeaveBalance[],
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
   });

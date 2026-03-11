@@ -1,11 +1,13 @@
 import { useState, useRef } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, FileText, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
+import { getErrorMessage } from "@/lib/errors";
 
 interface Profile {
   id: string;
@@ -95,21 +97,20 @@ export default function CSVBadgeImport({ profiles, onImportComplete }: CSVBadgeI
     setImporting(true);
 
     const inserts = validRows.map((r) => ({
-      employee_id: r.matched_profile!.id,
-      badge_id: r.badge_id,
+      employeeId: r.matched_profile!.id,
+      badgeId: r.badge_id,
       vendor: r.vendor,
     }));
 
-    const { error, data } = await supabase.from("badge_mappings").insert(inserts as any).select();
     setImporting(false);
-
-    if (error) {
-      toast({ title: "Import failed", description: error.message, variant: "destructive" });
-    } else {
-      const count = data?.length || inserts.length;
+    try {
+      const data = await convex.mutation(api.admin.bulkInsertBadgeMappings, { mappings: inserts });
+      const count = data?.insertedIds?.length || inserts.length;
       setResult({ success: count, failed: errorRows.length });
       toast({ title: `Imported ${count} badge mapping(s)` });
       onImportComplete();
+    } catch (error) {
+      toast({ title: "Import failed", description: getErrorMessage(error, "Import failed"), variant: "destructive" });
     }
   };
 

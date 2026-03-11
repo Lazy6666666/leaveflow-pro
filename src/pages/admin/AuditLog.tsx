@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { buildCSV, downloadCSV } from "@/lib/csv";
+import type { BadgeProps } from "@/components/ui/badge";
 
 interface AuditEntry {
   id: string;
@@ -19,12 +21,12 @@ interface AuditEntry {
   record_id: string;
   action: string;
   changed_by: string | null;
-  old_data: any;
-  new_data: any;
+  old_data: Record<string, unknown> | null;
+  new_data: Record<string, unknown> | null;
   created_at: string;
 }
 
-const ACTION_COLORS: Record<string, string> = {
+const ACTION_COLORS: Record<string, NonNullable<BadgeProps["variant"]>> = {
   INSERT: "default",
   UPDATE: "secondary",
   DELETE: "destructive",
@@ -42,17 +44,13 @@ const AuditLog = () => {
   useEffect(() => {
     const fetch = async () => {
       const [logsRes, profilesRes] = await Promise.all([
-        supabase
-          .from("audit_logs" as any)
-          .select("*")
-          .order("created_at", { ascending: false })
-          .limit(500),
-        supabase.from("profiles").select("id, full_name, email"),
+        convex.query(api.admin.getAuditLogData, {}),
+        convex.query(api.admin.getEmployeesData, {}),
       ]);
-      if (logsRes.data) setLogs(logsRes.data as unknown as AuditEntry[]);
-      if (profilesRes.data) {
+      if (logsRes) setLogs(logsRes as unknown as AuditEntry[]);
+      if (profilesRes?.employees) {
         const map: Record<string, string> = {};
-        profilesRes.data.forEach((p: any) => { map[p.id] = p.full_name || p.email || p.id; });
+        profilesRes.employees.forEach((p) => { map[p.id] = p.full_name || p.email || p.id; });
         setProfiles(map);
       }
     };
@@ -141,7 +139,7 @@ const AuditLog = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant={ACTION_COLORS[entry.action] as any || "default"} className="text-xs">
+                        <Badge variant={ACTION_COLORS[entry.action] || "default"} className="text-xs">
                           {entry.action}
                         </Badge>
                       </TableCell>

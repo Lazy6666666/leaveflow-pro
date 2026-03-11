@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,12 +26,7 @@ const TeamCalendar = () => {
     const fetchLeaves = async () => {
       const monthStart = format(startOfMonth(currentMonth), "yyyy-MM-dd");
       const monthEnd = format(endOfMonth(currentMonth), "yyyy-MM-dd");
-      const { data } = await supabase
-        .from("leave_requests")
-        .select("id, start_date, end_date, status, profiles:employee_id(full_name), leave_types(name)")
-        .eq("status", "approved")
-        .gte("end_date", monthStart)
-        .lte("start_date", monthEnd);
+      const data = await convex.query(api.leave.getTeamCalendar, { startDate: monthStart, endDate: monthEnd });
       if (data) setLeaves(data as unknown as TeamLeave[]);
     };
     fetchLeaves().finally(() => setPageLoading(false));

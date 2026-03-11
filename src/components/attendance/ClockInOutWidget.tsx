@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { useMutation, useQuery } from "convex/react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,9 +8,12 @@ import { LogIn, LogOut, Clock } from "lucide-react";
 import { format, differenceInMinutes } from "date-fns";
 import { toast } from "sonner";
 import { SelfieCaptureDialog } from "./SelfieCaptureDialog";
+import { api } from "@/lib/convexApi";
+import { getErrorMessage } from "@/lib/errors";
+import type { AttendanceLogId, StorageId } from "@/lib/convexTypes";
 
 interface AttendanceLog {
-  id: string;
+  id: AttendanceLogId;
   clock_in: string | null;
   clock_out: string | null;
   status: string;
@@ -19,61 +22,17 @@ interface AttendanceLog {
 
 export function ClockInOutWidget() {
   const { user } = useAuth();
-  const [todayLog, setTodayLog] = useState<AttendanceLog | null>(null);
-  const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState(false);
   const [elapsed, setElapsed] = useState("");
-
-  const [requireSelfie, setRequireSelfie] = useState(false);
-  const [requireLocation, setRequireLocation] = useState(false);
   const [selfieOpen, setSelfieOpen] = useState(false);
   const [selfieType, setSelfieType] = useState<"clock_in" | "clock_out">("clock_in");
-
-  const fetchToday = async () => {
-    if (!user) return;
-    const today = format(new Date(), "yyyy-MM-dd");
-
-    // Fetch logs
-    const { data: logData } = await supabase
-      .from("attendance_logs")
-      .select("id, clock_in, clock_out, status, date")
-      .eq("employee_id", user.id)
-      .eq("date", today)
-      .maybeSingle();
-
-    setTodayLog(logData);
-
-    // Fetch requirement setting
-    const { data: settings } = await supabase
-      .from("attendance_settings")
-      .select("require_selfie, require_location")
-      .limit(1)
-      .maybeSingle();
-
-    if (settings) {
-      setRequireSelfie(!!settings.require_selfie);
-      setRequireLocation(!!settings.require_location);
-    }
-
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    fetchToday();
-
-    // Realtime subscription
-    const channel = supabase
-      .channel("attendance-today")
-      .on("postgres_changes", {
-        event: "*",
-        schema: "public",
-        table: "attendance_logs",
-        filter: `employee_id=eq.${user?.id}`,
-      }, () => fetchToday())
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user]);
+  const data = useQuery(api.attendance.getClockWidgetData, user ? {} : "skip");
+  const clockInMutation = useMutation(api.attendance.clockIn);
+  const clockOutMutation = useMutation(api.attendance.clockOut);
+  const todayLog = data?.todayLog as AttendanceLog | null;
+  const requireSelfie = !!data?.settings?.require_selfie;
+  const requireLocation = !!data?.settings?.require_location;
+  const loading = data === undefined;
 
   // Update elapsed time every minute
   useEffect(() => {
@@ -121,7 +80,7 @@ export function ClockInOutWidget() {
     });
   };
 
-  const processClockIn = async (selfiePath?: string) => {
+  const processClockIn = async (selfiePath?: StorageId) => {
     if (!user) return;
     setActing(true);
     try {
@@ -131,42 +90,19 @@ export function ClockInOutWidget() {
       }
 
       // Fetch settings for late threshold
-      const { data: settings } = await supabase
-        .from("attendance_settings")
-        .select("work_start_time, late_threshold_minutes")
-        .limit(1)
-        .maybeSingle();
-
-      const now = new Date();
-      let status: string = "present";
-
-      if (settings && settings.work_start_time) {
-        const [h, m] = settings.work_start_time.split(":").map(Number);
-        const startTime = new Date();
-        startTime.setHours(h, m + (settings.late_threshold_minutes || 15), 0, 0);
-        if (now > startTime) status = "late";
-      }
-
-      const { error } = await supabase.from("attendance_logs").insert([{
-        employee_id: user.id,
-        clock_in: now.toISOString(),
-        status: status as "present" | "late",
-        date: format(now, "yyyy-MM-dd"),
-        selfie_clock_in: selfiePath || null,
-        location_clock_in: location,
-      }]);
-
-      if (error) throw error;
-      toast.success(status === "late" ? "Clocked in (late)" : "Clocked in successfully");
-      fetchToday();
-    } catch (e: any) {
-      toast.error(e.message || "Failed to clock in");
+      const result = await clockInMutation({
+        selfieClockInStorageId: selfiePath,
+        locationClockIn: location ?? undefined,
+      });
+      toast.success(result.status === "late" ? "Clocked in (late)" : "Clocked in successfully");
+    } catch (e) {
+      toast.error(getErrorMessage(e, "Failed to clock in"));
     } finally {
       setActing(false);
     }
   };
 
-  const processClockOut = async (selfiePath?: string) => {
+  const processClockOut = async (selfiePath?: StorageId) => {
     if (!todayLog) return;
     setActing(true);
     try {
@@ -175,19 +111,14 @@ export function ClockInOutWidget() {
         location = await getLocation();
       }
 
-      const { error } = await supabase
-        .from("attendance_logs")
-        .update({
-          clock_out: new Date().toISOString(),
-          selfie_clock_out: selfiePath || null,
-          location_clock_out: location
-        })
-        .eq("id", todayLog.id);
-      if (error) throw error;
+      await clockOutMutation({
+        logId: todayLog.id,
+        selfieClockOutStorageId: selfiePath,
+        locationClockOut: location ?? undefined,
+      });
       toast.success("Clocked out successfully");
-      fetchToday();
-    } catch (e: any) {
-      toast.error(e.message || "Failed to clock out");
+    } catch (e) {
+      toast.error(getErrorMessage(e, "Failed to clock out"));
     } finally {
       setActing(false);
     }

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -8,17 +9,17 @@ import { format, startOfMonth, endOfMonth } from "date-fns";
 import { BarChart3, Users, Clock, AlertTriangle, Camera, MapPin } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Tooltip, Cell } from "recharts";
 import { SelfieLightbox } from "@/components/attendance/SelfieLightbox";
-import { Json } from "@/integrations/supabase/types";
+import type { LatLng, StorageId } from "@/lib/convexTypes";
 
 interface AttendanceLog {
   id: string;
   date: string;
   clock_in: string | null;
   clock_out: string | null;
-  selfie_clock_in: string | null;
-  selfie_clock_out: string | null;
-  location_clock_in: Json | null;
-  location_clock_out: Json | null;
+  selfie_clock_in: StorageId | null;
+  selfie_clock_out: StorageId | null;
+  location_clock_in: LatLng | null;
+  location_clock_out: LatLng | null;
   status: string;
   employee_id: string;
   profiles: { full_name: string | null; email: string | null; department_id: string | null } | null;
@@ -35,34 +36,14 @@ const AttendanceDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"today" | "month">("today");
   const [deptFilter, setDeptFilter] = useState("all");
-  const [lightboxPath, setLightboxPath] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchDepts = async () => {
-      const { data } = await supabase.from("departments").select("id, name");
-      setDepartments(data || []);
-    };
-    fetchDepts();
-  }, []);
+  const [lightboxPath, setLightboxPath] = useState<StorageId | null>(null);
 
   useEffect(() => {
     const fetchLogs = async () => {
       setLoading(true);
-      let query = supabase
-        .from("attendance_logs")
-        .select("id, date, clock_in, clock_out, selfie_clock_in, selfie_clock_out, location_clock_in, location_clock_out, status, employee_id, profiles:employee_id(full_name, email, department_id)")
-        .order("date", { ascending: false });
-
-      if (view === "today") {
-        query = query.eq("date", format(new Date(), "yyyy-MM-dd"));
-      } else {
-        const start = format(startOfMonth(new Date()), "yyyy-MM-dd");
-        const end = format(endOfMonth(new Date()), "yyyy-MM-dd");
-        query = query.gte("date", start).lte("date", end);
-      }
-
-      const { data } = await query.limit(500);
-      setLogs((data as AttendanceLog[]) || []);
+      const data = await convex.query(api.attendance.getAdminAttendanceDashboard, { view });
+      setDepartments(data.departments as Department[]);
+      setLogs((data.logs as AttendanceLog[]) || []);
       setLoading(false);
     };
     fetchLogs();
@@ -245,9 +226,9 @@ const AttendanceDashboard = () => {
                           </div>
                         )}
 
-                        {log.location_clock_in && typeof log.location_clock_in === 'object' && (
+                        {log.location_clock_in && (
                           <a
-                            href={`https://www.google.com/maps?q=${(log.location_clock_in as any).lat},${(log.location_clock_in as any).lng}`}
+                            href={`https://www.google.com/maps?q=${log.location_clock_in.lat},${log.location_clock_in.lng}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             title="View clock-in location"
@@ -270,9 +251,9 @@ const AttendanceDashboard = () => {
                               </div>
                             )}
 
-                            {log.location_clock_out && typeof log.location_clock_out === 'object' && (
+                            {log.location_clock_out && (
                               <a
-                                href={`https://www.google.com/maps?q=${(log.location_clock_out as any).lat},${(log.location_clock_out as any).lng}`}
+                                href={`https://www.google.com/maps?q=${log.location_clock_out.lat},${log.location_clock_out.lng}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 title="View clock-out location"

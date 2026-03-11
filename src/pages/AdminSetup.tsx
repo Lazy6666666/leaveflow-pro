@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ShieldCheck, Loader2, CheckCircle2, AlertTriangle } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
+import { getErrorMessage } from "@/lib/errors";
 
 const AdminSetup = () => {
   const { user } = useAuth();
@@ -23,19 +25,12 @@ const AdminSetup = () => {
     setResult(null);
 
     try {
-      const { data, error } = await supabase.functions.invoke("bootstrap-admin", {
-        body: { setup_token: token.trim() },
+      const data = await convex.mutation(api.admin.bootstrapAdmin, {
+        setupToken: token.trim(),
       });
-
-      if (error) {
-        setResult({ type: "error", message: error.message || "Failed to connect to the setup service." });
-      } else if (data?.error) {
-        setResult({ type: "error", message: data.error });
-      } else {
-        setResult({ type: "success", message: data?.message || "Successfully promoted to HR Admin!" });
-      }
-    } catch {
-      setResult({ type: "error", message: "An unexpected error occurred." });
+      setResult({ type: "success", message: data?.message || "Successfully promoted to HR Admin!" });
+    } catch (error) {
+      setResult({ type: "error", message: getErrorMessage(error, "An unexpected error occurred.") });
     }
 
     setIsSubmitting(false);

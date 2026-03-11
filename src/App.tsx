@@ -9,6 +9,7 @@ import AuthGuard from "@/components/AuthGuard";
 import RoleGuard from "@/components/RoleGuard";
 import AppLayout from "@/components/AppLayout";
 import Auth from "./pages/Auth";
+import Index from "./pages/Index";
 import ResetPassword from "./pages/ResetPassword";
 import Dashboard from "./pages/Dashboard";
 import MyLeave from "./pages/MyLeave";
@@ -45,9 +46,9 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <Routes>
-              <Route path="/auth" element={<Auth />} />
+              <Route path="/auth/*" element={<Auth />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+              <Route path="/" element={<Index />} />
               <Route element={<AuthGuard><AppLayout /></AuthGuard>}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/my-leave" element={<MyLeave />} />
@@ -57,8 +58,8 @@ const App = () => (
                 <Route path="/holidays" element={<Holidays />} />
                 <Route path="/profile" element={<ProfileSettings />} />
                 <Route path="/admin-setup" element={<AdminSetup />} />
-                <Route path="/manager/approvals" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><Approvals /></RoleGuard>} />
-                <Route path="/manager/team-calendar" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><TeamCalendar /></RoleGuard>} />
+                <Route path="/manager/approvals" element={<RoleGuard allowedRoles={["manager", "hr_admin"]} allowDelegatedManagerAccess><Approvals /></RoleGuard>} />
+                <Route path="/manager/team-calendar" element={<RoleGuard allowedRoles={["manager", "hr_admin"]} allowDelegatedManagerAccess><TeamCalendar /></RoleGuard>} />
                 <Route path="/manager/team-attendance" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><TeamAttendance /></RoleGuard>} />
                 <Route path="/manager/delegation" element={<RoleGuard allowedRoles={["manager", "hr_admin"]}><ManagerDelegation /></RoleGuard>} />
                 <Route path="/admin/employees" element={<RoleGuard allowedRoles={["hr_admin"]}><Employees /></RoleGuard>} />
