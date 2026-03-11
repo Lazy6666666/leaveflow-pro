@@ -1,10 +1,11 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   CalendarDays, PlusCircle, CheckSquare, Clock, CalendarHeart,
@@ -12,127 +13,50 @@ import {
 } from "lucide-react";
 import { DashboardSkeleton } from "@/components/skeletons";
 import { ClockInOutWidget } from "@/components/attendance/ClockInOutWidget";
-import { format, parseISO, startOfToday, endOfWeek, startOfWeek } from "date-fns";
+import { endOfWeek, parseISO, startOfToday, startOfWeek } from "date-fns";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
-interface LeaveBalance {
-  balance: number;
-  leave_type_id: string;
-  year: number;
-  leave_types: { name: string; annual_allocation: number } | null;
-}
-
-interface RecentRequest {
-  id: string;
-  start_date: string;
-  end_date: string;
-  status: string;
-  leave_types: { name: string } | null;
-}
-
-interface Holiday {
-  id: string;
-  name: string;
-  date: string;
-}
-
-interface TeamAbsence {
-  id: string;
-  start_date: string;
-  end_date: string;
-  profiles: { full_name: string | null; email: string | null } | null;
-  leave_types: { name: string } | null;
-}
-
 const DONUT_COLORS = [
-  "hsl(168, 56%, 34%)",
-  "hsl(220, 14%, 83%)",
+  "hsl(var(--primary))",
+  "hsl(var(--muted))",
 ];
 
 const STALE_TIME = 5 * 60 * 1000; // 5 minutes
+const fullDateFormatter = new Intl.DateTimeFormat(undefined, {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
+const monthDayFormatter = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+});
+const monthDayYearFormatter = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+const weekdayMonthDayFormatter = new Intl.DateTimeFormat(undefined, {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+});
 
 const Dashboard = () => {
-  const { user, hasRole } = useAuth();
-  const navigate = useNavigate();
-  const currentYear = new Date().getFullYear();
-  const today = format(startOfToday(), "yyyy-MM-dd");
-  const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
-  const weekEnd = format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
-
-  const { data: balances = [], isLoading: balLoading } = useQuery({
-    queryKey: ["dashboard-balances", user?.id, currentYear],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("leave_balances")
-        .select("balance, leave_type_id, year, leave_types(name, annual_allocation)")
-        .eq("employee_id", user!.id)
-        .eq("year", currentYear);
-      return (data as unknown as LeaveBalance[]) || [];
-    },
+  const { user, hasExplicitRole, hasManagerAccess, hasRole } = useAuth();
+  const { data, isLoading } = useQuery({
+    queryKey: ["dashboard", user?.id],
+    queryFn: async () => convex.query(api.leave.getDashboardData, {}),
     enabled: !!user,
     staleTime: STALE_TIME,
   });
 
-  const { data: recentRequests = [], isLoading: recLoading } = useQuery({
-    queryKey: ["dashboard-recent", user?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("leave_requests")
-        .select("id, start_date, end_date, status, leave_types(name)")
-        .eq("employee_id", user!.id)
-        .order("created_at", { ascending: false })
-        .limit(5);
-      return (data as unknown as RecentRequest[]) || [];
-    },
-    enabled: !!user,
-    staleTime: STALE_TIME,
-  });
-
-  const { data: upcomingHolidays = [], isLoading: holLoading } = useQuery({
-    queryKey: ["dashboard-holidays", today],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("public_holidays")
-        .select("id, name, date")
-        .gte("date", today)
-        .order("date")
-        .limit(5);
-      return data || [];
-    },
-    enabled: !!user,
-    staleTime: STALE_TIME,
-  });
-
-  const { data: teamAbsences = [], isLoading: teamLoading } = useQuery({
-    queryKey: ["dashboard-team", weekStart, weekEnd],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("leave_requests")
-        .select("id, start_date, end_date, profiles:employee_id(full_name, email), leave_types(name)")
-        .eq("status", "approved")
-        .lte("start_date", weekEnd)
-        .gte("end_date", weekStart)
-        .limit(20);
-      return (data as unknown as TeamAbsence[]) || [];
-    },
-    enabled: !!user,
-    staleTime: STALE_TIME,
-  });
-
-  const { data: pendingCount = 0 } = useQuery({
-    queryKey: ["dashboard-pending-count"],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("leave_requests")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-      return count || 0;
-    },
-    enabled: !!user && hasRole("manager"),
-    staleTime: STALE_TIME,
-  });
-
-  const loading = balLoading || recLoading || holLoading || teamLoading;
+  const balances = data?.balances ?? [];
+  const recentRequests = data?.recentRequests ?? [];
+  const upcomingHolidays = data?.upcomingHolidays ?? [];
+  const teamAbsences = data?.teamAbsences ?? [];
+  const pendingCount = data?.pendingCount ?? 0;
 
   const statusColor = (status: string) => {
     switch (status) {
@@ -151,6 +75,7 @@ const Dashboard = () => {
     { name: "Remaining", value: totalRemaining },
     { name: "Used", value: totalUsed },
   ];
+  const canAccessManagerOnlyTools = hasExplicitRole("manager") || hasExplicitRole("hr_admin");
 
   const quickActions = [
     { label: "Request Leave", desc: "Submit a new request", icon: PlusCircle, path: "/request-leave" },
@@ -158,9 +83,9 @@ const Dashboard = () => {
     { label: "History", desc: "View past requests", icon: Clock, path: "/leave-history" },
     { label: "Attendance", desc: "View attendance log", icon: CheckSquare, path: "/attendance" },
     { label: "Holidays", desc: "View public holidays", icon: CalendarHeart, path: "/holidays" },
-    ...(hasRole("manager") ? [{ label: "Approvals", desc: `${pendingCount} pending`, icon: CheckSquare, path: "/manager/approvals" }] : []),
-    ...(hasRole("manager") ? [{ label: "Team Calendar", desc: "View team schedule", icon: CalendarDays, path: "/manager/team-calendar" }] : []),
-    ...(hasRole("manager") ? [{ label: "Team Attendance", desc: "Daily status", icon: Users, path: "/manager/team-attendance" }] : []),
+    ...(hasManagerAccess ? [{ label: "Approvals", desc: `${pendingCount} pending`, icon: CheckSquare, path: "/manager/approvals" }] : []),
+    ...(hasManagerAccess ? [{ label: "Team Calendar", desc: "View team schedule", icon: CalendarDays, path: "/manager/team-calendar" }] : []),
+    ...(canAccessManagerOnlyTools ? [{ label: "Team Attendance", desc: "Daily status", icon: Users, path: "/manager/team-attendance" }] : []),
     ...(hasRole("hr_admin") ? [{ label: "Employees", desc: "Manage staff", icon: Users, path: "/admin/employees" }] : []),
     { label: "Profile", desc: "Edit your details", icon: Users, path: "/profile" },
   ];
@@ -170,19 +95,19 @@ const Dashboard = () => {
     return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
   };
 
-  const firstName = user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "there";
+  const firstName = data?.viewer.firstName || user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "there";
   const hour = new Date().getHours();
   const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
-  if (loading) return <DashboardSkeleton />;
+  if (isLoading) return <DashboardSkeleton />;
 
   return (
     <div className="space-y-10 max-w-6xl">
       {/* Greeting Header */}
       <div className="space-y-1">
         <div className="flex items-center gap-2 text-muted-foreground text-sm">
-          <Sparkles className="h-3.5 w-3.5" />
-          <span>{format(new Date(), "EEEE, MMMM d, yyyy")}</span>
+          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+          <span>{fullDateFormatter.format(new Date())}</span>
         </div>
         <h1 className="text-3xl font-serif font-semibold tracking-tight text-foreground">
           {greeting}, {firstName}
@@ -212,7 +137,7 @@ const Dashboard = () => {
             {upcomingHolidays.length > 0 ? (
               <>
                 <p className="text-lg font-semibold text-foreground leading-tight">{upcomingHolidays[0].name}</p>
-                <p className="text-xs text-muted-foreground mt-1">{format(parseISO(upcomingHolidays[0].date), "MMM d")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{monthDayFormatter.format(parseISO(upcomingHolidays[0].date))}</p>
               </>
             ) : (
               <p className="text-sm text-muted-foreground">None upcoming</p>
@@ -233,19 +158,20 @@ const Dashboard = () => {
         <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-4">Quick Actions</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {quickActions.map((action) => (
-            <button
+            <Link
               key={action.path}
-              onClick={() => navigate(action.path)}
-              className="group flex items-center gap-3.5 rounded-xl border border-border/60 bg-card p-4 text-left transition-all duration-200 hover:border-primary/30 hover:shadow-sm"
+              to={action.path}
+              aria-label={`${action.label}: ${action.desc}`}
+              className="group flex items-center gap-3.5 rounded-xl border border-border/60 bg-card p-4 text-left transition-[border-color,box-shadow] duration-200 hover:border-primary/30 hover:shadow-sm"
             >
               <div className="h-10 w-10 rounded-lg bg-muted/60 flex items-center justify-center shrink-0 group-hover:bg-primary/8 transition-colors">
-                <action.icon className="h-4.5 w-4.5 text-muted-foreground group-hover:text-primary transition-colors" />
+                <action.icon className="h-4.5 w-4.5 text-muted-foreground group-hover:text-primary transition-colors" aria-hidden="true" />
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground">{action.label}</p>
                 <p className="text-xs text-muted-foreground">{action.desc}</p>
               </div>
-            </button>
+            </Link>
           ))}
         </div>
       </div>
@@ -258,12 +184,9 @@ const Dashboard = () => {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-medium text-foreground">Leave Balance</CardTitle>
-                <button
-                  onClick={() => navigate("/my-leave")}
-                  className="text-xs text-primary hover:underline flex items-center gap-1"
-                >
-                  View details <ArrowRight className="h-3 w-3" />
-                </button>
+                <Link to="/my-leave" className="text-xs text-primary hover:underline flex items-center gap-1">
+                  View details <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                </Link>
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -271,6 +194,9 @@ const Dashboard = () => {
                 <p className="text-muted-foreground text-sm py-4">No leave balances found for this year.</p>
               ) : (
                 <>
+                  <p className="sr-only">
+                    Leave balance summary: {totalRemaining} days remaining out of {totalAllocation}, with {totalUsed} days used.
+                  </p>
                   <div className="flex items-center gap-8">
                     <div className="relative w-32 h-32 shrink-0">
                       <ResponsiveContainer width="100%" height="100%">
@@ -310,7 +236,7 @@ const Dashboard = () => {
                       </div>
                       {totalAllocation > 0 && (
                         <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
-                          <TrendingUp className="h-3 w-3" />
+                          <TrendingUp className="h-3 w-3" aria-hidden="true" />
                           <span>{Math.round((totalRemaining / totalAllocation) * 100)}% remaining</span>
                         </div>
                       )}
@@ -342,12 +268,9 @@ const Dashboard = () => {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-medium text-foreground">Recent Requests</CardTitle>
-                <button
-                  onClick={() => navigate("/leave-history")}
-                  className="text-xs text-primary hover:underline flex items-center gap-1"
-                >
-                  View all <ArrowRight className="h-3 w-3" />
-                </button>
+                <Link to="/leave-history" className="text-xs text-primary hover:underline flex items-center gap-1">
+                  View all <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                </Link>
               </div>
             </CardHeader>
             <CardContent>
@@ -360,7 +283,7 @@ const Dashboard = () => {
                       <div>
                         <p className="text-sm text-foreground">{req.leave_types?.name}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {format(parseISO(req.start_date), "MMM d")} – {format(parseISO(req.end_date), "MMM d, yyyy")}
+                          {monthDayFormatter.format(parseISO(req.start_date))} – {monthDayYearFormatter.format(parseISO(req.end_date))}
                         </p>
                       </div>
                       <Badge variant={statusColor(req.status)} className="capitalize text-xs">{req.status}</Badge>
@@ -379,12 +302,9 @@ const Dashboard = () => {
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-medium text-foreground">Upcoming Holidays</CardTitle>
-                <button
-                  onClick={() => navigate("/holidays")}
-                  className="text-xs text-primary hover:underline flex items-center gap-1"
-                >
-                  All holidays <ArrowRight className="h-3 w-3" />
-                </button>
+                <Link to="/holidays" className="text-xs text-primary hover:underline flex items-center gap-1">
+                  All holidays <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                </Link>
               </div>
             </CardHeader>
             <CardContent>
@@ -399,7 +319,7 @@ const Dashboard = () => {
                       <div key={h.id} className="flex items-center justify-between py-3 border-b border-border/40 last:border-0">
                         <div>
                           <p className="text-sm text-foreground">{h.name}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{format(parseISO(h.date), "EEE, MMM d")}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{weekdayMonthDayFormatter.format(parseISO(h.date))}</p>
                         </div>
                         <span className="text-xs text-muted-foreground tabular-nums bg-muted/60 px-2 py-0.5 rounded-md">{label}</span>
                       </div>
@@ -415,14 +335,14 @@ const Dashboard = () => {
             <CardHeader className="pb-2">
               <CardTitle className="text-base font-medium text-foreground">Team This Week</CardTitle>
               <p className="text-xs text-muted-foreground">
-                {format(startOfWeek(new Date(), { weekStartsOn: 1 }), "MMM d")} – {format(endOfWeek(new Date(), { weekStartsOn: 1 }), "MMM d")}
+                {monthDayFormatter.format(startOfWeek(new Date(), { weekStartsOn: 1 }))} – {monthDayFormatter.format(endOfWeek(new Date(), { weekStartsOn: 1 }))}
               </p>
             </CardHeader>
             <CardContent>
               {teamAbsences.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-center">
                   <div className="h-10 w-10 rounded-full bg-primary/8 flex items-center justify-center mb-3">
-                    <Users className="h-4.5 w-4.5 text-primary" />
+                    <Users className="h-4.5 w-4.5 text-primary" aria-hidden="true" />
                   </div>
                   <p className="text-sm text-muted-foreground">Everyone's in this week</p>
                 </div>
@@ -440,7 +360,7 @@ const Dashboard = () => {
                           {a.profiles?.full_name || a.profiles?.email || "Unknown"}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                          {a.leave_types?.name} · {format(parseISO(a.start_date), "MMM d")}–{format(parseISO(a.end_date), "MMM d")}
+                          {a.leave_types?.name} · {monthDayFormatter.format(parseISO(a.start_date))}–{monthDayFormatter.format(parseISO(a.end_date))}
                         </p>
                       </div>
                     </div>

@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
+import type { FunctionReturnType } from "convex/server";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,34 +12,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import {
-  Fingerprint, Plus, Wifi, WifiOff, RefreshCw, Trash2, TestTube,
+  Fingerprint, Plus, RefreshCw, Trash2, TestTube,
   Server, Globe, Shield, Clock,
 } from "lucide-react";
 import { format } from "date-fns";
+import { getErrorMessage } from "@/lib/errors";
 
-type Vendor = "zkteco" | "biotime" | "suprema" | "hikvision" | "generic_webhook";
+type BiometricsConfig = NonNullable<FunctionReturnType<typeof api.admin.getBiometricsConfigs>>[number];
+type BiometricsConfigId = BiometricsConfig["id"];
+type Vendor = BiometricsConfig["vendor"];
+type VendorField = "api_url" | "api_key" | "api_secret" | "webhook_secret";
+type VendorInfo = {
+  label: string;
+  description: string;
+  icon: typeof Server;
+  fields: VendorField[];
+};
 
-interface BiometricsConfig {
-  id: string;
-  vendor: Vendor;
-  name: string;
-  api_url: string | null;
-  api_key: string | null;
-  api_secret: string | null;
-  device_serial: string | null;
-  location_name: string | null;
-  sync_frequency_minutes: number;
-  is_active: boolean;
-  last_sync_at: string | null;
-  last_sync_status: string | null;
-  last_sync_records: number | null;
-  webhook_secret: string | null;
-  extra_config: Record<string, any>;
-  created_at: string;
-  updated_at: string;
-}
-
-const vendorInfo: Record<Vendor, { label: string; description: string; icon: typeof Server; fields: string[] }> = {
+const vendorInfo: Record<Vendor, VendorInfo> = {
   zkteco: {
     label: "ZKTeco",
     description: "ZKTeco iClock / ZKBioAccess REST API integration",
@@ -70,12 +62,14 @@ const vendorInfo: Record<Vendor, { label: string; description: string; icon: typ
   },
 };
 
+const isVendor = (value: string): value is Vendor => value in vendorInfo;
+
 const BiometricsSettings = () => {
   const [configs, setConfigs] = useState<BiometricsConfig[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [testingId, setTestingId] = useState<string | null>(null);
-  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [testingId, setTestingId] = useState<BiometricsConfigId | null>(null);
+  const [syncingId, setSyncingId] = useState<BiometricsConfigId | null>(null);
   const { toast } = useToast();
 
   // Form state
@@ -84,6 +78,7 @@ const BiometricsSettings = () => {
   const [formApiUrl, setFormApiUrl] = useState("");
   const [formApiKey, setFormApiKey] = useState("");
   const [formApiSecret, setFormApiSecret] = useState("");
+  const [formWebhookSecret, setFormWebhookSecret] = useState("");
   const [formDeviceSerial, setFormDeviceSerial] = useState("");
   const [formLocation, setFormLocation] = useState("");
   const [formSyncFreq, setFormSyncFreq] = useState(30);
@@ -91,8 +86,8 @@ const BiometricsSettings = () => {
 
   const fetchConfigs = async () => {
     setLoading(true);
-    const { data } = await supabase.from("biometrics_config").select("*").order("created_at", { ascending: false });
-    setConfigs((data as unknown as BiometricsConfig[]) || []);
+    const data = await convex.query(api.admin.getBiometricsConfigs, {});
+    setConfigs(data ?? []);
     setLoading(false);
   };
 
@@ -104,6 +99,7 @@ const BiometricsSettings = () => {
     setFormApiUrl("");
     setFormApiKey("");
     setFormApiSecret("");
+    setFormWebhookSecret("");
     setFormDeviceSerial("");
     setFormLocation("");
     setFormSyncFreq(30);
@@ -115,78 +111,71 @@ const BiometricsSettings = () => {
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from("biometrics_config").insert({
-      vendor: formVendor,
-      name: formName.trim(),
-      api_url: formApiUrl.trim() || null,
-      api_key: formApiKey.trim() || null,
-      api_secret: formApiSecret.trim() || null,
-      device_serial: formDeviceSerial.trim() || null,
-      location_name: formLocation.trim() || null,
-      sync_frequency_minutes: formSyncFreq,
-      is_active: false,
-    } as any);
-    setSaving(false);
-
-    if (error) {
-      toast({ title: "Failed to add device", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await convex.mutation(api.admin.saveBiometricsConfig, {
+        vendor: formVendor,
+        name: formName.trim(),
+        apiUrl: formApiUrl.trim() || undefined,
+        apiKey: formApiKey.trim() || undefined,
+        apiSecret: formApiSecret.trim() || undefined,
+        webhookSecret: formWebhookSecret.trim() || undefined,
+        deviceSerial: formDeviceSerial.trim() || undefined,
+        locationName: formLocation.trim() || undefined,
+        syncFrequencyMinutes: formSyncFreq,
+      });
       toast({ title: "Device added", description: "Test the connection before enabling sync." });
       resetForm();
       setDialogOpen(false);
       fetchConfigs();
+    } catch (error) {
+      toast({ title: "Failed to add device", description: getErrorMessage(error, "Failed to add device"), variant: "destructive" });
     }
+    setSaving(false);
   };
 
-  const handleTestConnection = async (configId: string) => {
+  const handleTestConnection = async (configId: BiometricsConfigId) => {
     setTestingId(configId);
     try {
-      const { data, error } = await supabase.functions.invoke("sync-attendance", {
-        body: { action: "test_connection", config_id: configId },
-      });
-      if (error) throw error;
+      const data = await convex.action(api.admin.testBiometricsConnection, { configId });
       if (data?.success) {
         toast({ title: "Connection successful", description: data.message });
       } else {
         toast({ title: "Connection failed", description: data?.message || "Unknown error", variant: "destructive" });
       }
       fetchConfigs();
-    } catch (e: any) {
-      toast({ title: "Test failed", description: e.message, variant: "destructive" });
+    } catch (e) {
+      toast({ title: "Test failed", description: getErrorMessage(e, "Test failed"), variant: "destructive" });
     }
     setTestingId(null);
   };
 
-  const handleSync = async (configId: string) => {
+  const handleSync = async (configId: BiometricsConfigId) => {
     setSyncingId(configId);
     try {
-      const { data, error } = await supabase.functions.invoke("sync-attendance", {
-        body: { action: "sync", config_id: configId },
-      });
-      if (error) throw error;
+      const data = await convex.action(api.admin.syncBiometrics, { configId });
       toast({
         title: "Sync complete",
-        description: `Synced ${data?.total_synced || 0} records`,
+        description: data?.message || `Synced ${data?.total_synced || 0} records`,
       });
       fetchConfigs();
-    } catch (e: any) {
-      toast({ title: "Sync failed", description: e.message, variant: "destructive" });
+    } catch (e) {
+      toast({ title: "Sync failed", description: getErrorMessage(e, "Sync failed"), variant: "destructive" });
     }
     setSyncingId(null);
   };
 
   const handleToggleActive = async (config: BiometricsConfig) => {
-    await supabase.from("biometrics_config").update({ is_active: !config.is_active } as any).eq("id", config.id);
+    await convex.mutation(api.admin.toggleBiometricsConfig, { configId: config.id });
     fetchConfigs();
   };
 
-  const handleDelete = async (configId: string) => {
-    const { error } = await supabase.from("biometrics_config").delete().eq("id", configId);
-    if (error) {
-      toast({ title: "Delete failed", description: error.message, variant: "destructive" });
-    } else {
+  const handleDelete = async (configId: BiometricsConfigId) => {
+    try {
+      await convex.mutation(api.admin.deleteBiometricsConfig, { configId });
       toast({ title: "Device removed" });
       fetchConfigs();
+    } catch (error) {
+      toast({ title: "Delete failed", description: getErrorMessage(error, "Delete failed"), variant: "destructive" });
     }
   };
 
@@ -197,7 +186,7 @@ const BiometricsSettings = () => {
     return <Badge variant="destructive">Error</Badge>;
   };
 
-  const webhookUrl = `${window.location.origin}/functions/v1/sync-attendance`;
+  const webhookUrl = `${import.meta.env.VITE_CONVEX_SITE_URL}/biometrics/webhook`;
 
   return (
     <div className="space-y-8 max-w-4xl">
@@ -224,10 +213,10 @@ const BiometricsSettings = () => {
             <div className="space-y-4 pt-2">
               <div className="space-y-2">
                 <Label>Vendor</Label>
-                <Select value={formVendor} onValueChange={(v) => setFormVendor(v as Vendor)}>
+                <Select value={formVendor} onValueChange={(value) => { if (isVendor(value)) setFormVendor(value); }}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {(Object.entries(vendorInfo) as [Vendor, typeof vendorInfo[Vendor]][]).map(([key, info]) => (
+                    {(Object.entries(vendorInfo) as [Vendor, VendorInfo][]).map(([key, info]) => (
                       <SelectItem key={key} value={key}>
                         <span className="flex items-center gap-2">
                           <info.icon className="h-3.5 w-3.5" />
@@ -242,34 +231,34 @@ const BiometricsSettings = () => {
 
               <div className="space-y-2">
                 <Label>Device Name</Label>
-                <Input placeholder="e.g. Main Entrance, Floor 2" value={formName} onChange={(e) => setFormName(e.target.value)} />
+                <Input name="deviceName" autoComplete="off" placeholder="e.g. Main Entrance, Floor 2" value={formName} onChange={(e) => setFormName(e.target.value)} />
               </div>
 
               {vendorInfo[formVendor].fields.includes("api_url") && (
                 <div className="space-y-2">
                   <Label>API URL</Label>
-                  <Input placeholder="https://your-device-ip-or-cloud-url" value={formApiUrl} onChange={(e) => setFormApiUrl(e.target.value)} />
+                  <Input type="url" name="apiUrl" autoComplete="url" placeholder="https://your-device-ip-or-cloud-url" value={formApiUrl} onChange={(e) => setFormApiUrl(e.target.value)} />
                 </div>
               )}
 
               {vendorInfo[formVendor].fields.includes("api_key") && (
                 <div className="space-y-2">
                   <Label>{formVendor === "hikvision" ? "Username" : "API Key / Token"}</Label>
-                  <Input type="password" placeholder="Enter API key or token" value={formApiKey} onChange={(e) => setFormApiKey(e.target.value)} />
+                  <Input type="password" name="apiKey" autoComplete="new-password" placeholder="Enter API key or token" value={formApiKey} onChange={(e) => setFormApiKey(e.target.value)} />
                 </div>
               )}
 
               {vendorInfo[formVendor].fields.includes("api_secret") && (
                 <div className="space-y-2">
                   <Label>Password / Secret</Label>
-                  <Input type="password" placeholder="Enter password or secret" value={formApiSecret} onChange={(e) => setFormApiSecret(e.target.value)} />
+                  <Input type="password" name="apiSecret" autoComplete="new-password" placeholder="Enter password or secret" value={formApiSecret} onChange={(e) => setFormApiSecret(e.target.value)} />
                 </div>
               )}
 
               {vendorInfo[formVendor].fields.includes("webhook_secret") && (
                 <div className="space-y-2">
                   <Label>Webhook Secret (optional)</Label>
-                  <Input placeholder="For payload signature verification" value={formApiKey} onChange={(e) => setFormApiKey(e.target.value)} />
+                  <Input name="webhookSecret" autoComplete="off" placeholder="For payload signature verification" value={formWebhookSecret} onChange={(e) => setFormWebhookSecret(e.target.value)} />
                   <div className="rounded-md bg-muted p-3">
                     <p className="text-xs text-muted-foreground mb-1">Configure your device to POST events to:</p>
                     <code className="text-xs text-foreground break-all">{webhookUrl}</code>
@@ -280,21 +269,21 @@ const BiometricsSettings = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Device Serial (optional)</Label>
-                  <Input placeholder="Serial number" value={formDeviceSerial} onChange={(e) => setFormDeviceSerial(e.target.value)} />
+                  <Input name="deviceSerial" autoComplete="off" placeholder="Serial number" value={formDeviceSerial} onChange={(e) => setFormDeviceSerial(e.target.value)} />
                 </div>
                 <div className="space-y-2">
                   <Label>Location (optional)</Label>
-                  <Input placeholder="Building A" value={formLocation} onChange={(e) => setFormLocation(e.target.value)} />
+                  <Input name="deviceLocation" autoComplete="off" placeholder="Building A" value={formLocation} onChange={(e) => setFormLocation(e.target.value)} />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label>Sync Frequency (minutes)</Label>
-                <Input type="number" min={5} max={1440} value={formSyncFreq} onChange={(e) => setFormSyncFreq(Number(e.target.value))} />
+                <Input name="syncFrequencyMinutes" type="number" min={5} max={1440} value={formSyncFreq} onChange={(e) => setFormSyncFreq(Number(e.target.value))} />
               </div>
 
               <Button className="w-full" onClick={handleAdd} disabled={saving}>
-                {saving ? "Adding..." : "Add Device"}
+                {saving ? "Adding…" : "Add Device"}
               </Button>
             </div>
           </DialogContent>
@@ -303,7 +292,7 @@ const BiometricsSettings = () => {
 
       {/* Supported Vendors Overview */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {(Object.entries(vendorInfo) as [Vendor, typeof vendorInfo[Vendor]][]).map(([key, info]) => {
+        {(Object.entries(vendorInfo) as [Vendor, VendorInfo][]).map(([key, info]) => {
           const count = configs.filter((c) => c.vendor === key).length;
           return (
             <Card key={key} className="border border-border/60">

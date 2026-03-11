@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,12 +14,20 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, CalendarHeart } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { parseISO } from "date-fns";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
+import { getErrorMessage } from "@/lib/errors";
+import type { PublicHolidayId } from "@/lib/convexTypes";
 
 interface Holiday {
-  id: string; name: string; date: string; description: string | null; is_recurring: boolean; created_at: string;
+  id: PublicHolidayId; name: string; date: string; description: string | null; is_recurring: boolean; created_at: string;
 }
+
+const holidayDateFormatter = new Intl.DateTimeFormat(undefined, {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+});
 
 const Holidays = () => {
   const { hasRole } = useAuth();
@@ -35,12 +44,32 @@ const Holidays = () => {
   const [pageLoading, setPageLoading] = useState(true);
   const [yearFilter, setYearFilter] = useState(new Date().getFullYear().toString());
 
-  const fetchHolidays = async () => {
-    const { data } = await supabase.from("public_holidays").select("*").gte("date", `${yearFilter}-01-01`).lte("date", `${yearFilter}-12-31`).order("date");
-    if (data) setHolidays(data);
-  };
+  const loadHolidays = useCallback(async (year: string) => {
+    const data = await convex.query(api.admin.getHolidays, { year: Number(year) });
+    setHolidays(data as Holiday[]);
+  }, []);
 
-  useEffect(() => { setPageLoading(true); fetchHolidays().finally(() => setPageLoading(false)); }, [yearFilter]);
+  useEffect(() => {
+    let cancelled = false;
+
+    setPageLoading(true);
+    convex
+      .query(api.admin.getHolidays, { year: Number(yearFilter) })
+      .then((data) => {
+        if (!cancelled) {
+          setHolidays(data as Holiday[]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setPageLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [yearFilter]);
 
   if (pageLoading) return (
     <div className="space-y-6">
@@ -55,22 +84,34 @@ const Holidays = () => {
   const handleSave = async () => {
     if (!name.trim() || !date) return;
     setLoading(true);
-    const payload = { name: name.trim(), date, description: description.trim() || null, is_recurring: isRecurring };
-    if (editing) {
-      const { error } = await supabase.from("public_holidays").update(payload).eq("id", editing.id);
-      if (error) toast.error(error.message); else toast.success("Holiday updated");
-    } else {
-      const { error } = await supabase.from("public_holidays").insert(payload);
-      if (error) toast.error(error.message); else toast.success("Holiday added");
+    try {
+      await convex.mutation(api.admin.saveHoliday, {
+        holidayId: editing?.id,
+        name: name.trim(),
+        date,
+        description: description.trim() || undefined,
+        isRecurring,
+      });
+      await loadHolidays(yearFilter);
+      setDialogOpen(false);
+      toast.success(editing ? "Holiday updated" : "Holiday added");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to save holiday"));
+    } finally {
+      setLoading(false);
     }
-    setLoading(false); setDialogOpen(false); fetchHolidays();
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const { error } = await supabase.from("public_holidays").delete().eq("id", deleteTarget.id);
-    if (error) toast.error(error.message); else toast.success("Holiday deleted");
-    setDeleteTarget(null); fetchHolidays();
+    try {
+      await convex.mutation(api.admin.deleteHoliday, { holidayId: deleteTarget.id });
+      await loadHolidays(yearFilter);
+      setDeleteTarget(null);
+      toast.success("Holiday deleted");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to delete holiday"));
+    }
   };
 
   const isPast = (d: string) => parseISO(d) < new Date();
@@ -85,7 +126,22 @@ const Holidays = () => {
           <p className="text-muted-foreground mt-1">Company-wide public holidays calendar</p>
         </div>
         <div className="flex items-center gap-3">
-          <Input type="number" value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="w-24 h-10" min={2020} max={2030} />
+          <div className="space-y-2">
+            <Label className="sr-only" htmlFor="holiday-year-filter">Holiday year</Label>
+            <Input
+              id="holiday-year-filter"
+              name="holidayYear"
+              type="number"
+              inputMode="numeric"
+              autoComplete="off"
+              aria-label="Filter holidays by year"
+              value={yearFilter}
+              onChange={(e) => setYearFilter(e.target.value)}
+              className="w-24 h-10"
+              min={2020}
+              max={2030}
+            />
+          </div>
           {isAdmin && (
             <Button onClick={openCreate} className="h-10">
               <Plus className="mr-2 h-4 w-4" /> Add Holiday
@@ -118,14 +174,14 @@ const Holidays = () => {
               <TableBody>
                 {holidays.map((h) => (
                   <TableRow key={h.id} className={isPast(h.date) ? "opacity-50" : ""}>
-                    <TableCell className="font-medium tabular-nums">{format(parseISO(h.date), "EEE, MMM d")}</TableCell>
+                    <TableCell className="font-medium tabular-nums">{holidayDateFormatter.format(parseISO(h.date))}</TableCell>
                     <TableCell className="font-medium">{h.name}</TableCell>
                     <TableCell className="max-w-[300px] truncate text-muted-foreground hidden md:table-cell">{h.description || "—"}</TableCell>
                     <TableCell>{h.is_recurring ? <Badge variant="secondary" className="text-xs">Yearly</Badge> : "—"}</TableCell>
                     {isAdmin && (
                       <TableCell className="space-x-1">
-                        <Button size="icon" variant="ghost" onClick={() => openEdit(h)} className="h-8 w-8"><Pencil className="h-3.5 w-3.5" /></Button>
-                        <Button size="icon" variant="ghost" onClick={() => setDeleteTarget(h)} className="h-8 w-8"><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => openEdit(h)} className="h-8 w-8" aria-label={`Edit ${h.name}`} title={`Edit ${h.name}`}><Pencil className="h-3.5 w-3.5" /></Button>
+                        <Button size="icon" variant="ghost" onClick={() => setDeleteTarget(h)} className="h-8 w-8" aria-label={`Delete ${h.name}`} title={`Delete ${h.name}`}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                       </TableCell>
                     )}
                   </TableRow>
@@ -147,7 +203,7 @@ const Holidays = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={loading || !name.trim() || !date}>{loading ? "Saving..." : "Save"}</Button>
+            <Button onClick={handleSave} disabled={loading || !name.trim() || !date}>{loading ? "Saving…" : "Save"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
