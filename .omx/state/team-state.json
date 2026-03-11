@@ -1,0 +1,16 @@
+{
+  "active": false,
+  "mode": "team",
+  "iteration": 0,
+  "max_iterations": 50,
+  "current_phase": "cancelled",
+  "task_description": "Analyze remaining Supabase-to-Convex migration gaps in leaveflow-pro using .omx/context/supabase-convex-migration-20260311T213722Z.md as grounding. Worker 1 owns AI assistant parity and biometrics scheduler hooks. Worker 2 owns attendance admin CRUD, storage ACL parity, audit coverage, and HR delegation parity. Report exact file-level gaps, auth risks, schema/index needs, and safe implementation suggestions; do not refactor unrelated UI.",
+  "started_at": "2026-03-11T21:38:49.173Z",
+  "tmux_pane_id": "%19",
+  "tmux_pane_set_at": "2026-03-11T21:38:49.173Z",
+  "linked_ralph": false,
+  "team_name": "analyze-remaining-supabase-to",
+  "agent_count": 2,
+  "agent_types": "executor",
+  "completed_at": "2026-03-11T21:55:53.946Z"
+}

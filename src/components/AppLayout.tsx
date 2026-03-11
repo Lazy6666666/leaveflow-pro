@@ -12,24 +12,38 @@ const AppLayout = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+      <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col">
-          <header className="h-14 flex items-center justify-between border-b bg-card/80 backdrop-blur-sm px-4 sticky top-0 z-10">
-            <div className="flex items-center">
-              <SidebarTrigger className="mr-4" />
-              <h1 className="text-sm font-medium text-foreground">BALANCE</h1>
+          <header className="sticky top-0 z-10 flex h-16 items-center justify-between border-b border-border bg-background px-4 sm:px-6">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger className="h-9 w-9 rounded-full border border-border bg-background shadow-none" />
+              <div className="hidden sm:block">
+                <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">BALANCE</p>
+                <h1 className="text-sm font-semibold text-foreground">Workforce control center</h1>
+              </div>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
               <NotificationBell />
-              <Button variant="ghost" size="icon" onClick={toggleTheme} className="h-9 w-9">
+              <Button
+                variant="ios-glass"
+                size="icon"
+                onClick={toggleTheme}
+                className="h-9 w-9 rounded-full"
+                aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
+              >
                 {theme === "light" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
               </Button>
             </div>
           </header>
-          <main className="flex-1 p-6 overflow-auto">
-            <div className="animate-fade-in">
-              <Outlet />
+          <main id="main-content" className="flex-1 overflow-auto px-4 py-6 sm:px-6 sm:py-8">
+            <div className="min-h-full">
+              <div className="animate-reveal">
+                <Outlet />
+              </div>
             </div>
           </main>
         </div>

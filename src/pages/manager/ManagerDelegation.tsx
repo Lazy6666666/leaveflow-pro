@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,9 +13,11 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { toast } from "sonner";
 import { UserCheck, Plus, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { getErrorMessage } from "@/lib/errors";
+import type { ManagerDelegationId } from "@/lib/convexTypes";
 
 interface Delegation {
-  id: string;
+  id: ManagerDelegationId;
   manager_id: string;
   delegate_id: string;
   start_date: string;
@@ -26,27 +29,39 @@ interface Delegation {
 interface ProfileMin { id: string; full_name: string | null; email: string | null; }
 
 const ManagerDelegation = () => {
-  const { user } = useAuth();
+  const { user, hasExplicitRole } = useAuth();
   const [delegations, setDelegations] = useState<Delegation[]>([]);
   const [profiles, setProfiles] = useState<ProfileMin[]>([]);
+  const [managerCandidates, setManagerCandidates] = useState<ProfileMin[]>([]);
+  const [managerId, setManagerId] = useState("");
   const [delegateId, setDelegateId] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const isHrAdmin = hasExplicitRole("hr_admin");
 
   const fetchData = async () => {
     if (!user) return;
-    const [delRes, profRes] = await Promise.all([
-      supabase
-        .from("manager_delegations" as any)
-        .select("*")
-        .or(`manager_id.eq.${user.id},delegate_id.eq.${user.id}`)
-        .order("created_at", { ascending: false }),
-      supabase.from("profiles").select("id, full_name, email"),
+    const [data, employeesData] = await Promise.all([
+      convex.query(api.manager.getDelegationsPageData, {}),
+      isHrAdmin ? convex.query(api.admin.getEmployeesData, {}) : Promise.resolve(null),
     ]);
-    if (delRes.data) setDelegations(delRes.data as unknown as Delegation[]);
-    if (profRes.data) setProfiles(profRes.data);
+    setDelegations(data.delegations as Delegation[]);
+    setProfiles(data.profiles as ProfileMin[]);
+    if (employeesData) {
+      const managerIds = new Set(
+        employeesData.roles
+          .filter((role) => role.role === "manager" || role.role === "hr_admin")
+          .map((role) => role.user_id),
+      );
+      const candidates = (employeesData.employees as ProfileMin[]).filter((profile) => managerIds.has(profile.id));
+      setManagerCandidates(candidates);
+      setManagerId((current) => current || candidates[0]?.id || "");
+    } else {
+      setManagerCandidates([]);
+      setManagerId("");
+    }
   };
 
   useEffect(() => { fetchData().finally(() => setLoading(false)); }, [user]);
@@ -59,41 +74,48 @@ const ManagerDelegation = () => {
   const dateError = startDate && endDate && endDate < startDate ? "End date must be on or after start date" : null;
 
   const handleCreate = async () => {
-    if (!user || !delegateId || !startDate || !endDate) return;
+    if (!user || !delegateId || !startDate || !endDate || (isHrAdmin && !managerId)) return;
     if (dateError) { toast.error(dateError); return; }
     setSubmitting(true);
-    const { error } = await (supabase.from("manager_delegations" as any) as any).insert({
-      manager_id: user.id,
-      delegate_id: delegateId,
-      start_date: startDate,
-      end_date: endDate,
-    });
-    if (error) {
-      toast.error(error.message);
-    } else {
+    try {
+      await convex.mutation(api.manager.createDelegation, {
+        managerId: isHrAdmin ? managerId : undefined,
+        delegateId,
+        startDate,
+        endDate,
+      });
       toast.success("Delegation created");
       setDelegateId(""); setStartDate(""); setEndDate("");
       fetchData();
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to create delegation"));
     }
     setSubmitting(false);
   };
 
-  const handleDeactivate = async (id: string) => {
-    const { error } = await (supabase.from("manager_delegations" as any) as any).update({ is_active: false }).eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Delegation deactivated");
-    fetchData();
+  const handleDeactivate = async (id: ManagerDelegationId) => {
+    try {
+      await convex.mutation(api.manager.deactivateDelegation, { delegationId: id });
+      toast.success("Delegation deactivated");
+      fetchData();
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to deactivate delegation"));
+    }
   };
 
-  const otherProfiles = profiles.filter((p) => p.id !== user?.id);
+  const effectiveManagerId = isHrAdmin ? managerId : user?.id;
+  const otherProfiles = profiles.filter((p) => p.id !== effectiveManagerId);
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <UserCheck className="h-6 w-6 text-primary" /> Approval Delegation
+    <div className="mx-auto max-w-6xl space-y-8">
+      <div className="space-y-2">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">Manager</p>
+        <h1 className="text-3xl font-serif font-semibold tracking-tight text-foreground flex items-center gap-2">
+          <UserCheck className="h-6 w-6 text-foreground" /> Approval Delegation
         </h1>
-        <p className="text-muted-foreground mt-1">Assign a temporary approver when you're away</p>
+        <p className="text-sm text-muted-foreground">
+          {isHrAdmin ? "Manage delegation coverage for any manager without changing the current workflow." : "Assign a temporary approver when you're away."}
+        </p>
       </div>
 
       <Card>
@@ -105,6 +127,19 @@ const ManagerDelegation = () => {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            {isHrAdmin && (
+              <div className="space-y-2">
+                <Label>Manager</Label>
+                <Select value={managerId} onValueChange={setManagerId}>
+                  <SelectTrigger className="h-11"><SelectValue placeholder="Select manager" /></SelectTrigger>
+                  <SelectContent>
+                    {managerCandidates.map((profile) => (
+                      <SelectItem key={profile.id} value={profile.id}>{profile.full_name || profile.email}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Delegate</Label>
               <Select value={delegateId} onValueChange={setDelegateId}>
@@ -126,7 +161,7 @@ const ManagerDelegation = () => {
               {dateError && <p className="text-xs text-destructive">{dateError}</p>}
             </div>
             <div className="flex items-end">
-              <Button onClick={handleCreate} disabled={submitting || !delegateId || !startDate || !endDate || !!dateError} className="h-11 w-full">
+              <Button onClick={handleCreate} disabled={submitting || !delegateId || !startDate || !endDate || !!dateError || (isHrAdmin && !managerId)} className="h-11 w-full">
                 {submitting ? "Creating..." : "Create"}
               </Button>
             </div>
@@ -136,7 +171,7 @@ const ManagerDelegation = () => {
 
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Your Delegations</CardTitle>
+          <CardTitle className="text-lg">{isHrAdmin ? "Delegations" : "Your Delegations"}</CardTitle>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -157,9 +192,12 @@ const ManagerDelegation = () => {
               <TableBody>
                 {delegations.map((d) => {
                   const isManager = d.manager_id === user?.id;
+                  const canDeactivate = d.is_active && (isManager || isHrAdmin);
                   return (
                     <TableRow key={d.id}>
-                      <TableCell className="text-sm">{isManager ? "You delegated to" : "Delegated by"}</TableCell>
+                      <TableCell className="text-sm">
+                        {isManager ? "You delegated to" : isHrAdmin ? `Manager ${profileName(d.manager_id)} delegated to` : "Delegated by"}
+                      </TableCell>
                       <TableCell className="font-medium">{profileName(isManager ? d.delegate_id : d.manager_id)}</TableCell>
                       <TableCell className="tabular-nums text-sm">
                         {format(parseISO(d.start_date), "MMM d")} — {format(parseISO(d.end_date), "MMM d, yyyy")}
@@ -170,7 +208,7 @@ const ManagerDelegation = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {isManager && d.is_active && (
+                        {canDeactivate && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button size="sm" variant="ghost" className="h-8 text-destructive">
@@ -181,7 +219,7 @@ const ManagerDelegation = () => {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>Deactivate Delegation</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Are you sure you want to deactivate this delegation to {profileName(d.delegate_id)}? They will no longer be able to approve requests on your behalf.
+                                  Are you sure you want to deactivate this delegation to {profileName(d.delegate_id)}? They will no longer be able to approve requests on behalf of {profileName(d.manager_id)}.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>

@@ -1,14 +1,12 @@
-import { useEffect, useState } from "react";
 import {
   LayoutDashboard, CalendarDays, PlusCircle, History, CalendarHeart,
   UserCog, CheckSquare, CalendarRange, Users, Settings,
   BarChart3, Building2, Wallet, LogOut, ShieldCheck, Fingerprint, CreditCard, ClipboardList, UserCheck,
 } from "lucide-react";
-import balanceLogo from "@/assets/balance-logo.png";
+import { motion } from "framer-motion";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
 import {
   Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
   SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
@@ -27,9 +25,12 @@ const employeeItems = [
   { title: "Profile", url: "/profile", icon: UserCog },
 ];
 
-const managerItems = [
+const delegateManagerItems = [
   { title: "Approvals", url: "/manager/approvals", icon: CheckSquare },
   { title: "Team Calendar", url: "/manager/team-calendar", icon: CalendarRange },
+];
+
+const managerOnlyItems = [
   { title: "Team Attendance", url: "/manager/team-attendance", icon: Fingerprint },
   { title: "Delegation", url: "/manager/delegation", icon: UserCheck },
 ];
@@ -51,19 +52,11 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
   const location = useLocation();
-  const { hasRole, signOut, user } = useAuth();
-  const [showSetup, setShowSetup] = useState(false);
-
-  useEffect(() => {
-    supabase
-      .from("user_roles")
-      .select("id")
-      .eq("role", "hr_admin")
-      .limit(1)
-      .then(({ data }) => {
-        setShowSetup(!data || data.length === 0);
-      });
-  }, [hasRole("hr_admin")]);
+  const { hasExplicitRole, hasManagerAccess, hasRole, signOut, user, needsAdminSetup } = useAuth();
+  const canAccessManagerOnlyTools = hasExplicitRole("manager") || hasExplicitRole("hr_admin");
+  const managerItems = canAccessManagerOnlyTools
+    ? [...delegateManagerItems, ...managerOnlyItems]
+    : delegateManagerItems;
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -74,43 +67,53 @@ export function AppSidebar() {
           <NavLink
             to={item.url}
             end
-            className="hover:bg-sidebar-accent/60 transition-colors"
-            activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+            className="relative overflow-hidden rounded-2xl px-3.5 py-3 text-sidebar-foreground/72 transition-colors duration-300 ease-apple-ease hover:bg-black/[0.035] hover:text-sidebar-foreground"
+            activeClassName="text-sidebar-foreground font-medium"
           >
-            <item.icon className="mr-2 h-4 w-4" />
-            {!collapsed && <span>{item.title}</span>}
+            {isActive(item.url) ? (
+              <motion.span
+                layoutId="sidebar-active-pill"
+                className="absolute inset-0 rounded-2xl border border-border bg-foreground/[0.045]"
+                transition={{ type: "spring", stiffness: 420, damping: 30 }}
+              />
+            ) : null}
+            <item.icon className="relative z-10 mr-3 h-4 w-4 shrink-0" />
+            {!collapsed && <span className="relative z-10 text-[13.5px] leading-none">{item.title}</span>}
           </NavLink>
         </SidebarMenuButton>
       </SidebarMenuItem>
     ));
 
   return (
-    <Sidebar collapsible="icon">
-      <SidebarContent>
+    <Sidebar collapsible="icon" className="border-r border-border bg-background">
+      <SidebarContent className="gap-1 pt-1">
         {!collapsed && (
-          <div className="px-4 py-5 flex items-center gap-3">
-            <img src={balanceLogo} alt="BALANCE" className="h-9 w-9 rounded-lg object-cover shrink-0" />
-            <div className="min-w-0">
-              <h2 className="text-sm font-semibold text-sidebar-foreground leading-tight">BALANCE</h2>
-              <p className="text-xs text-sidebar-foreground/50 truncate">{user?.email}</p>
+          <div className="mx-5 mt-4 flex items-center gap-3.5 border-b border-border pb-5">
+            <div className="flex h-[5.25rem] w-[5.25rem] shrink-0 items-center justify-center rounded-[1.5rem] border border-stone-300 bg-stone-100 p-2.5 shadow-[0_12px_28px_hsl(0_0%_0%/0.08)]">
+              <img src="/favicon.ico" alt="BALANCE" className="h-full w-full object-contain" />
+            </div>
+            <div className="min-w-0 space-y-1.5">
+              <p className="text-[10px] uppercase tracking-[0.28em] text-sidebar-foreground/42">Workspace</p>
+              <h2 className="text-base font-semibold tracking-[0.18em] text-sidebar-foreground leading-none">BALANCE</h2>
+              <p className="text-[11px] leading-5 text-sidebar-foreground/55 truncate">{user?.email}</p>
             </div>
           </div>
         )}
 
-        <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/40 text-[11px] uppercase tracking-wider">Employee</SidebarGroupLabel>
+        <SidebarGroup className="pt-3">
+          <SidebarGroupLabel className="px-5 pb-2 text-sidebar-foreground/38 text-[10px] uppercase tracking-[0.28em]">Employee</SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>{renderNavItems(employeeItems)}</SidebarMenu>
+            <SidebarMenu className="space-y-1.5 px-3.5">{renderNavItems(employeeItems)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {hasRole("manager") && (
+        {hasManagerAccess && (
           <>
-            <Separator className="mx-4 w-auto bg-sidebar-border" />
+            <Separator className="mx-5 my-3 w-auto bg-border" />
             <SidebarGroup>
-              <SidebarGroupLabel className="text-sidebar-foreground/40 text-[11px] uppercase tracking-wider">Manager</SidebarGroupLabel>
+              <SidebarGroupLabel className="px-5 pb-2 text-sidebar-foreground/38 text-[10px] uppercase tracking-[0.28em]">Manager</SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>{renderNavItems(managerItems)}</SidebarMenu>
+                <SidebarMenu className="space-y-1.5 px-3.5">{renderNavItems(managerItems)}</SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
           </>
@@ -118,33 +121,40 @@ export function AppSidebar() {
 
         {hasRole("hr_admin") && (
           <>
-            <Separator className="mx-4 w-auto bg-sidebar-border" />
+            <Separator className="mx-5 my-3 w-auto bg-border" />
             <SidebarGroup>
-              <SidebarGroupLabel className="text-sidebar-foreground/40 text-[11px] uppercase tracking-wider">HR Admin</SidebarGroupLabel>
+              <SidebarGroupLabel className="px-5 pb-2 text-sidebar-foreground/38 text-[10px] uppercase tracking-[0.28em]">HR Admin</SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>{renderNavItems(adminItems)}</SidebarMenu>
+                <SidebarMenu className="space-y-1.5 px-3.5">{renderNavItems(adminItems)}</SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
           </>
         )}
 
-        {showSetup && !hasRole("hr_admin") && (
+        {needsAdminSetup && !hasRole("hr_admin") && (
           <>
-            <Separator className="mx-4 w-auto bg-sidebar-border" />
+            <Separator className="mx-5 my-3 w-auto bg-border" />
             <SidebarGroup>
-              <SidebarGroupLabel className="text-sidebar-foreground/40 text-[11px] uppercase tracking-wider">Setup</SidebarGroupLabel>
+              <SidebarGroupLabel className="px-5 pb-2 text-sidebar-foreground/38 text-[10px] uppercase tracking-[0.28em]">Setup</SidebarGroupLabel>
               <SidebarGroupContent>
-                <SidebarMenu>
+                <SidebarMenu className="space-y-1.5 px-3.5">
                   <SidebarMenuItem>
                     <SidebarMenuButton asChild isActive={isActive("/admin-setup")}>
                       <NavLink
                         to="/admin-setup"
                         end
-                        className="hover:bg-sidebar-accent/60 transition-colors"
-                        activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                        className="relative overflow-hidden rounded-2xl px-3.5 py-3 text-sidebar-foreground/72 transition-colors duration-300 ease-apple-ease hover:bg-black/[0.035] hover:text-sidebar-foreground"
+                        activeClassName="text-sidebar-foreground font-medium"
                       >
-                        <ShieldCheck className="mr-2 h-4 w-4" />
-                        {!collapsed && <span>Admin Setup</span>}
+                        {isActive("/admin-setup") ? (
+                          <motion.span
+                            layoutId="sidebar-active-pill"
+                            className="absolute inset-0 rounded-2xl border border-border bg-foreground/[0.045]"
+                            transition={{ type: "spring", stiffness: 420, damping: 30 }}
+                          />
+                        ) : null}
+                        <ShieldCheck className="relative z-10 mr-3 h-4 w-4 shrink-0" />
+                        {!collapsed && <span className="relative z-10 text-[13.5px] leading-none">Admin Setup</span>}
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -155,14 +165,14 @@ export function AppSidebar() {
         )}
       </SidebarContent>
 
-      <SidebarFooter className="border-t border-sidebar-border">
+      <SidebarFooter className="mx-3.5 mb-3.5 mt-auto rounded-[1.4rem] border border-border bg-card">
         <Button
           variant="ghost"
-          className="w-full justify-start text-sidebar-foreground/60 hover:text-destructive hover:bg-sidebar-accent/50"
+          className="w-full justify-start rounded-[1.2rem] px-3.5 py-6 text-black dark:text-white hover:bg-black/[0.035] hover:text-destructive dark:hover:bg-white/[0.06]"
           onClick={signOut}
         >
-          <LogOut className="mr-2 h-4 w-4" />
-          {!collapsed && <span>Sign Out</span>}
+          <LogOut className="mr-3 h-4 w-4 shrink-0" />
+          {!collapsed && <span className="text-[13.5px] leading-none">Sign Out</span>}
         </Button>
       </SidebarFooter>
     </Sidebar>

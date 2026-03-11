@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,12 +26,7 @@ const TeamCalendar = () => {
     const fetchLeaves = async () => {
       const monthStart = format(startOfMonth(currentMonth), "yyyy-MM-dd");
       const monthEnd = format(endOfMonth(currentMonth), "yyyy-MM-dd");
-      const { data } = await supabase
-        .from("leave_requests")
-        .select("id, start_date, end_date, status, profiles:employee_id(full_name), leave_types(name)")
-        .eq("status", "approved")
-        .gte("end_date", monthStart)
-        .lte("start_date", monthEnd);
+      const data = await convex.query(api.leave.getTeamCalendar, { startDate: monthStart, endDate: monthEnd });
       if (data) setLeaves(data as unknown as TeamLeave[]);
     };
     fetchLeaves().finally(() => setPageLoading(false));
@@ -51,12 +47,13 @@ const TeamCalendar = () => {
   const startDay = startOfMonth(currentMonth).getDay();
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <CalendarRange className="h-6 w-6 text-primary" /> Team Calendar
+    <div className="mx-auto max-w-6xl space-y-8">
+      <div className="space-y-2">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">Manager</p>
+        <h1 className="text-3xl font-serif font-semibold tracking-tight text-foreground flex items-center gap-2">
+          <CalendarRange className="h-6 w-6 text-foreground" /> Team Calendar
         </h1>
-        <p className="text-muted-foreground mt-1">View approved team leaves</p>
+        <p className="text-sm text-muted-foreground">View approved team leaves.</p>
       </div>
 
       <Card>

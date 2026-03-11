@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -9,17 +10,17 @@ import { Clock, CalendarDays, Camera, MapPin } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { SelfieLightbox } from "@/components/attendance/SelfieLightbox";
-import { Json } from "@/integrations/supabase/types";
+import type { LatLng, StorageId } from "@/lib/convexTypes";
 
 interface AttendanceLog {
   id: string;
   date: string;
   clock_in: string | null;
   clock_out: string | null;
-  selfie_clock_in: string | null;
-  selfie_clock_out: string | null;
-  location_clock_in: Json | null;
-  location_clock_out: Json | null;
+  selfie_clock_in: StorageId | null;
+  selfie_clock_out: StorageId | null;
+  location_clock_in: LatLng | null;
+  location_clock_out: LatLng | null;
   status: string;
   source: string;
   notes: string | null;
@@ -30,29 +31,37 @@ const AttendanceHistory = () => {
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [monthOffset, setMonthOffset] = useState("0");
-  const [lightboxPath, setLightboxPath] = useState<string | null>(null);
+  const [lightboxPath, setLightboxPath] = useState<StorageId | null>(null);
   const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(logs, 20);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setLogs([]);
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
     const fetchLogs = async () => {
       setLoading(true);
-      const targetDate = subMonths(new Date(), parseInt(monthOffset));
-      const start = format(startOfMonth(targetDate), "yyyy-MM-dd");
-      const end = format(endOfMonth(targetDate), "yyyy-MM-dd");
-
-      const { data } = await supabase
-        .from("attendance_logs")
-        .select("id, date, clock_in, clock_out, selfie_clock_in, selfie_clock_out, location_clock_in, location_clock_out, status, source, notes")
-        .eq("employee_id", user.id)
-        .gte("date", start)
-        .lte("date", end)
-        .order("date", { ascending: false });
-
-      setLogs((data as AttendanceLog[]) || []);
-      setLoading(false);
+      try {
+        const data = await convex.query(api.attendance.getAttendanceHistory, { monthOffset: parseInt(monthOffset) });
+        if (!cancelled) {
+          setLogs((data as AttendanceLog[]) || []);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
     };
+
     fetchLogs();
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, monthOffset]);
 
   const statusColor = (s: string) => {
@@ -84,9 +93,10 @@ const AttendanceHistory = () => {
   const targetDate = subMonths(new Date(), parseInt(monthOffset));
 
   return (
-    <div className="space-y-8 max-w-4xl">
+    <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex items-center justify-between">
         <div>
+          <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">Attendance</p>
           <h1 className="text-2xl font-serif font-semibold tracking-tight text-foreground">
             Attendance History
           </h1>
@@ -109,25 +119,25 @@ const AttendanceHistory = () => {
 
       {/* Stats */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Card className="border-0 shadow-sm">
+        <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Days Logged</p>
             <p className="text-2xl font-semibold tabular-nums text-foreground">{stats.total}</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-sm">
+        <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Present</p>
             <p className="text-2xl font-semibold tabular-nums text-foreground">{stats.present}</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-sm">
+        <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Late</p>
-            <p className="text-2xl font-semibold tabular-nums text-destructive">{stats.late}</p>
+            <p className="text-2xl font-semibold tabular-nums text-foreground">{stats.late}</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-sm">
+        <Card>
           <CardContent className="p-4">
             <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Absent</p>
             <p className="text-2xl font-semibold tabular-nums text-muted-foreground">{stats.absent}</p>
@@ -136,7 +146,7 @@ const AttendanceHistory = () => {
       </div>
 
       {/* Logs */}
-      <Card className="border-0 shadow-sm">
+      <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium text-foreground flex items-center gap-2">
             <CalendarDays className="h-4 w-4" />
@@ -176,9 +186,9 @@ const AttendanceHistory = () => {
                                 />
                               </div>
                             )}
-                            {log.location_clock_in && typeof log.location_clock_in === 'object' && (
+                            {log.location_clock_in && (
                               <a
-                                href={`https://www.google.com/maps?q=${(log.location_clock_in as any).lat},${(log.location_clock_in as any).lng}`}
+                                href={`https://www.google.com/maps?q=${log.location_clock_in.lat},${log.location_clock_in.lng}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 title="View clock-in location"
@@ -199,9 +209,9 @@ const AttendanceHistory = () => {
                                 />
                               </div>
                             )}
-                            {log.location_clock_out && typeof log.location_clock_out === 'object' && (
+                            {log.location_clock_out && (
                               <a
-                                href={`https://www.google.com/maps?q=${(log.location_clock_out as any).lat},${(log.location_clock_out as any).lng}`}
+                                href={`https://www.google.com/maps?q=${log.location_clock_out.lat},${log.location_clock_out.lng}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 title="View clock-out location"

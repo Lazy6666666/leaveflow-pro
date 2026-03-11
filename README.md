@@ -59,6 +59,57 @@ This project is built with:
 - React
 - shadcn-ui
 - Tailwind CSS
+- Clerk
+- Convex
+
+## Backend operational notes
+
+### Clerk onboarding webhook
+
+The Convex backend now exposes a server-side provisioning endpoint at `/clerk/onboarding`.
+
+Required server env:
+
+- `CLERK_ONBOARDING_SECRET`
+- `CLERK_JWT_ISSUER_DOMAIN`
+- `CLERK_APPLICATION_ID`
+
+Recommended flow:
+
+1. Set `CLERK_ONBOARDING_SECRET` in Convex env and send the same secret with the onboarding request.
+2. Configure your trusted server-side onboarding source to POST `user.created` and `user.updated`-style payloads to:
+   `https://<your-convex-site>/clerk/onboarding`
+3. Send the shared secret in one of:
+   - `x-clerk-onboarding-secret`
+   - `x-webhook-secret`
+   - `Authorization: Bearer <secret>`
+
+This route provisions:
+
+- `profiles`
+- default `employee` role
+- current-year leave balances
+
+The browser-side `ensureCurrentUser` mutation is still present as a safety net, but the preferred production path is now server-to-server onboarding.
+
+### Biometrics sync scheduler
+
+The Convex cron scheduler now runs a recurring biometrics sync check every 1 minute.
+
+Behavior:
+
+- only active biometrics configs are checked
+- only configs whose `syncFrequencyMinutes` window has elapsed are synced
+- `generic_webhook` configs are skipped by the pull scheduler and remain webhook-driven
+
+### Generic webhook site URL
+
+For generic biometrics webhook testing, set one of:
+
+- `CONVEX_SITE_URL`
+- `VITE_CONVEX_SITE_URL`
+
+`CONVEX_SITE_URL` is preferred. The backend no longer falls back to a placeholder URL.
 
 ## How can I deploy this project?
 

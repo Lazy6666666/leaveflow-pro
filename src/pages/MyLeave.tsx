@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -18,14 +19,7 @@ const MyLeave = () => {
 
   const { data: balances = [], isLoading } = useQuery({
     queryKey: ["leave-balances", user?.id, currentYear],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("leave_balances")
-        .select("balance, leave_type_id, year, leave_types(name, annual_allocation, carry_forward_limit)")
-        .eq("employee_id", user!.id)
-        .eq("year", currentYear);
-      return (data as unknown as LeaveBalance[]) || [];
-    },
+    queryFn: async () => (await convex.query(api.leave.getMyBalances, { year: currentYear })) as LeaveBalance[],
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
   });
@@ -40,13 +34,14 @@ const MyLeave = () => {
   );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">My Leave</h1>
-        <p className="text-muted-foreground mt-1">Your leave balances for {currentYear}</p>
+    <div className="mx-auto max-w-6xl space-y-8">
+      <div className="space-y-2">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">Leave</p>
+        <h1 className="text-3xl font-serif font-semibold tracking-tight text-foreground">My Leave</h1>
+        <p className="text-sm text-muted-foreground">Your leave balances for {currentYear}</p>
       </div>
 
-      <div className="grid gap-5 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-2">
         {balances.map((b) => {
           const total = b.leave_types?.annual_allocation || 0;
           const used = total - b.balance;

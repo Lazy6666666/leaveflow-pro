@@ -1,21 +1,24 @@
 import { useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { CheckSquare, Inbox } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import { getErrorMessage } from "@/lib/errors";
+import type { LeaveRequestId } from "@/lib/convexTypes";
 
 interface PendingRequest {
-  id: string;
+  id: LeaveRequestId;
   start_date: string;
   end_date: string;
   reason: string | null;
@@ -33,31 +36,23 @@ const Approvals = () => {
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["pending-approvals"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("leave_requests")
-        .select("id, start_date, end_date, reason, status, created_at, profiles:employee_id(full_name, email), leave_types(name)")
-        .eq("status", "pending")
-        .order("created_at", { ascending: true });
-      return (data as unknown as PendingRequest[]) || [];
-    },
+    queryFn: async () => (await convex.query(api.leave.getPendingApprovals, {})) as PendingRequest[],
     staleTime: 60 * 1000,
   });
 
   const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(requests, 10);
 
   const actionMutation = useMutation({
-    mutationFn: async ({ id, status, comment }: { id: string; status: string; comment: string | null }) => {
-      const { error } = await supabase
-        .from("leave_requests")
-        .update({ status, manager_comment: comment })
-        .eq("id", id);
-      if (error) throw error;
+    mutationFn: async ({ id, status, comment }: { id: LeaveRequestId; status: "approved" | "rejected"; comment: string | null }) => {
+      await convex.mutation(api.leave.updateRequestStatus, {
+        requestId: id,
+        status,
+        managerComment: comment || undefined,
+      });
       return { id, status };
     },
     onSuccess: ({ id, status }) => {
       toast.success(`Request ${status}`);
-      supabase.functions.invoke("notify-leave", { body: { type: status, request_id: id } }).catch(() => {});
       setSelectedRequest(null);
       setComment("");
       setAction(null);
@@ -66,7 +61,7 @@ const Approvals = () => {
       queryClient.invalidateQueries({ queryKey: ["leave-balances"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-balances"] });
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err) => toast.error(getErrorMessage(err, "Failed to update request")),
   });
 
   if (isLoading) return (
@@ -82,12 +77,13 @@ const Approvals = () => {
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <CheckSquare className="h-6 w-6 text-primary" /> Pending Approvals
+    <div className="mx-auto max-w-6xl space-y-8">
+      <div className="space-y-2">
+        <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">Manager</p>
+        <h1 className="text-3xl font-serif font-semibold tracking-tight text-foreground flex items-center gap-2">
+          <CheckSquare className="h-6 w-6 text-foreground" /> Pending Approvals
         </h1>
-        <p className="text-muted-foreground mt-1">Review and action team leave requests</p>
+        <p className="text-sm text-muted-foreground">Review and action team leave requests.</p>
       </div>
 
       <Card>
@@ -144,6 +140,9 @@ const Approvals = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{action === "approved" ? "Approve" : "Reject"} Leave Request</DialogTitle>
+            <DialogDescription>
+              Review the request details and optionally leave a comment before confirming your decision.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="bg-muted/50 rounded-lg p-4 space-y-1 text-sm">

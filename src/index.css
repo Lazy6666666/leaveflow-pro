@@ -1,59 +1,68 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 210 20% 98%;
-    --foreground: 220 25% 10%;
+    --background: 0 0% 98%;
+    --foreground: 0 0% 10%;
+    --background-elevated: 0 0% 100%;
+    --background-deep: 0 0% 94%;
 
     --card: 0 0% 100%;
-    --card-foreground: 220 25% 10%;
+    --card-foreground: 0 0% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 220 25% 10%;
+    --popover-foreground: 0 0% 10%;
 
-    --primary: 168 56% 34%;
+    --primary: 0 0% 34%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 14% 93%;
-    --secondary-foreground: 220 20% 25%;
+    --secondary: 0 0% 93%;
+    --secondary-foreground: 0 0% 25%;
 
-    --muted: 210 14% 93%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 0 0% 93%;
+    --muted-foreground: 0 0% 46%;
 
-    --accent: 168 40% 94%;
-    --accent-foreground: 168 56% 24%;
+    --accent: 0 0% 94%;
+    --accent-foreground: 0 0% 24%;
 
-    --destructive: 0 72% 50%;
+    --destructive: 0 0% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 13% 90%;
-    --input: 220 13% 90%;
-    --ring: 168 56% 34%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 0 0% 34%;
+    --glass-highlight: 0 0% 100%;
+    --glass-shadow: 0 0% 10%;
+    --glass-accent: 0 0% 74%;
+    --blur-sm: 4px;
+    --blur-md: 12px;
+    --blur-lg: 24px;
 
     --radius: 0.75rem;
 
-    --sidebar-background: 220 20% 14%;
-    --sidebar-foreground: 210 20% 90%;
-    --sidebar-primary: 168 56% 48%;
+    --sidebar-background: 0 0% 14%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 0 0% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 18% 20%;
-    --sidebar-accent-foreground: 210 20% 90%;
-    --sidebar-border: 220 18% 22%;
-    --sidebar-ring: 168 56% 48%;
+    --sidebar-accent: 0 0% 20%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 22%;
+    --sidebar-ring: 0 0% 48%;
 
-    --chart-1: 168 56% 34%;
-    --chart-2: 168 40% 50%;
-    --chart-3: 200 55% 50%;
-    --chart-4: 220 20% 60%;
-    --chart-5: 260 40% 55%;
+    --chart-1: 0 0% 34%;
+    --chart-2: 0 0% 50%;
+    --chart-3: 0 0% 50%;
+    --chart-4: 0 0% 60%;
+    --chart-5: 0 0% 55%;
 
-    --sidebar: 220 20% 14%;
+    --sidebar: 0 0% 14%;
 
-    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     --font-serif: 'Playfair Display', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
     --font-mono: 'SF Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
@@ -71,49 +80,54 @@
   }
 
   .dark {
-    --background: 220 20% 7%;
-    --foreground: 210 20% 95%;
+    --background: 0 0% 7%;
+    --foreground: 0 0% 95%;
+    --background-elevated: 0 0% 10%;
+    --background-deep: 0 0% 5%;
 
-    --card: 220 20% 10%;
-    --card-foreground: 210 20% 95%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 95%;
 
-    --popover: 220 20% 12%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 0 0% 12%;
+    --popover-foreground: 0 0% 95%;
 
-    --primary: 168 56% 48%;
-    --primary-foreground: 220 25% 6%;
+    --primary: 0 0% 48%;
+    --primary-foreground: 0 0% 6%;
 
-    --secondary: 220 18% 18%;
-    --secondary-foreground: 210 20% 85%;
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 0 0% 85%;
 
-    --muted: 220 14% 16%;
-    --muted-foreground: 220 10% 55%;
+    --muted: 0 0% 16%;
+    --muted-foreground: 0 0% 55%;
 
-    --accent: 220 18% 16%;
-    --accent-foreground: 168 56% 55%;
+    --accent: 0 0% 16%;
+    --accent-foreground: 0 0% 55%;
 
-    --destructive: 0 72% 55%;
+    --destructive: 0 0% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 18% 18%;
-    --input: 220 18% 18%;
-    --ring: 168 56% 48%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 48%;
+    --glass-highlight: 0 0% 100%;
+    --glass-shadow: 0 0% 2%;
+    --glass-accent: 0 0% 52%;
 
-    --sidebar-background: 220 25% 6%;
-    --sidebar-foreground: 210 20% 90%;
-    --sidebar-primary: 168 56% 48%;
-    --sidebar-primary-foreground: 220 25% 6%;
-    --sidebar-accent: 220 18% 12%;
-    --sidebar-accent-foreground: 210 20% 90%;
-    --sidebar-border: 220 18% 14%;
-    --sidebar-ring: 168 56% 48%;
+    --sidebar-background: 0 0% 6%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 0 0% 48%;
+    --sidebar-primary-foreground: 0 0% 6%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 90%;
+    --sidebar-border: 0 0% 14%;
+    --sidebar-ring: 0 0% 48%;
 
-    --chart-1: 168 56% 48%;
-    --chart-2: 168 40% 55%;
-    --chart-3: 200 55% 55%;
-    --chart-4: 220 20% 55%;
-    --chart-5: 260 40% 60%;
-    --sidebar: 220 25% 6%;
+    --chart-1: 0 0% 48%;
+    --chart-2: 0 0% 55%;
+    --chart-3: 0 0% 55%;
+    --chart-4: 0 0% 55%;
+    --chart-5: 0 0% 60%;
+    --sidebar: 0 0% 6%;
   }
 }
 
@@ -122,8 +136,116 @@
     @apply border-border;
   }
 
+  html {
+    color-scheme: light;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans);
+    min-height: 100vh;
+    background: hsl(var(--background));
+    letter-spacing: -0.01em;
+  }
+
+  :where(a, button, input, select, textarea, summary, [role="button"], [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
+  .skip-link {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    z-index: 50;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    background: hsl(var(--background));
+    color: hsl(var(--foreground));
+    box-shadow: var(--shadow-md);
+    transform: translateY(-200%);
+    transition: transform 150ms ease;
+  }
+
+  .skip-link:focus-visible {
+    transform: translateY(0);
+  }
+}
+
+@layer components {
+  .glass {
+    background: hsl(var(--background-elevated));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid hsl(var(--border));
+    box-shadow:
+      inset 0 1px 0 hsl(var(--glass-highlight) / 0.04),
+      0 10px 24px hsl(var(--glass-shadow) / 0.05);
+  }
+
+  .glass-dark {
+    background: hsl(var(--background-elevated));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border: 1px solid hsl(var(--border));
+    box-shadow:
+      inset 0 1px 0 hsl(var(--glass-highlight) / 0.04),
+      0 12px 28px hsl(var(--glass-shadow) / 0.22);
+  }
+
+  .glass-panel {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .glass-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(180deg, hsl(var(--glass-highlight) / 0.03), transparent 18%);
+    pointer-events: none;
+    z-index: -1;
+  }
+
+  .glass-skeleton {
+    position: relative;
+    overflow: hidden;
+    background: hsl(var(--background-elevated) / 0.92);
+    border: 1px solid hsl(var(--border) / 0.9);
+    box-shadow: inset 0 1px 0 hsl(var(--glass-highlight) / 0.04);
+  }
+
+  .glass-skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(90deg, transparent, hsl(var(--glass-highlight) / 0.28), transparent);
+    animation: shimmer 2.6s infinite;
+  }
+
+  .app-blob {
+    display: none;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(0, -22px, 0) scale(1.06);
   }
 }

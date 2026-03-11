@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -24,14 +25,7 @@ const TeamAttendance = () => {
   useEffect(() => {
     const fetchTeam = async () => {
       setLoading(true);
-      const date = format(subDays(new Date(), parseInt(selectedDate)), "yyyy-MM-dd");
-
-      const { data } = await supabase
-        .from("attendance_logs")
-        .select("id, date, clock_in, clock_out, status, profiles:employee_id(full_name, email)")
-        .eq("date", date)
-        .order("clock_in", { ascending: true });
-
+      const data = await convex.query(api.attendance.getTeamAttendance, { dayOffset: parseInt(selectedDate) });
       setLogs((data as unknown as TeamLog[]) || []);
       setLoading(false);
     };
@@ -60,9 +54,10 @@ const TeamAttendance = () => {
   };
 
   return (
-    <div className="space-y-8 max-w-4xl">
+    <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex items-center justify-between">
         <div>
+          <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">Manager</p>
           <h1 className="text-2xl font-serif font-semibold tracking-tight text-foreground">
             Team Attendance
           </h1>
@@ -86,19 +81,19 @@ const TeamAttendance = () => {
 
       {/* Stats */}
       <div className="grid gap-4 grid-cols-3">
-        <Card className="border-0 shadow-sm">
+        <Card>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-semibold tabular-nums text-foreground">{stats.present}</p>
             <p className="text-xs text-muted-foreground mt-1">Present</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-sm">
+        <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-semibold tabular-nums text-destructive">{stats.late}</p>
+            <p className="text-2xl font-semibold tabular-nums text-foreground">{stats.late}</p>
             <p className="text-xs text-muted-foreground mt-1">Late</p>
           </CardContent>
         </Card>
-        <Card className="border-0 shadow-sm">
+        <Card>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-semibold tabular-nums text-muted-foreground">{stats.absent}</p>
             <p className="text-xs text-muted-foreground mt-1">Absent</p>
@@ -107,7 +102,7 @@ const TeamAttendance = () => {
       </div>
 
       {/* Team List */}
-      <Card className="border-0 shadow-sm">
+      <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-base font-medium text-foreground flex items-center gap-2">
             <Users className="h-4 w-4" />

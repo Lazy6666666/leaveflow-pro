@@ -1,156 +1,97 @@
-import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
+import { endOfWeek, parseISO, startOfToday, startOfWeek } from "date-fns";
 import {
-  CalendarDays, PlusCircle, CheckSquare, Clock, CalendarHeart,
-  ArrowRight, Users, TrendingUp, Sparkles,
+  ArrowRight,
+  CalendarDays,
+  CalendarHeart,
+  CheckSquare,
+  Clock,
+  PlusCircle,
+  Sparkles,
+  TrendingUp,
+  Users,
 } from "lucide-react";
-import { DashboardSkeleton } from "@/components/skeletons";
-import { ClockInOutWidget } from "@/components/attendance/ClockInOutWidget";
-import { format, parseISO, startOfToday, endOfWeek, startOfWeek } from "date-fns";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { Link } from "react-router-dom";
 
-interface LeaveBalance {
-  balance: number;
-  leave_type_id: string;
-  year: number;
-  leave_types: { name: string; annual_allocation: number } | null;
-}
+import { ClockInOutWidget } from "@/components/attendance/ClockInOutWidget";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { DashboardSkeleton } from "@/components/skeletons";
+import { useAuth } from "@/contexts/AuthContext";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 
-interface RecentRequest {
-  id: string;
-  start_date: string;
-  end_date: string;
-  status: string;
-  leave_types: { name: string } | null;
-}
+const DONUT_COLORS = ["hsl(var(--primary))", "hsl(var(--muted))"];
+const STALE_TIME = 5 * 60 * 1000;
+const cardShellClass = "glass glass-panel rounded-[1.75rem] border border-white/10 bg-white/10 shadow-xl dark:bg-white/5";
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08, delayChildren: 0.08 },
+  },
+};
+const revealItem = {
+  hidden: { opacity: 0, y: 18, scale: 0.985 },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { type: "spring" as const, stiffness: 220, damping: 22 },
+  },
+};
 
-interface Holiday {
-  id: string;
-  name: string;
-  date: string;
-}
-
-interface TeamAbsence {
-  id: string;
-  start_date: string;
-  end_date: string;
-  profiles: { full_name: string | null; email: string | null } | null;
-  leave_types: { name: string } | null;
-}
-
-const DONUT_COLORS = [
-  "hsl(168, 56%, 34%)",
-  "hsl(220, 14%, 83%)",
-];
-
-const STALE_TIME = 5 * 60 * 1000; // 5 minutes
+const fullDateFormatter = new Intl.DateTimeFormat(undefined, {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
+const monthDayFormatter = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+});
+const monthDayYearFormatter = new Intl.DateTimeFormat(undefined, {
+  month: "short",
+  day: "numeric",
+  year: "numeric",
+});
+const weekdayMonthDayFormatter = new Intl.DateTimeFormat(undefined, {
+  weekday: "short",
+  month: "short",
+  day: "numeric",
+});
 
 const Dashboard = () => {
-  const { user, hasRole } = useAuth();
-  const navigate = useNavigate();
-  const currentYear = new Date().getFullYear();
-  const today = format(startOfToday(), "yyyy-MM-dd");
-  const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
-  const weekEnd = format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd");
-
-  const { data: balances = [], isLoading: balLoading } = useQuery({
-    queryKey: ["dashboard-balances", user?.id, currentYear],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("leave_balances")
-        .select("balance, leave_type_id, year, leave_types(name, annual_allocation)")
-        .eq("employee_id", user!.id)
-        .eq("year", currentYear);
-      return (data as unknown as LeaveBalance[]) || [];
-    },
+  const { user, hasExplicitRole, hasManagerAccess, hasRole } = useAuth();
+  const { data, isLoading } = useQuery({
+    queryKey: ["dashboard", user?.id],
+    queryFn: async () => convex.query(api.leave.getDashboardData, {}),
     enabled: !!user,
     staleTime: STALE_TIME,
   });
 
-  const { data: recentRequests = [], isLoading: recLoading } = useQuery({
-    queryKey: ["dashboard-recent", user?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("leave_requests")
-        .select("id, start_date, end_date, status, leave_types(name)")
-        .eq("employee_id", user!.id)
-        .order("created_at", { ascending: false })
-        .limit(5);
-      return (data as unknown as RecentRequest[]) || [];
-    },
-    enabled: !!user,
-    staleTime: STALE_TIME,
-  });
+  const balances = data?.balances ?? [];
+  const recentRequests = data?.recentRequests ?? [];
+  const upcomingHolidays = data?.upcomingHolidays ?? [];
+  const teamAbsences = data?.teamAbsences ?? [];
+  const pendingCount = data?.pendingCount ?? 0;
 
-  const { data: upcomingHolidays = [], isLoading: holLoading } = useQuery({
-    queryKey: ["dashboard-holidays", today],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("public_holidays")
-        .select("id, name, date")
-        .gte("date", today)
-        .order("date")
-        .limit(5);
-      return data || [];
-    },
-    enabled: !!user,
-    staleTime: STALE_TIME,
-  });
-
-  const { data: teamAbsences = [], isLoading: teamLoading } = useQuery({
-    queryKey: ["dashboard-team", weekStart, weekEnd],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("leave_requests")
-        .select("id, start_date, end_date, profiles:employee_id(full_name, email), leave_types(name)")
-        .eq("status", "approved")
-        .lte("start_date", weekEnd)
-        .gte("end_date", weekStart)
-        .limit(20);
-      return (data as unknown as TeamAbsence[]) || [];
-    },
-    enabled: !!user,
-    staleTime: STALE_TIME,
-  });
-
-  const { data: pendingCount = 0 } = useQuery({
-    queryKey: ["dashboard-pending-count"],
-    queryFn: async () => {
-      const { count } = await supabase
-        .from("leave_requests")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "pending");
-      return count || 0;
-    },
-    enabled: !!user && hasRole("manager"),
-    staleTime: STALE_TIME,
-  });
-
-  const loading = balLoading || recLoading || holLoading || teamLoading;
-
-  const statusColor = (status: string) => {
-    switch (status) {
-      case "approved": return "default";
-      case "rejected": return "destructive";
-      case "cancelled": return "secondary";
-      default: return "outline";
-    }
-  };
-
-  const totalAllocation = balances.reduce((sum, b) => sum + (b.leave_types?.annual_allocation || 0), 0);
-  const totalRemaining = balances.reduce((sum, b) => sum + b.balance, 0);
+  const totalAllocation = balances.reduce((sum, balance) => sum + (balance.leave_types?.annual_allocation || 0), 0);
+  const totalRemaining = balances.reduce((sum, balance) => sum + balance.balance, 0);
   const totalUsed = totalAllocation - totalRemaining;
-
-  const donutData = [
-    { name: "Remaining", value: totalRemaining },
-    { name: "Used", value: totalUsed },
-  ];
+  const canAccessManagerOnlyTools = hasExplicitRole("manager") || hasExplicitRole("hr_admin");
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const firstName =
+    data?.viewer.firstName ||
+    user?.user_metadata?.full_name?.split(" ")[0] ||
+    user?.email?.split("@")[0] ||
+    "there";
 
   const quickActions = [
     { label: "Request Leave", desc: "Submit a new request", icon: PlusCircle, path: "/request-leave" },
@@ -158,297 +99,366 @@ const Dashboard = () => {
     { label: "History", desc: "View past requests", icon: Clock, path: "/leave-history" },
     { label: "Attendance", desc: "View attendance log", icon: CheckSquare, path: "/attendance" },
     { label: "Holidays", desc: "View public holidays", icon: CalendarHeart, path: "/holidays" },
-    ...(hasRole("manager") ? [{ label: "Approvals", desc: `${pendingCount} pending`, icon: CheckSquare, path: "/manager/approvals" }] : []),
-    ...(hasRole("manager") ? [{ label: "Team Calendar", desc: "View team schedule", icon: CalendarDays, path: "/manager/team-calendar" }] : []),
-    ...(hasRole("manager") ? [{ label: "Team Attendance", desc: "Daily status", icon: Users, path: "/manager/team-attendance" }] : []),
+    ...(hasManagerAccess ? [{ label: "Approvals", desc: `${pendingCount} pending`, icon: CheckSquare, path: "/manager/approvals" }] : []),
+    ...(hasManagerAccess ? [{ label: "Team Calendar", desc: "View team schedule", icon: CalendarDays, path: "/manager/team-calendar" }] : []),
+    ...(canAccessManagerOnlyTools ? [{ label: "Team Attendance", desc: "Daily status", icon: Users, path: "/manager/team-attendance" }] : []),
     ...(hasRole("hr_admin") ? [{ label: "Employees", desc: "Manage staff", icon: Users, path: "/admin/employees" }] : []),
     { label: "Profile", desc: "Edit your details", icon: Users, path: "/profile" },
   ];
 
-  const getInitials = (name: string | null | undefined) => {
-    if (!name) return "?";
-    return name.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
+  const statusColor = (status: string) => {
+    switch (status) {
+      case "approved":
+        return "default";
+      case "rejected":
+        return "destructive";
+      case "cancelled":
+        return "secondary";
+      default:
+        return "outline";
+    }
   };
 
-  const firstName = user?.user_metadata?.full_name?.split(" ")[0] || user?.email?.split("@")[0] || "there";
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return "?";
+    return name
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
-  if (loading) return <DashboardSkeleton />;
+  const donutData = [
+    { name: "Remaining", value: totalRemaining },
+    { name: "Used", value: totalUsed },
+  ];
+
+  if (isLoading) return <DashboardSkeleton />;
 
   return (
-    <div className="space-y-10 max-w-6xl">
-      {/* Greeting Header */}
-      <div className="space-y-1">
-        <div className="flex items-center gap-2 text-muted-foreground text-sm">
-          <Sparkles className="h-3.5 w-3.5" />
-          <span>{format(new Date(), "EEEE, MMMM d, yyyy")}</span>
+    <div className="mx-auto max-w-6xl space-y-10">
+      <motion.div
+        className="space-y-2"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 220, damping: 24 }}
+      >
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+          <span>{fullDateFormatter.format(new Date())}</span>
         </div>
         <h1 className="text-3xl font-serif font-semibold tracking-tight text-foreground">
           {greeting}, {firstName}
         </h1>
-      </div>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Your leave, attendance, and team pulse in one fluid control surface.
+        </p>
+      </motion.div>
 
-      {/* Summary Stats Row */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
-        <ClockInOutWidget />
-        <Card className="border-0 shadow-sm bg-card">
-          <CardContent className="p-5">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Total Balance</p>
-            <p className="text-3xl font-semibold tabular-nums text-foreground">{totalRemaining}</p>
-            <p className="text-xs text-muted-foreground mt-1">of {totalAllocation} days</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm bg-card">
-          <CardContent className="p-5">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Days Used</p>
-            <p className="text-3xl font-semibold tabular-nums text-foreground">{totalUsed}</p>
-            <p className="text-xs text-muted-foreground mt-1">this year</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm bg-card">
-          <CardContent className="p-5">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Next Holiday</p>
-            {upcomingHolidays.length > 0 ? (
-              <>
-                <p className="text-lg font-semibold text-foreground leading-tight">{upcomingHolidays[0].name}</p>
-                <p className="text-xs text-muted-foreground mt-1">{format(parseISO(upcomingHolidays[0].date), "MMM d")}</p>
-              </>
-            ) : (
-              <p className="text-sm text-muted-foreground">None upcoming</p>
-            )}
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm bg-card">
-          <CardContent className="p-5">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-2">Team Status</p>
-            <p className="text-3xl font-semibold tabular-nums text-foreground">{teamAbsences.length}</p>
-            <p className="text-xs text-muted-foreground mt-1">out this week</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Quick Actions */}
-      <div>
-        <h2 className="text-xs uppercase tracking-widest text-muted-foreground mb-4">Quick Actions</h2>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {quickActions.map((action) => (
-            <button
-              key={action.path}
-              onClick={() => navigate(action.path)}
-              className="group flex items-center gap-3.5 rounded-xl border border-border/60 bg-card p-4 text-left transition-all duration-200 hover:border-primary/30 hover:shadow-sm"
-            >
-              <div className="h-10 w-10 rounded-lg bg-muted/60 flex items-center justify-center shrink-0 group-hover:bg-primary/8 transition-colors">
-                <action.icon className="h-4.5 w-4.5 text-muted-foreground group-hover:text-primary transition-colors" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">{action.label}</p>
-                <p className="text-xs text-muted-foreground">{action.desc}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="grid gap-8 lg:grid-cols-5">
-        {/* Leave Balance — spans 3 */}
-        <div className="lg:col-span-3 space-y-6">
-          <Card className="border-0 shadow-sm overflow-hidden">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-medium text-foreground">Leave Balance</CardTitle>
-                <button
-                  onClick={() => navigate("/my-leave")}
-                  className="text-xs text-primary hover:underline flex items-center gap-1"
-                >
-                  View details <ArrowRight className="h-3 w-3" />
-                </button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              {balances.length === 0 ? (
-                <p className="text-muted-foreground text-sm py-4">No leave balances found for this year.</p>
-              ) : (
+      <motion.div
+        className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5"
+        variants={staggerContainer}
+        initial="hidden"
+        animate="show"
+      >
+        <motion.div variants={revealItem}>
+          <ClockInOutWidget />
+        </motion.div>
+        <motion.div variants={revealItem}>
+          <Card className={cardShellClass}>
+            <CardContent className="p-5">
+              <p className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Total Balance</p>
+              <p className="text-3xl font-semibold tabular-nums text-foreground">{totalRemaining}</p>
+              <p className="mt-1 text-xs text-muted-foreground">of {totalAllocation} days</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+        <motion.div variants={revealItem}>
+          <Card className={cardShellClass}>
+            <CardContent className="p-5">
+              <p className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Days Used</p>
+              <p className="text-3xl font-semibold tabular-nums text-foreground">{totalUsed}</p>
+              <p className="mt-1 text-xs text-muted-foreground">this year</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+        <motion.div variants={revealItem}>
+          <Card className={cardShellClass}>
+            <CardContent className="p-5">
+              <p className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Next Holiday</p>
+              {upcomingHolidays.length > 0 ? (
                 <>
-                  <div className="flex items-center gap-8">
-                    <div className="relative w-32 h-32 shrink-0">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={donutData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={38}
-                            outerRadius={56}
-                            dataKey="value"
-                            strokeWidth={0}
-                          >
-                            {donutData.map((_, idx) => (
-                              <Cell key={idx} fill={DONUT_COLORS[idx]} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            formatter={(value: number, name: string) => [`${value} days`, name]}
-                            contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-2xl font-semibold text-foreground leading-none">{totalRemaining}</span>
-                        <span className="text-[10px] text-muted-foreground mt-0.5">remaining</span>
-                      </div>
-                    </div>
-                    <div className="flex-1 space-y-1.5">
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="h-2 w-2 rounded-full bg-primary" />
-                        <span className="text-foreground">{totalRemaining} days remaining</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="h-2 w-2 rounded-full bg-muted-foreground/30" />
-                        <span className="text-muted-foreground">{totalUsed} days used</span>
-                      </div>
-                      {totalAllocation > 0 && (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground pt-1">
-                          <TrendingUp className="h-3 w-3" />
-                          <span>{Math.round((totalRemaining / totalAllocation) * 100)}% remaining</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                  <p className="text-lg font-semibold leading-tight text-foreground">{upcomingHolidays[0].name}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{monthDayFormatter.format(parseISO(upcomingHolidays[0].date))}</p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">None upcoming</p>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+        <motion.div variants={revealItem}>
+          <Card className={cardShellClass}>
+            <CardContent className="p-5">
+              <p className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Team Status</p>
+              <p className="text-3xl font-semibold tabular-nums text-foreground">{teamAbsences.length}</p>
+              <p className="mt-1 text-xs text-muted-foreground">out this week</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+      </motion.div>
 
-                  <div className="space-y-4">
-                    {balances.map((b) => {
-                      const total = b.leave_types?.annual_allocation || 0;
-                      const pct = total > 0 ? (b.balance / total) * 100 : 0;
-                      return (
-                        <div key={b.leave_type_id} className="space-y-2">
-                          <div className="flex justify-between items-baseline">
-                            <span className="text-sm text-foreground">{b.leave_types?.name}</span>
-                            <span className="text-xs text-muted-foreground tabular-nums">{b.balance} / {total}</span>
+      <div>
+        <h2 className="mb-4 text-xs uppercase tracking-widest text-muted-foreground">Quick Actions</h2>
+        <motion.div
+          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="show"
+        >
+          {quickActions.map((action) => (
+            <motion.div
+              key={action.path}
+              variants={revealItem}
+              whileHover={{ y: -4 }}
+              transition={{ type: "spring", stiffness: 340, damping: 22 }}
+            >
+              <Link
+                to={action.path}
+                aria-label={`${action.label}: ${action.desc}`}
+                className="glass glass-panel group flex items-center gap-3.5 rounded-[1.5rem] border border-white/10 bg-white/10 p-4 text-left transition-[border-color,box-shadow,background-color] duration-300 ease-apple-ease hover:border-white/20 hover:bg-white/14 hover:shadow-xl dark:bg-white/5"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted/60 transition-colors group-hover:bg-primary/8">
+                  <action.icon className="h-4.5 w-4.5 text-muted-foreground transition-colors group-hover:text-primary" aria-hidden="true" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-foreground">{action.label}</p>
+                  <p className="text-xs text-muted-foreground">{action.desc}</p>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
+        </motion.div>
+      </div>
+
+      <div className="grid gap-8 lg:grid-cols-5">
+        <div className="space-y-6 lg:col-span-3">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 220, damping: 24 }}
+          >
+            <Card className={`${cardShellClass} overflow-hidden`}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-medium text-foreground">Leave Balance</CardTitle>
+                  <Link to="/my-leave" className="flex items-center gap-1 text-xs text-primary hover:underline">
+                    View details <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {balances.length === 0 ? (
+                  <p className="py-4 text-sm text-muted-foreground">No leave balances found for this year.</p>
+                ) : (
+                  <>
+                    <p className="sr-only">
+                      Leave balance summary: {totalRemaining} days remaining out of {totalAllocation}, with {totalUsed} days used.
+                    </p>
+                    <div className="flex items-center gap-8">
+                      <div className="relative h-32 w-32 shrink-0">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie
+                              data={donutData}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={38}
+                              outerRadius={56}
+                              dataKey="value"
+                              strokeWidth={0}
+                            >
+                              {donutData.map((_, index) => (
+                                <Cell key={index} fill={DONUT_COLORS[index]} />
+                              ))}
+                            </Pie>
+                            <Tooltip
+                              formatter={(value: number, name: string) => [`${value} days`, name]}
+                              contentStyle={{ borderRadius: "8px", fontSize: "12px" }}
+                            />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <span className="text-2xl font-semibold leading-none text-foreground">{totalRemaining}</span>
+                          <span className="mt-0.5 text-[10px] text-muted-foreground">remaining</span>
+                        </div>
+                      </div>
+                      <div className="flex-1 space-y-1.5">
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="h-2 w-2 rounded-full bg-primary" />
+                          <span className="text-foreground">{totalRemaining} days remaining</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="h-2 w-2 rounded-full bg-muted-foreground/30" />
+                          <span className="text-muted-foreground">{totalUsed} days used</span>
+                        </div>
+                        {totalAllocation > 0 ? (
+                          <div className="flex items-center gap-1.5 pt-1 text-xs text-muted-foreground">
+                            <TrendingUp className="h-3 w-3" aria-hidden="true" />
+                            <span>{Math.round((totalRemaining / totalAllocation) * 100)}% remaining</span>
                           </div>
-                          <Progress value={pct} className="h-1.5" />
+                        ) : null}
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      {balances.map((balance) => {
+                        const total = balance.leave_types?.annual_allocation || 0;
+                        const percentage = total > 0 ? (balance.balance / total) * 100 : 0;
+
+                        return (
+                          <div key={balance.leave_type_id} className="space-y-2">
+                            <div className="flex items-baseline justify-between">
+                              <span className="text-sm text-foreground">{balance.leave_types?.name}</span>
+                              <span className="text-xs tabular-nums text-muted-foreground">
+                                {balance.balance} / {total}
+                              </span>
+                            </div>
+                            <Progress value={percentage} className="h-1.5" />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 220, damping: 24, delay: 0.04 }}
+          >
+            <Card className={cardShellClass}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-medium text-foreground">Recent Requests</CardTitle>
+                  <Link to="/leave-history" className="flex items-center gap-1 text-xs text-primary hover:underline">
+                    View all <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {recentRequests.length === 0 ? (
+                  <p className="py-4 text-sm text-muted-foreground">No requests yet.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {recentRequests.map((request) => (
+                      <div key={request.id} className="flex items-center justify-between border-b border-border/40 py-3 last:border-0">
+                        <div>
+                          <p className="text-sm text-foreground">{request.leave_types?.name}</p>
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            {monthDayFormatter.format(parseISO(request.start_date))} - {monthDayYearFormatter.format(parseISO(request.end_date))}
+                          </p>
+                        </div>
+                        <Badge variant={statusColor(request.status)} className="text-xs capitalize">
+                          {request.status}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
+        </div>
+
+        <div className="space-y-6 lg:col-span-2">
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 220, damping: 24, delay: 0.08 }}
+          >
+            <Card className={cardShellClass}>
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-medium text-foreground">Upcoming Holidays</CardTitle>
+                  <Link to="/holidays" className="flex items-center gap-1 text-xs text-primary hover:underline">
+                    All holidays <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {upcomingHolidays.length === 0 ? (
+                  <p className="py-4 text-sm text-muted-foreground">No upcoming holidays.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {upcomingHolidays.map((holiday) => {
+                      const days = Math.ceil((parseISO(holiday.date).getTime() - startOfToday().getTime()) / (1000 * 60 * 60 * 24));
+                      const label = days === 0 ? "Today" : days === 1 ? "Tomorrow" : `${days}d`;
+
+                      return (
+                        <div key={holiday.id} className="flex items-center justify-between border-b border-border/40 py-3 last:border-0">
+                          <div>
+                            <p className="text-sm text-foreground">{holiday.name}</p>
+                            <p className="mt-0.5 text-xs text-muted-foreground">{weekdayMonthDayFormatter.format(parseISO(holiday.date))}</p>
+                          </div>
+                          <span className="rounded-md bg-muted/60 px-2 py-0.5 text-xs tabular-nums text-muted-foreground">{label}</span>
                         </div>
                       );
                     })}
                   </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          {/* Recent Requests */}
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-medium text-foreground">Recent Requests</CardTitle>
-                <button
-                  onClick={() => navigate("/leave-history")}
-                  className="text-xs text-primary hover:underline flex items-center gap-1"
-                >
-                  View all <ArrowRight className="h-3 w-3" />
-                </button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {recentRequests.length === 0 ? (
-                <p className="text-muted-foreground text-sm py-4">No requests yet.</p>
-              ) : (
-                <div className="space-y-1">
-                  {recentRequests.map((req) => (
-                    <div key={req.id} className="flex items-center justify-between py-3 border-b border-border/40 last:border-0">
-                      <div>
-                        <p className="text-sm text-foreground">{req.leave_types?.name}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {format(parseISO(req.start_date), "MMM d")} – {format(parseISO(req.end_date), "MMM d, yyyy")}
-                        </p>
-                      </div>
-                      <Badge variant={statusColor(req.status)} className="capitalize text-xs">{req.status}</Badge>
+          <motion.div
+            initial={{ opacity: 0, y: 22 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 220, damping: 24, delay: 0.12 }}
+          >
+            <Card className={cardShellClass}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base font-medium text-foreground">Team This Week</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  {monthDayFormatter.format(startOfWeek(new Date(), { weekStartsOn: 1 }))} - {monthDayFormatter.format(endOfWeek(new Date(), { weekStartsOn: 1 }))}
+                </p>
+              </CardHeader>
+              <CardContent>
+                {teamAbsences.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/8">
+                      <Users className="h-4.5 w-4.5 text-primary" aria-hidden="true" />
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right Column — spans 2 */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Upcoming Holidays */}
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-medium text-foreground">Upcoming Holidays</CardTitle>
-                <button
-                  onClick={() => navigate("/holidays")}
-                  className="text-xs text-primary hover:underline flex items-center gap-1"
-                >
-                  All holidays <ArrowRight className="h-3 w-3" />
-                </button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {upcomingHolidays.length === 0 ? (
-                <p className="text-muted-foreground text-sm py-4">No upcoming holidays.</p>
-              ) : (
-                <div className="space-y-1">
-                  {upcomingHolidays.map((h) => {
-                    const days = Math.ceil((parseISO(h.date).getTime() - startOfToday().getTime()) / (1000 * 60 * 60 * 24));
-                    const label = days === 0 ? "Today" : days === 1 ? "Tomorrow" : `${days}d`;
-                    return (
-                      <div key={h.id} className="flex items-center justify-between py-3 border-b border-border/40 last:border-0">
-                        <div>
-                          <p className="text-sm text-foreground">{h.name}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{format(parseISO(h.date), "EEE, MMM d")}</p>
-                        </div>
-                        <span className="text-xs text-muted-foreground tabular-nums bg-muted/60 px-2 py-0.5 rounded-md">{label}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Team Availability */}
-          <Card className="border-0 shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base font-medium text-foreground">Team This Week</CardTitle>
-              <p className="text-xs text-muted-foreground">
-                {format(startOfWeek(new Date(), { weekStartsOn: 1 }), "MMM d")} – {format(endOfWeek(new Date(), { weekStartsOn: 1 }), "MMM d")}
-              </p>
-            </CardHeader>
-            <CardContent>
-              {teamAbsences.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <div className="h-10 w-10 rounded-full bg-primary/8 flex items-center justify-center mb-3">
-                    <Users className="h-4.5 w-4.5 text-primary" />
+                    <p className="text-sm text-muted-foreground">Everyone is in this week</p>
                   </div>
-                  <p className="text-sm text-muted-foreground">Everyone's in this week</p>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {teamAbsences.map((a) => (
-                    <div key={a.id} className="flex items-center gap-3 py-3 border-b border-border/40 last:border-0">
-                      <Avatar className="h-8 w-8">
-                        <AvatarFallback className="bg-muted text-muted-foreground text-xs">
-                          {getInitials(a.profiles?.full_name)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-foreground truncate">
-                          {a.profiles?.full_name || a.profiles?.email || "Unknown"}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {a.leave_types?.name} · {format(parseISO(a.start_date), "MMM d")}–{format(parseISO(a.end_date), "MMM d")}
-                        </p>
+                ) : (
+                  <div className="space-y-1">
+                    {teamAbsences.map((absence) => (
+                      <div key={absence.id} className="flex items-center gap-3 border-b border-border/40 py-3 last:border-0">
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="bg-muted text-xs text-muted-foreground">
+                            {getInitials(absence.profiles?.full_name)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-sm text-foreground">
+                            {absence.profiles?.full_name || absence.profiles?.email || "Unknown"}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {absence.leave_types?.name} · {monthDayFormatter.format(parseISO(absence.start_date))}-{monthDayFormatter.format(parseISO(absence.end_date))}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
       </div>
     </div>

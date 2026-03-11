@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
+import { getErrorMessage } from "@/lib/errors";
+import type { StorageId } from "@/lib/convexTypes";
 
 interface SelfieLightboxProps {
-    path: string | null;
+    path: StorageId | null;
     onClose: () => void;
     title?: string;
 }
@@ -24,19 +27,12 @@ export function SelfieLightbox({ path, onClose, title = "Selfie Verification" }:
             setLoading(true);
             setError("");
             try {
-                const { data, error: signedUrlError } = await supabase.storage
-                    .from("attendance-selfies")
-                    .createSignedUrl(path, 3600); // 1 hour
-
-                if (signedUrlError) throw signedUrlError;
-                if (data?.signedUrl) {
-                    setImageUrl(data.signedUrl);
-                } else {
-                    throw new Error("Could not generate URL");
-                }
-            } catch (err: any) {
+                const url = await convex.query(api.files.getFileUrl, { storageId: path });
+                if (!url) throw new Error("Could not generate URL");
+                setImageUrl(url);
+            } catch (err) {
                 console.error("Error fetching selfie:", err);
-                setError("Failed to load image");
+                setError(getErrorMessage(err, "Failed to load image"));
             } finally {
                 setLoading(false);
             }

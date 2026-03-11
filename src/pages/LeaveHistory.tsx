@@ -1,5 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,9 +14,11 @@ import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { buildCSV, downloadCSV } from "@/lib/csv";
+import { getErrorMessage } from "@/lib/errors";
+import type { LeaveRequestId } from "@/lib/convexTypes";
 
 interface LeaveRequest {
-  id: string;
+  id: LeaveRequestId;
   start_date: string;
   end_date: string;
   reason: string | null;
@@ -31,14 +34,7 @@ const LeaveHistory = () => {
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["leave-history", user?.id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("leave_requests")
-        .select("id, start_date, end_date, reason, status, manager_comment, created_at, leave_types(name)")
-        .eq("employee_id", user!.id)
-        .order("created_at", { ascending: false });
-      return (data as unknown as LeaveRequest[]) || [];
-    },
+    queryFn: async () => (await convex.query(api.leave.getLeaveHistory, {})) as LeaveRequest[],
     enabled: !!user,
     staleTime: 2 * 60 * 1000,
   });
@@ -46,9 +42,8 @@ const LeaveHistory = () => {
   const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(requests, 10);
 
   const cancelMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("leave_requests").update({ status: "cancelled" }).eq("id", id);
-      if (error) throw error;
+    mutationFn: async (id: LeaveRequestId) => {
+      await convex.mutation(api.leave.cancelRequest, { requestId: id });
     },
     onSuccess: () => {
       toast.success("Request cancelled");
@@ -57,7 +52,7 @@ const LeaveHistory = () => {
       queryClient.invalidateQueries({ queryKey: ["dashboard-balances"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-recent"] });
     },
-    onError: (err: any) => toast.error(err.message),
+    onError: (err) => toast.error(getErrorMessage(err, "Failed to cancel request")),
   });
 
   if (isLoading) return (
@@ -85,13 +80,14 @@ const LeaveHistory = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <History className="h-6 w-6 text-primary" /> Leave History
+          <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">Leave</p>
+          <h1 className="flex items-center gap-2 text-3xl font-serif font-semibold tracking-tight text-foreground">
+            <History className="h-6 w-6 text-foreground" /> Leave History
           </h1>
-          <p className="text-muted-foreground mt-1">View all your leave requests</p>
+          <p className="mt-1 text-sm text-muted-foreground">View all your leave requests.</p>
         </div>
         {requests.length > 0 && (
           <Button variant="outline" size="sm" className="gap-1" onClick={exportCSV}>

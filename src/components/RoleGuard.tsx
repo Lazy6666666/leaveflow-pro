@@ -1,11 +1,18 @@
 import { Navigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Enums } from "@/integrations/supabase/types";
 
-type AppRole = Enums<"app_role">;
+type AppRole = "employee" | "manager" | "hr_admin";
 
-const RoleGuard = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: AppRole[] }) => {
-  const { roles, loading } = useAuth();
+const RoleGuard = ({
+  children,
+  allowedRoles,
+  allowDelegatedManagerAccess = false,
+}: {
+  children: React.ReactNode;
+  allowedRoles: AppRole[];
+  allowDelegatedManagerAccess?: boolean;
+}) => {
+  const { hasExplicitRole, hasRole, loading } = useAuth();
 
   if (loading) {
     return (
@@ -15,7 +22,13 @@ const RoleGuard = ({ children, allowedRoles }: { children: React.ReactNode; allo
     );
   }
 
-  const hasAccess = allowedRoles.some((role) => roles.includes(role));
+  const hasAccess = allowedRoles.some((role) => {
+    if (role === "manager" && allowDelegatedManagerAccess) {
+      return hasRole("manager");
+    }
+
+    return hasExplicitRole(role);
+  });
 
   if (!hasAccess) {
     return <Navigate to="/dashboard" replace />;

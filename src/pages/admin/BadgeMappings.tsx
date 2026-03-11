@@ -1,18 +1,21 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, CreditCard, Search } from "lucide-react";
 import CSVBadgeImport from "@/components/admin/CSVBadgeImport";
+import { getErrorMessage } from "@/lib/errors";
+import type { BadgeMappingId } from "@/lib/convexTypes";
 
 interface BadgeMapping {
-  id: string;
+  id: BadgeMappingId;
   employee_id: string;
   badge_id: string;
   vendor: string | null;
@@ -43,20 +46,9 @@ const BadgeMappings = () => {
 
   const fetchData = async () => {
     setLoading(true);
-    const [{ data: maps }, { data: profs }] = await Promise.all([
-      supabase.from("badge_mappings").select("*").order("created_at", { ascending: false }),
-      supabase.from("profiles").select("id, full_name, email").order("full_name"),
-    ]);
-
-    const profileMap = new Map((profs || []).map((p: Profile) => [p.id, p]));
-    const enriched = (maps || []).map((m: any) => ({
-      ...m,
-      employee_name: profileMap.get(m.employee_id)?.full_name || "Unknown",
-      employee_email: profileMap.get(m.employee_id)?.email || "",
-    }));
-
-    setMappings(enriched);
-    setProfiles((profs as Profile[]) || []);
+    const data = await convex.query(api.admin.getBadgeMappingsData, {});
+    setMappings(data.mappings as BadgeMapping[]);
+    setProfiles(data.profiles as Profile[]);
     setLoading(false);
   };
 
@@ -68,27 +60,26 @@ const BadgeMappings = () => {
       return;
     }
     setSaving(true);
-    const { error } = await supabase.from("badge_mappings").insert({
-      employee_id: formEmployeeId,
-      badge_id: formBadgeId.trim(),
-      vendor: formVendor === "all" ? null : formVendor,
-    } as any);
-    setSaving(false);
-
-    if (error) {
-      toast({ title: "Failed to add mapping", description: error.message, variant: "destructive" });
-    } else {
+    try {
+      await convex.mutation(api.admin.saveBadgeMapping, {
+        employeeId: formEmployeeId,
+        badgeId: formBadgeId.trim(),
+        vendor: formVendor === "all" ? undefined : formVendor,
+      });
       toast({ title: "Badge mapping added" });
       setFormBadgeId("");
       setFormEmployeeId("");
       setFormVendor("all");
       setDialogOpen(false);
       fetchData();
+    } catch (error) {
+      toast({ title: "Failed to add mapping", description: getErrorMessage(error, "Failed to add mapping"), variant: "destructive" });
     }
+    setSaving(false);
   };
 
-  const handleDelete = async (id: string) => {
-    await supabase.from("badge_mappings").delete().eq("id", id);
+  const handleDelete = async (id: BadgeMappingId) => {
+    await convex.mutation(api.admin.deleteBadgeMapping, { mappingId: id });
     toast({ title: "Mapping removed" });
     fetchData();
   };
@@ -101,9 +92,10 @@ const BadgeMappings = () => {
   );
 
   return (
-    <div className="space-y-8 max-w-4xl">
+    <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
+          <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">HR Admin</p>
           <h1 className="text-2xl font-serif font-semibold tracking-tight text-foreground">
             Badge ID Mappings
           </h1>
@@ -119,6 +111,9 @@ const BadgeMappings = () => {
           <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Add Badge Mapping</DialogTitle>
+              <DialogDescription>
+                Link a badge or employee code to an employee profile for biometrics matching.
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4 pt-2">
               <div className="space-y-2">
@@ -180,7 +175,7 @@ const BadgeMappings = () => {
         />
       </div>
 
-      <Card className="border-0 shadow-sm">
+      <Card>
         <CardContent className="p-0">
           {loading ? (
             <p className="text-sm text-muted-foreground p-6">Loading...</p>
