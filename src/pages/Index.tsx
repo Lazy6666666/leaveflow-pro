@@ -1,12 +1,29 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import React, { useEffect } from 'react';
+import { Navbar } from '@/components/landing/Navbar';
+import { Hero } from '@/components/landing/Hero';
+import { ProblemManifest } from '@/components/landing/ProblemManifest';
+import { FeaturesGrid } from '@/components/landing/FeaturesGrid';
+import { PricingTier } from '@/components/landing/PricingTier';
+import { StatsRow } from '@/components/landing/StatsRow';
+import { FinalCTA } from '@/components/landing/FinalCTA';
+import { Footer } from '@/components/landing/Footer';
 
 const Index = () => {
+  useEffect(() => {
+    // Scroll to top on mount
+    window.scrollTo(0, 0);
+  }, []);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
-      </div>
+    <div className="min-h-screen bg-[#0A0A0A] text-white selection:bg-white selection:text-black font-['Inter'] overflow-x-hidden">
+      <Navbar />
+      <Hero />
+      <ProblemManifest />
+      <FeaturesGrid />
+      <PricingTier />
+      <StatsRow />
+      <FinalCTA />
+      <Footer />
     </div>
   );
 };
