@@ -24,6 +24,8 @@ export default defineSchema({
     avatarUrl: v.optional(v.string()),
     departmentId: v.optional(v.id("departments")),
     managerUserId: v.optional(v.string()),
+    hourlyRate: v.optional(v.number()),
+    baseSalary: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -214,4 +216,20 @@ export default defineSchema({
     .index("by_storageId", ["storageId"])
     .index("by_ownerUserId", ["ownerUserId"])
     .index("by_ownerUserId_fileClass", ["ownerUserId", "fileClass"]),
+
+  policyDocuments: defineTable({
+    title: v.string(),
+    content: v.string(),
+    embedding: v.array(v.float64()),
+    metadata: v.optional(v.any()),
+    storageId: v.optional(v.id("_storage")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_title", ["title"])
+    .vectorIndex("by_embedding", {
+      dimensions: 1536,
+      vectorField: "embedding",
+      filterFields: ["title"],
+    }),
 });

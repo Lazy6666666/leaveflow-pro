@@ -3,6 +3,7 @@ import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -22,6 +23,7 @@ type AppRole = "employee" | "manager" | "hr_admin";
 interface Employee {
   id: string; full_name: string | null; email: string | null;
   department_id: string | null; manager_id: string | null;
+  hourly_rate: number | null; base_salary: number | null;
   departments: { name: string } | null; manager: { full_name: string | null } | null;
 }
 
@@ -38,6 +40,8 @@ const Employees = () => {
   const [editDeptId, setEditDeptId] = useState<DepartmentId | "">("");
   const [editManagerId, setEditManagerId] = useState("");
   const [editRole, setEditRole] = useState<AppRole>("employee");
+  const [editHourlyRate, setEditHourlyRate] = useState("");
+  const [editBaseSalary, setEditBaseSalary] = useState("");
   const [saving, setSaving] = useState(false);
 
   const fetchAll = async () => {
@@ -70,6 +74,8 @@ const Employees = () => {
 
   const openEdit = (emp: Employee) => {
     setEditEmployee(emp); setEditDeptId(emp.department_id || ""); setEditManagerId(emp.manager_id || "");
+    setEditHourlyRate(emp.hourly_rate?.toString() ?? "");
+    setEditBaseSalary(emp.base_salary?.toString() ?? "");
     const empRoles = getRoles(emp.id);
     setEditRole(empRoles.includes("hr_admin") ? "hr_admin" : empRoles.includes("manager") ? "manager" : "employee");
   };
@@ -82,6 +88,8 @@ const Employees = () => {
         employeeId: editEmployee.id,
         departmentId: editDeptId || undefined,
         managerId: editManagerId || undefined,
+        hourlyRate: editHourlyRate.trim() ? Number(editHourlyRate) : undefined,
+        baseSalary: editBaseSalary.trim() ? Number(editBaseSalary) : undefined,
         role: editRole,
       });
       toast.success("Employee updated");
@@ -186,6 +194,32 @@ const Employees = () => {
                   <SelectItem value="hr_admin">HR Admin</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Hourly Rate</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editHourlyRate}
+                  onChange={(event) => setEditHourlyRate(event.target.value)}
+                  className="h-11"
+                  placeholder="Optional"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Base Salary</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editBaseSalary}
+                  onChange={(event) => setEditBaseSalary(event.target.value)}
+                  className="h-11"
+                  placeholder="Optional"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>

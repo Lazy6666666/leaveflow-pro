@@ -251,6 +251,8 @@ export const getEmployeesData = query({
         email: profile.email ?? null,
         department_id: profile.departmentId ?? null,
         manager_id: profile.managerUserId ?? null,
+        hourly_rate: profile.hourlyRate ?? null,
+        base_salary: profile.baseSalary ?? null,
         departments: profile.departmentId ? { name: departmentMap.get(String(profile.departmentId))?.name ?? null } : null,
       })),
       roles: roles.map((role) => ({
@@ -267,6 +269,8 @@ export const updateEmployee = mutation({
     employeeId: v.string(),
     departmentId: v.optional(v.id("departments")),
     managerId: v.optional(v.string()),
+    hourlyRate: v.optional(v.number()),
+    baseSalary: v.optional(v.number()),
     role: appRoleValidator,
   },
   handler: async (ctx, args) => {
@@ -279,6 +283,8 @@ export const updateEmployee = mutation({
     const profilePatch = {
       departmentId: args.departmentId,
       managerUserId: args.managerId,
+      hourlyRate: args.hourlyRate,
+      baseSalary: args.baseSalary,
       updatedAt: now(),
     };
     await ctx.db.patch(profile._id, profilePatch);
