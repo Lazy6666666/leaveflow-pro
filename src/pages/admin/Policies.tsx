@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,12 +8,14 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Plus, Settings } from "lucide-react";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
+import { getErrorMessage } from "@/lib/errors";
+import type { LeaveTypeId } from "@/lib/convexTypes";
 
-interface LeaveType { id: string; name: string; annual_allocation: number; carry_forward_limit: number; is_active: boolean; }
+interface LeaveType { id: LeaveTypeId; name: string; annual_allocation: number; carry_forward_limit: number; is_active: boolean; }
 
 const Policies = () => {
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
@@ -24,8 +27,8 @@ const Policies = () => {
   const [isActive, setIsActive] = useState(true);
 
   const fetchTypes = async () => {
-    const { data } = await supabase.from("leave_types").select("*").order("name");
-    if (data) setLeaveTypes(data);
+    const data = await convex.query(api.admin.getLeavePolicies, {});
+    setLeaveTypes(data as LeaveType[]);
   };
 
   const [pageLoading, setPageLoading] = useState(true);
@@ -43,27 +46,31 @@ const Policies = () => {
   const openEdit = (lt: LeaveType) => { setEditing(lt); setName(lt.name); setAllocation(lt.annual_allocation); setCarryForward(lt.carry_forward_limit); setIsActive(lt.is_active); setDialogOpen(true); };
 
   const handleSave = async () => {
-    const payload = { name, annual_allocation: allocation, carry_forward_limit: carryForward, is_active: isActive };
-    if (editing) {
-      const { error } = await supabase.from("leave_types").update(payload).eq("id", editing.id);
-      if (error) { toast.error(error.message); return; }
-      toast.success("Leave type updated");
-    } else {
-      const { error } = await supabase.from("leave_types").insert(payload);
-      if (error) { toast.error(error.message); return; }
-      toast.success("Leave type created");
+    try {
+      await convex.mutation(api.admin.saveLeaveType, {
+        leaveTypeId: editing?.id,
+        name,
+        annualAllocation: allocation,
+        carryForwardLimit: carryForward,
+        isActive,
+      });
+      toast.success(editing ? "Leave type updated" : "Leave type created");
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to save leave type"));
+      return;
     }
     setDialogOpen(false); fetchTypes();
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Settings className="h-6 w-6 text-primary" /> Leave Policies
+          <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">HR Admin</p>
+          <h1 className="text-3xl font-serif font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <Settings className="h-6 w-6 text-foreground" /> Leave Policies
           </h1>
-          <p className="text-muted-foreground mt-1">Configure leave types and allocation rules</p>
+          <p className="mt-1 text-sm text-muted-foreground">Configure leave types and allocation rules.</p>
         </div>
         <Button onClick={openNew} className="h-10"><Plus className="mr-2 h-4 w-4" /> Add Leave Type</Button>
       </div>
@@ -106,7 +113,12 @@ const Policies = () => {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>{editing ? "Edit" : "Add"} Leave Type</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit" : "Add"} Leave Type</DialogTitle>
+            <DialogDescription>
+              Configure the leave type name, annual allocation, carry forward limit, and active status.
+            </DialogDescription>
+          </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2"><Label>Name</Label><Input value={name} onChange={(e) => setName(e.target.value)} className="h-11" /></div>
             <div className="space-y-2"><Label>Annual Allocation (days)</Label><Input type="number" value={allocation} onChange={(e) => setAllocation(Number(e.target.value))} className="h-11" /></div>

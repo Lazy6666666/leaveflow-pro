@@ -1,0 +1,69 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e166]:
+    - generic [ref=e167]:
+      - generic [ref=e168]:
+        - img "BALANCE logo" [ref=e169]
+        - generic [ref=e170]: BALANCE
+      - generic [ref=e171]:
+        - heading "Manage time off with clarity." [level=1] [ref=e172]:
+          - text: Manage time off
+          - text: with clarity.
+        - paragraph [ref=e173]: Track leave balances, submit requests, and stay aligned with your team — all in one place.
+        - generic [ref=e174]:
+          - generic [ref=e175]:
+            - paragraph [ref=e176]: 100%
+            - paragraph [ref=e177]: Paperless
+          - generic [ref=e178]:
+            - paragraph [ref=e179]: 2x
+            - paragraph [ref=e180]: Faster approvals
+          - generic [ref=e181]:
+            - paragraph [ref=e182]: 24/7
+            - paragraph [ref=e183]: Self-service
+      - paragraph [ref=e184]: © 2026 BALANCE. All rights reserved.
+    - generic [ref=e185]:
+      - button "Switch to dark mode" [ref=e186] [cursor=pointer]:
+        - img
+      - generic [ref=e188]:
+        - generic [ref=e189]:
+          - heading "Welcome back" [level=3] [ref=e190]
+          - paragraph [ref=e191]: Sign in with Clerk to manage leave requests
+        - generic [ref=e194]:
+          - generic [ref=e195]:
+            - generic [ref=e197]:
+              - heading "Sign in to BALANCE LMS" [level=1] [ref=e198]
+              - paragraph [ref=e199]: Welcome back! Please sign in to continue
+            - generic [ref=e201]:
+              - generic [ref=e202]:
+                - generic [ref=e205]:
+                  - generic [ref=e207]: Email address
+                  - textbox "Email address" [active] [ref=e208]:
+                    - /placeholder: Enter your email address
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - generic: Password
+                      - generic:
+                        - textbox "Password":
+                          - /placeholder: Enter your password
+                        - button "Show password":
+                          - img
+              - button "Continue" [ref=e211] [cursor=pointer]:
+                - generic [ref=e212]:
+                  - text: Continue
+                  - img [ref=e213]
+          - generic [ref=e215]:
+            - generic [ref=e216]:
+              - generic [ref=e217]: Don’t have an account?
+              - link "Sign up" [ref=e218] [cursor=pointer]:
+                - /url: http://127.0.0.1:4173/auth/sign-up
+            - generic [ref=e220]:
+              - generic [ref=e222]:
+                - paragraph [ref=e223]: Secured by
+                - link "Clerk logo" [ref=e224] [cursor=pointer]:
+                  - /url: https://go.clerk.com/components
+                  - img [ref=e225]
+              - paragraph [ref=e230]: Development mode

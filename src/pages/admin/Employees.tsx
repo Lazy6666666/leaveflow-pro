@@ -1,25 +1,29 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Users, Download } from "lucide-react";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
-import type { Enums } from "@/integrations/supabase/types";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { buildCSV, downloadCSV } from "@/lib/csv";
+import { getErrorMessage } from "@/lib/errors";
+import type { DepartmentId } from "@/lib/convexTypes";
 
-type AppRole = Enums<"app_role">;
+type AppRole = "employee" | "manager" | "hr_admin";
 
 interface Employee {
   id: string; full_name: string | null; email: string | null;
   department_id: string | null; manager_id: string | null;
+  hourly_rate: number | null; base_salary: number | null;
   departments: { name: string } | null; manager: { full_name: string | null } | null;
 }
 
@@ -33,20 +37,19 @@ const Employees = () => {
   const [departments, setDepartments] = useState<Department[]>([]);
   const [allProfiles, setAllProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
-  const [editDeptId, setEditDeptId] = useState("");
+  const [editDeptId, setEditDeptId] = useState<DepartmentId | "">("");
   const [editManagerId, setEditManagerId] = useState("");
   const [editRole, setEditRole] = useState<AppRole>("employee");
+  const [editHourlyRate, setEditHourlyRate] = useState("");
+  const [editBaseSalary, setEditBaseSalary] = useState("");
   const [saving, setSaving] = useState(false);
 
   const fetchAll = async () => {
-    const [empRes, roleRes, deptRes] = await Promise.all([
-      supabase.from("profiles").select("id, full_name, email, department_id, manager_id, departments(name)"),
-      supabase.from("user_roles").select("user_id, role"),
-      supabase.from("departments").select("id, name"),
-    ]);
-    if (empRes.data) { setEmployees(empRes.data as unknown as Employee[]); setAllProfiles(empRes.data.map((p) => ({ id: p.id, full_name: p.full_name }))); }
-    if (roleRes.data) setRoles(roleRes.data);
-    if (deptRes.data) setDepartments(deptRes.data);
+    const data = await convex.query(api.admin.getEmployeesData, {});
+    setEmployees(data.employees as Employee[]);
+    setAllProfiles(data.employees.map((p) => ({ id: p.id, full_name: p.full_name })));
+    setRoles(data.roles as UserRole[]);
+    setDepartments(data.departments as Department[]);
   };
 
   useEffect(() => { fetchAll().finally(() => setPageLoading(false)); }, []);
@@ -71,6 +74,8 @@ const Employees = () => {
 
   const openEdit = (emp: Employee) => {
     setEditEmployee(emp); setEditDeptId(emp.department_id || ""); setEditManagerId(emp.manager_id || "");
+    setEditHourlyRate(emp.hourly_rate?.toString() ?? "");
+    setEditBaseSalary(emp.base_salary?.toString() ?? "");
     const empRoles = getRoles(emp.id);
     setEditRole(empRoles.includes("hr_admin") ? "hr_admin" : empRoles.includes("manager") ? "manager" : "employee");
   };
@@ -78,16 +83,22 @@ const Employees = () => {
   const handleSave = async () => {
     if (!editEmployee) return;
     setSaving(true);
-    const { error } = await supabase.from("profiles").update({ department_id: editDeptId || null, manager_id: editManagerId || null }).eq("id", editEmployee.id);
-    if (error) { toast.error(error.message); setSaving(false); return; }
-    const { error: delError } = await supabase.from("user_roles").delete().eq("user_id", editEmployee.id);
-    if (delError) { toast.error("Failed to update roles: " + delError.message); setSaving(false); return; }
-    const rolesToInsert: { user_id: string; role: AppRole }[] = [{ user_id: editEmployee.id, role: "employee" }];
-    if (editRole === "manager") rolesToInsert.push({ user_id: editEmployee.id, role: "manager" });
-    if (editRole === "hr_admin") { rolesToInsert.push({ user_id: editEmployee.id, role: "manager" }); rolesToInsert.push({ user_id: editEmployee.id, role: "hr_admin" }); }
-    const { error: insertError } = await supabase.from("user_roles").insert(rolesToInsert);
-    if (insertError) { toast.error("Failed to assign roles: " + insertError.message); setSaving(false); return; }
-    toast.success("Employee updated"); setEditEmployee(null); setSaving(false); fetchAll();
+    try {
+      await convex.mutation(api.admin.updateEmployee, {
+        employeeId: editEmployee.id,
+        departmentId: editDeptId || undefined,
+        managerId: editManagerId || undefined,
+        hourlyRate: editHourlyRate.trim() ? Number(editHourlyRate) : undefined,
+        baseSalary: editBaseSalary.trim() ? Number(editBaseSalary) : undefined,
+        role: editRole,
+      });
+      toast.success("Employee updated");
+      setEditEmployee(null);
+      fetchAll();
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update employee"));
+    }
+    setSaving(false);
   };
 
   const roleColor = (role: AppRole) => {
@@ -95,13 +106,14 @@ const Employees = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Users className="h-6 w-6 text-primary" /> Employees
+          <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">HR Admin</p>
+          <h1 className="text-3xl font-serif font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <Users className="h-6 w-6 text-foreground" /> Employees
           </h1>
-          <p className="text-muted-foreground mt-1">Manage employees, roles, and departments</p>
+          <p className="mt-1 text-sm text-muted-foreground">Manage employees, roles, and departments.</p>
         </div>
         <Button variant="outline" size="sm" className="gap-1" onClick={exportCSV}>
           <Download className="h-4 w-4" /> Export CSV
@@ -151,11 +163,16 @@ const Employees = () => {
 
       <Dialog open={!!editEmployee} onOpenChange={() => setEditEmployee(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Edit Employee: {editEmployee?.full_name || editEmployee?.email}</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Edit Employee: {editEmployee?.full_name || editEmployee?.email}</DialogTitle>
+            <DialogDescription>
+              Update the employee department, manager, and application role assignments.
+            </DialogDescription>
+          </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
               <Label>Department</Label>
-              <Select value={editDeptId} onValueChange={setEditDeptId}>
+                <Select value={editDeptId} onValueChange={(value) => setEditDeptId(value as DepartmentId)}>
                 <SelectTrigger className="h-11"><SelectValue placeholder="No department" /></SelectTrigger>
                 <SelectContent>{departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
               </Select>
@@ -177,6 +194,32 @@ const Employees = () => {
                   <SelectItem value="hr_admin">HR Admin</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Hourly Rate</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editHourlyRate}
+                  onChange={(event) => setEditHourlyRate(event.target.value)}
+                  className="h-11"
+                  placeholder="Optional"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Base Salary</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={editBaseSalary}
+                  onChange={(event) => setEditBaseSalary(event.target.value)}
+                  className="h-11"
+                  placeholder="Optional"
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>

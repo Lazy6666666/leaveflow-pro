@@ -1,4 +1,5 @@
 import type { Config } from "tailwindcss";
+import tailwindcssAnimate from "tailwindcss-animate";
 
 export default {
   darkMode: ["class"],
@@ -12,8 +13,11 @@ export default {
   			'2xl': '1400px'
   		}
   	},
-  	extend: {
-  		colors: {
+  		extend: {
+  			transitionTimingFunction: {
+  				'apple-ease': 'cubic-bezier(0.23, 1, 0.32, 1)'
+  			},
+  			colors: {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
@@ -63,25 +67,40 @@ export default {
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
   		},
-  		keyframes: {
-  			'accordion-down': {
-  				from: { height: '0' },
-  				to: { height: 'var(--radix-accordion-content-height)' }
-  			},
+  			keyframes: {
+  				'accordion-down': {
+  					from: { height: '0' },
+  					to: { height: 'var(--radix-accordion-content-height)' }
+  				},
   			'accordion-up': {
   				from: { height: 'var(--radix-accordion-content-height)' },
   				to: { height: '0' }
   			},
-  			'fade-in': {
-  				from: { opacity: '0', transform: 'translateY(8px)' },
-  				to: { opacity: '1', transform: 'translateY(0)' }
-  			}
-  		},
-  		animation: {
-  			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out',
-  			'fade-in': 'fade-in 0.4s ease-out'
-  		},
+  				'fade-in': {
+  					from: { opacity: '0', transform: 'translateY(8px)' },
+  					to: { opacity: '1', transform: 'translateY(0)' }
+  				},
+  				shimmer: {
+  					'0%': { transform: 'translateX(-100%)' },
+  					'100%': { transform: 'translateX(100%)' }
+  				},
+  				float: {
+  					'0%, 100%': { transform: 'translate3d(0, 0, 0) scale(1)' },
+  					'50%': { transform: 'translate3d(0, -20px, 0) scale(1.05)' }
+  				},
+  				reveal: {
+  					from: { opacity: '0', transform: 'translateY(18px) scale(0.985)' },
+  					to: { opacity: '1', transform: 'translateY(0) scale(1)' }
+  				}
+  			},
+  			animation: {
+  				'accordion-down': 'accordion-down 0.2s ease-out',
+  				'accordion-up': 'accordion-up 0.2s ease-out',
+  				'fade-in': 'fade-in 0.4s ease-out',
+  				shimmer: 'shimmer 2.6s linear infinite',
+  				float: 'float 16s ease-in-out infinite',
+  				reveal: 'reveal 0.7s cubic-bezier(0.23, 1, 0.32, 1) both'
+  			},
   		boxShadow: {
   			'2xs': 'var(--shadow-2xs)',
   			xs: 'var(--shadow-xs)',
@@ -98,5 +117,5 @@ export default {
   		}
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+  plugins: [tailwindcssAnimate],
 } satisfies Config;

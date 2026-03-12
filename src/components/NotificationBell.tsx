@@ -1,15 +1,17 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useId, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useMutation, useQuery } from "convex/react";
 import { Bell, CheckCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
+import { api } from "@/lib/convexApi";
+import type { NotificationId } from "@/lib/convexTypes";
 
 interface AppNotification {
-  id: string;
+  id: NotificationId;
   title: string;
   message: string;
   type: string;
@@ -20,56 +22,29 @@ interface AppNotification {
 
 const NotificationBell = () => {
   const { user } = useAuth();
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [open, setOpen] = useState(false);
+  const headingId = useId();
+  const notifications = (useQuery(api.notifications.listCurrent, user ? {} : "skip") ?? []) as AppNotification[];
+  const markReadMutation = useMutation(api.notifications.markRead);
+  const markAllReadMutation = useMutation(api.notifications.markAllRead);
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
+  const notificationButtonLabel = unreadCount > 0
+    ? `Open notifications (${unreadCount} unread)`
+    : "Open notifications";
 
-  const fetchNotifications = async () => {
-    if (!user) return;
-    const { data } = await supabase
-      .from("notifications")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(20);
-    if (data) setNotifications(data as unknown as AppNotification[]);
-  };
-
-  useEffect(() => {
-    if (!user) return;
-    fetchNotifications();
-
-    const channel = supabase
-      .channel("notifications-realtime")
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        (payload) => {
-          const newNotif = payload.new as AppNotification;
-          setNotifications((prev) => [newNotif, ...prev].slice(0, 20));
-        }
-      )
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
-  }, [user]);
-
-  const markAsRead = async (id: string) => {
-    await supabase.from("notifications").update({ is_read: true }).eq("id", id);
-    setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)));
+  const markAsRead = async (id: NotificationId) => {
+    await markReadMutation({ notificationId: id });
   };
 
   const markAllRead = async () => {
-    const unreadIds = notifications.filter((n) => !n.is_read).map((n) => n.id);
-    if (unreadIds.length === 0) return;
-    await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
-    setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    if (!notifications.some((notification) => !notification.is_read)) return;
+    await markAllReadMutation({});
+  };
+
+  const handleNotificationClick = async (notification: AppNotification) => {
+    if (notification.is_read) return;
+    await markAsRead(notification.id);
   };
 
   const typeIcon = (type: string) => {
@@ -84,50 +59,72 @@ const NotificationBell = () => {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="h-9 w-9 relative">
-          <Bell className="h-4 w-4" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative h-9 w-9"
+          aria-label={notificationButtonLabel}
+        >
+          <Bell className="h-4 w-4" aria-hidden="true" />
           {unreadCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 h-4 w-4 rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground flex items-center justify-center">
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </span>
+            <>
+              <span
+                className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground"
+                aria-hidden="true"
+              >
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+              <span className="sr-only">{unreadCount} unread notifications</span>
+            </>
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <div className="flex items-center justify-between px-4 py-3 border-b">
-          <h4 className="text-sm font-semibold text-foreground">Notifications</h4>
-          {unreadCount > 0 && (
-            <Button variant="ghost" size="sm" className="h-7 text-xs gap-1" onClick={markAllRead}>
-              <CheckCheck className="h-3 w-3" /> Mark all read
-            </Button>
-          )}
+      <PopoverContent className="w-80 p-0" align="end" aria-labelledby={headingId}>
+        <div className="border-b px-4 py-3">
+          <div className="flex items-center justify-between gap-2">
+            <h4 id={headingId} className="text-sm font-semibold text-foreground">
+              Notifications
+            </h4>
+            {unreadCount > 0 && (
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={markAllRead}>
+                <CheckCheck className="h-3 w-3" aria-hidden="true" />
+                Mark all read
+              </Button>
+            )}
+          </div>
         </div>
         <ScrollArea className="max-h-80">
           {notifications.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">No notifications yet</p>
+            <p className="py-8 text-center text-sm text-muted-foreground">No notifications yet</p>
           ) : (
-            notifications.map((n) => (
-              <div
-                key={n.id}
-                className={cn(
-                  "flex items-start gap-3 px-4 py-3 border-b border-border/40 cursor-pointer hover:bg-muted/50 transition-colors",
-                  !n.is_read && "bg-primary/5"
-                )}
-                onClick={() => !n.is_read && markAsRead(n.id)}
-              >
-                <span className="text-sm mt-0.5">{typeIcon(n.type)}</span>
-                <div className="flex-1 min-w-0">
-                  <p className={cn("text-sm", !n.is_read && "font-semibold")}>{n.title}</p>
-                  <p className="text-xs text-muted-foreground truncate">{n.message}</p>
-                  <p className="text-[10px] text-muted-foreground/60 mt-1">
-                    {formatDistanceToNow(new Date(n.created_at), { addSuffix: true })}
-                  </p>
-                </div>
-                {!n.is_read && (
-                  <div className="h-2 w-2 rounded-full bg-primary mt-1.5 shrink-0" />
-                )}
-              </div>
-            ))
+            <div role="list">
+              {notifications.map((notification) => {
+                const relativeTime = formatDistanceToNow(new Date(notification.created_at), { addSuffix: true });
+
+                return (
+                  <button
+                    key={notification.id}
+                    type="button"
+                    className={cn(
+                      "flex w-full items-start gap-3 border-b border-border/40 px-4 py-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                      !notification.is_read && "bg-primary/5"
+                    )}
+                    onClick={() => void handleNotificationClick(notification)}
+                    aria-label={`${notification.title}. ${notification.message}. ${relativeTime}. ${notification.is_read ? "Read" : "Unread. Activate to mark as read."}`}
+                  >
+                    <span className="mt-0.5 text-sm" aria-hidden="true">{typeIcon(notification.type)}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className={cn("text-sm", !notification.is_read && "font-semibold")}>{notification.title}</p>
+                      <p className="truncate text-xs text-muted-foreground">{notification.message}</p>
+                      <p className="mt-1 text-[10px] text-muted-foreground/60">{relativeTime}</p>
+                    </div>
+                    {!notification.is_read && (
+                      <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-primary" aria-hidden="true" />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           )}
         </ScrollArea>
       </PopoverContent>

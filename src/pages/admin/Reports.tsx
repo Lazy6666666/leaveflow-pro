@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { convex } from "@/lib/convex";
+import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BarChart3, Download } from "lucide-react";
@@ -7,11 +8,11 @@ import { PageHeaderSkeleton, CardSkeleton } from "@/components/skeletons";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const COLORS = [
-  "hsl(168, 56%, 34%)",
-  "hsl(168, 40%, 50%)",
-  "hsl(200, 55%, 50%)",
-  "hsl(220, 20%, 60%)",
-  "hsl(260, 40%, 55%)",
+  "hsl(var(--foreground))",
+  "hsl(var(--muted-foreground))",
+  "hsl(var(--border))",
+  "hsl(var(--muted))",
+  "hsl(var(--secondary-foreground))",
 ];
 
 const Reports = () => {
@@ -23,34 +24,11 @@ const Reports = () => {
 
   useEffect(() => {
     const fetchReports = async () => {
-      const [reqRes, attRes] = await Promise.all([
-        supabase.from("leave_requests").select("status, leave_type_id, created_at, leave_types(name)"),
-        supabase.from("attendance_logs").select("status, date"),
-      ]);
-
-      if (reqRes.data) {
-        const statusMap: Record<string, number> = {};
-        const typeMap: Record<string, number> = {};
-        const monthMap: Record<string, number> = {};
-        reqRes.data.forEach((r: any) => {
-          statusMap[r.status] = (statusMap[r.status] || 0) + 1;
-          typeMap[r.leave_types?.name || "Unknown"] = (typeMap[r.leave_types?.name || "Unknown"] || 0) + 1;
-          const month = new Date(r.created_at).toLocaleString("default", { month: "short", year: "numeric" });
-          monthMap[month] = (monthMap[month] || 0) + 1;
-        });
-        setStatusData(Object.entries(statusMap).map(([name, count]) => ({ name, count })));
-        setTypeData(Object.entries(typeMap).map(([name, count]) => ({ name, count })));
-        setMonthlyData(Object.entries(monthMap).map(([month, requests]) => ({ month, requests })));
-      }
-
-      if (attRes.data) {
-        const attMap: Record<string, number> = {};
-        attRes.data.forEach((a: any) => {
-          const label = (a.status as string).replace("_", " ");
-          attMap[label] = (attMap[label] || 0) + 1;
-        });
-        setAttendanceData(Object.entries(attMap).map(([name, count]) => ({ name, count })));
-      }
+      const data = await convex.query(api.admin.getReportsData, {});
+      setStatusData(data.statusData);
+      setTypeData(data.typeData);
+      setMonthlyData(data.monthlyData);
+      setAttendanceData(data.attendanceData);
     };
     fetchReports().finally(() => setPageLoading(false));
   }, []);
@@ -79,13 +57,14 @@ const Reports = () => {
   );
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <BarChart3 className="h-6 w-6 text-primary" /> Reports & Analytics
+          <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">HR Admin</p>
+          <h1 className="text-3xl font-serif font-semibold tracking-tight text-foreground flex items-center gap-2">
+            <BarChart3 className="h-6 w-6 text-foreground" /> Reports & Analytics
           </h1>
-          <p className="text-muted-foreground mt-1">Leave and attendance insights</p>
+          <p className="mt-1 text-sm text-muted-foreground">Leave and attendance insights.</p>
         </div>
         <Button variant="outline" size="sm" className="gap-1" onClick={exportCSV}>
           <Download className="h-4 w-4" /> Export CSV
@@ -122,7 +101,7 @@ const Reports = () => {
                 <XAxis dataKey="name" tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} />
                 <YAxis tick={{ fill: "hsl(var(--muted-foreground))" }} />
                 <Tooltip contentStyle={{ borderRadius: "0.5rem", border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }} />
-                <Bar dataKey="count" fill="hsl(168, 56%, 34%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="hsl(var(--chart-1))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -157,7 +136,7 @@ const Reports = () => {
                 <XAxis dataKey="month" tick={{ fill: "hsl(var(--muted-foreground))" }} />
                 <YAxis tick={{ fill: "hsl(var(--muted-foreground))" }} />
                 <Tooltip contentStyle={{ borderRadius: "0.5rem", border: "1px solid hsl(var(--border))", background: "hsl(var(--card))" }} />
-                <Bar dataKey="requests" fill="hsl(168, 40%, 50%)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="requests" fill="hsl(var(--chart-2))" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
