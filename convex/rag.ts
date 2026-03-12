@@ -3,9 +3,12 @@ import { api } from "./_generated/api";
 import { v } from "convex/values";
 import { getMistralApiKey } from "./lib/env";
 import { now } from "./lib/auth";
+import { getUserRoles, requireIdentity } from "./lib/auth";
 
 const MISTRAL_EMBEDDING_MODEL = "mistral-embed";
 const MISTRAL_DIMENSIONS = 1024;
+const POLICY_VECTOR_SCORE_THRESHOLD = 0.55;
+const MISTRAL_TIMEOUT_MS = 15_000;
 
 function normalizeQuery(query: string) {
   return query.trim().toLowerCase();
@@ -32,33 +35,60 @@ async function embedText(input: string) {
     return null;
   }
 
-  const response = await fetch("https://api.mistral.ai/v1/embeddings", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
-    },
-    body: JSON.stringify({
-      model: MISTRAL_EMBEDDING_MODEL,
-      input: [input],
-      output_dimension: MISTRAL_DIMENSIONS,
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), MISTRAL_TIMEOUT_MS);
+  let response: Response;
+  try {
+    response = await fetch("https://api.mistral.ai/v1/embeddings", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({
+        model: MISTRAL_EMBEDDING_MODEL,
+        input: [input],
+        output_dimension: MISTRAL_DIMENSIONS,
+      }),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    console.error("Policy embedding transport failed", error);
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     console.error("Policy embedding request failed", await response.text());
     return null;
   }
 
-  const payload = await response.json();
+  let payload: any;
+  try {
+    payload = await response.json();
+  } catch (error) {
+    console.error("Policy embedding response parsing failed", error);
+    return null;
+  }
   const embedding = payload?.data?.[0]?.embedding;
   return Array.isArray(embedding) ? embedding : null;
+}
+
+async function requirePolicyReader(ctx: Parameters<typeof query>[0]["handler"] extends never ? never : any) {
+  const identity = await requireIdentity(ctx);
+  const roles = await getUserRoles(ctx, identity.subject);
+  return { identity, roles, isHrAdmin: roles.includes("hr_admin") };
 }
 
 export const listPolicyDocuments = query({
   args: {},
   handler: async (ctx) => {
+    const { isHrAdmin } = await requirePolicyReader(ctx);
+    if (!isHrAdmin) {
+      throw new Error("Forbidden");
+    }
     const documents = await ctx.db.query("policyDocuments").withIndex("by_title").collect();
     return documents.map((document) => ({
       id: document._id,
@@ -75,6 +105,10 @@ export const getPolicyDocumentsByIds = query({
     ids: v.array(v.id("policyDocuments")),
   },
   handler: async (ctx, args) => {
+    const { isHrAdmin } = await requirePolicyReader(ctx);
+    if (!isHrAdmin) {
+      throw new Error("Forbidden");
+    }
     return await Promise.all(
       args.ids.map(async (id) => {
         const document = await ctx.db.get(id);
@@ -97,6 +131,7 @@ export const searchPolicyLexical = query({
     query: v.string(),
   },
   handler: async (ctx, args) => {
+    await requirePolicyReader(ctx);
     const normalizedTerms = normalizeQuery(args.query).split(/\s+/).filter(Boolean);
     const documents = await ctx.db.query("policyDocuments").collect();
     return documents
@@ -215,6 +250,7 @@ export const searchPolicy = action({
     });
 
     const matches = nearest
+      .filter((result) => result._score >= POLICY_VECTOR_SCORE_THRESHOLD)
       .map((result) => {
         const document = documents.find((entry) => entry?.id === result._id);
         return document

@@ -229,6 +229,7 @@ const shortDateFormatter = new Intl.DateTimeFormat(undefined, {
 const MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions";
 const MISTRAL_CHAT_MODEL = "mistral-small-latest";
 const MAX_TOOL_ROUNDS = 4;
+const MISTRAL_TIMEOUT_MS = 15_000;
 
 function addDays(date: string, days: number) {
   const next = new Date(`${date}T00:00:00`);
@@ -455,6 +456,19 @@ function extractModelText(content: unknown) {
     .trim();
 
   return text.length > 0 ? text : null;
+}
+
+async function fetchWithTimeout(input: string, init: RequestInit, timeoutMs = MISTRAL_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 function parseToolArguments(argumentsText: string | undefined) {
@@ -792,26 +806,39 @@ If the user asks to submit, apply, approve, or reject directly, redirect them to
   const tools = buildAssistantTools(canSeeManagerData, isHrAdmin);
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
-    const response = await fetch(MISTRAL_API_URL, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${mistralApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: MISTRAL_CHAT_MODEL,
-        temperature: 0.2,
-        messages: mistralMessages,
-        tools,
-      }),
-    });
+    let response: Response;
+    try {
+      response = await fetchWithTimeout(MISTRAL_API_URL, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${mistralApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: MISTRAL_CHAT_MODEL,
+          temperature: 0.2,
+          messages: mistralMessages,
+          tools,
+        }),
+      });
+    } catch (error) {
+      console.error("Assistant Mistral transport failed", error);
+      return null;
+    }
 
     if (!response.ok) {
       console.error("Assistant Mistral request failed", await response.text());
       return null;
     }
 
-    const payload = await response.json() as MistralResponse;
+    let payload: MistralResponse;
+    try {
+      payload = await response.json() as MistralResponse;
+    } catch (error) {
+      console.error("Assistant Mistral response parsing failed", error);
+      return null;
+    }
+
     const assistantMessage = payload.choices?.[0]?.message;
     if (!assistantMessage) {
       return null;

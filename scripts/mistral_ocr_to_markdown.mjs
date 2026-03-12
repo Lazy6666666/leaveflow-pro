@@ -41,10 +41,15 @@ const response = await fetch("https://api.mistral.ai/v1/ocr", {
   },
   body: JSON.stringify({
     model: "mistral-ocr-latest",
-    document: {
-      type: "document_url",
-      document_url: dataUrl,
-    },
+    document: mimeType === "application/pdf"
+      ? {
+          type: "document_url",
+          document_url: dataUrl,
+        }
+      : {
+          type: "image_url",
+          image_url: dataUrl,
+        },
   }),
 });
 
