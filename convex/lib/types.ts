@@ -19,6 +19,7 @@ export type NotificationDoc = Doc<"notifications">;
 export type ManagerDelegationDoc = Doc<"managerDelegations">;
 export type AuditLogDoc = Doc<"auditLogs">;
 export type StorageFileDoc = Doc<"storageFiles">;
+export type PolicyDocumentDoc = Doc<"policyDocuments">;
 
 export type DepartmentId = Id<"departments">;
 export type LeaveTypeId = Id<"leaveTypes">;
@@ -30,3 +31,4 @@ export type BiometricsConfigId = Id<"biometricsConfigs">;
 export type BadgeMappingId = Id<"badgeMappings">;
 export type ManagerDelegationId = Id<"managerDelegations">;
 export type StorageId = Id<"_storage">;
+export type PolicyDocumentId = Id<"policyDocuments">;

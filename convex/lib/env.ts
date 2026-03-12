@@ -6,6 +6,7 @@ const ENV_KEYS = [
   "AI_GATEWAY_API_KEY",
   "CONVEX_SITE_URL",
   "LOVABLE_API_KEY",
+  "MISTRAL_API_KEY",
   "RESEND_API_KEY",
   "VITE_CONVEX_SITE_URL",
 ] as const;
@@ -55,4 +56,8 @@ export function getConvexSiteUrl(): string | undefined {
 
 export function getAiGatewayApiKey(): string | undefined {
   return getEnv("AI_GATEWAY_API_KEY") ?? getEnv("LOVABLE_API_KEY");
+}
+
+export function getMistralApiKey(): string | undefined {
+  return getEnv("MISTRAL_API_KEY");
 }
