@@ -1,5 +1,3 @@
-"use node";
-
 import { action, mutation, query } from "./_generated/server";
 import { api } from "./_generated/api";
 import { v } from "convex/values";
