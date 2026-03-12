@@ -3,7 +3,7 @@
 import { action } from "./_generated/server";
 import { api } from "./_generated/api";
 import { v } from "convex/values";
-import { getAiGatewayApiKey } from "./lib/env";
+import { getAiGatewayApiKey, getMistralApiKey } from "./lib/env";
 
 type BalanceSummary = {
   balance: number;
@@ -189,6 +189,9 @@ const shortDateFormatter = new Intl.DateTimeFormat(undefined, {
   day: "numeric",
   year: "numeric",
 });
+
+const MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions";
+const MISTRAL_CHAT_MODEL = "mistral-small-latest";
 
 function addDays(date: string, days: number) {
   const next = new Date(`${date}T00:00:00`);
@@ -407,11 +410,80 @@ function summarizeToolPayload(payload: ResolvedIntent["payload"]) {
   return payload;
 }
 
+function extractModelText(content: unknown) {
+  if (typeof content === "string") {
+    const trimmed = content.trim();
+    return trimmed.length > 0 ? trimmed : null;
+  }
+
+  if (!Array.isArray(content)) {
+    return null;
+  }
+
+  const text = content
+    .map((part) => {
+      if (typeof part === "string") {
+        return part;
+      }
+      if (part && typeof part === "object" && "text" in part && typeof part.text === "string") {
+        return part.text;
+      }
+      return "";
+    })
+    .join("\n")
+    .trim();
+
+  return text.length > 0 ? text : null;
+}
+
 async function maybeGenerateAiReply(
   messages: ChatMessage[],
   currentUser: CurrentUser,
   resolved: ResolvedIntent,
 ) {
+  const systemMessage = {
+    role: "system" as const,
+    content: `${BASE_SYSTEM_PROMPT}
+
+Role: ${getRoleLabel(currentUser)}
+Intent: ${resolved.intent}
+Tool result:
+${JSON.stringify(summarizeToolPayload(resolved.payload), null, 2)}`,
+  };
+
+  const mistralApiKey = getMistralApiKey();
+  if (mistralApiKey) {
+    const response = await fetch(MISTRAL_API_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${mistralApiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: MISTRAL_CHAT_MODEL,
+        temperature: 0.2,
+        messages: [
+          systemMessage,
+          ...messages.map((message) => ({
+            role: message.role,
+            content: message.content,
+          })),
+        ],
+      }),
+    });
+
+    if (response.ok) {
+      const payload = await response.json();
+      const content = payload?.choices?.[0]?.message?.content;
+      const reply = extractModelText(content);
+      if (reply) {
+        return reply;
+      }
+    } else {
+      console.error("Assistant Mistral request failed", await response.text());
+    }
+  }
+
   const aiGatewayApiKey = getAiGatewayApiKey();
   if (!aiGatewayApiKey) {
     return null;
@@ -427,15 +499,7 @@ async function maybeGenerateAiReply(
       model: "openai/gpt-4.1-mini",
       temperature: 0.2,
       messages: [
-        {
-          role: "system",
-          content: `${BASE_SYSTEM_PROMPT}
-
-Role: ${getRoleLabel(currentUser)}
-Intent: ${resolved.intent}
-Tool result:
-${JSON.stringify(summarizeToolPayload(resolved.payload), null, 2)}`,
-        },
+        systemMessage,
         ...messages.map((message) => ({
           role: message.role,
           content: message.content,
