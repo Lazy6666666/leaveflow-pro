@@ -228,7 +228,7 @@ export default defineSchema({
   })
     .index("by_title", ["title"])
     .vectorIndex("by_embedding", {
-      dimensions: 1536,
+      dimensions: 1024,
       vectorField: "embedding",
       filterFields: ["title"],
     }),

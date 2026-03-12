@@ -6,8 +6,8 @@ import { v } from "convex/values";
 import { getMistralApiKey } from "./lib/env";
 import { now } from "./lib/auth";
 
-const MISTRAL_EMBEDDING_MODEL = "codestral-embed";
-const MISTRAL_DIMENSIONS = 1536;
+const MISTRAL_EMBEDDING_MODEL = "mistral-embed";
+const MISTRAL_DIMENSIONS = 1024;
 
 function normalizeQuery(query: string) {
   return query.trim().toLowerCase();

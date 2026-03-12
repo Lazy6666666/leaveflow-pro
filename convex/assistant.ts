@@ -3,7 +3,7 @@
 import { action } from "./_generated/server";
 import { api } from "./_generated/api";
 import { v } from "convex/values";
-import { getAiGatewayApiKey, getMistralApiKey } from "./lib/env";
+import { getMistralApiKey } from "./lib/env";
 
 type BalanceSummary = {
   balance: number;
@@ -138,6 +138,42 @@ type ChatMessage = {
   content: string;
 };
 
+type MistralToolCall = {
+  id?: string;
+  function?: {
+    name?: string;
+    arguments?: string;
+  } | null;
+};
+
+type MistralMessage = {
+  role: "system" | "user" | "assistant" | "tool";
+  content?: string | Array<{ type?: string; text?: string }> | null;
+  name?: string;
+  tool_call_id?: string;
+  tool_calls?: MistralToolCall[];
+};
+
+type MistralToolDefinition = {
+  type: "function";
+  function: {
+    name: string;
+    description: string;
+    parameters: {
+      type: "object";
+      properties: Record<string, unknown>;
+      required?: string[];
+      additionalProperties: boolean;
+    };
+  };
+};
+
+type MistralResponse = {
+  choices?: Array<{
+    message?: MistralMessage | null;
+  }>;
+};
+
 type AssistantIntent =
   | "workflow"
   | "payroll"
@@ -192,6 +228,7 @@ const shortDateFormatter = new Intl.DateTimeFormat(undefined, {
 
 const MISTRAL_API_URL = "https://api.mistral.ai/v1/chat/completions";
 const MISTRAL_CHAT_MODEL = "mistral-small-latest";
+const MAX_TOOL_ROUNDS = 4;
 
 function addDays(date: string, days: number) {
   const next = new Date(`${date}T00:00:00`);
@@ -394,22 +431,6 @@ function shouldUseTeamBurnoutSummary(input: string, currentUser: CurrentUser) {
   return /\b(anyone|who|team|staff)\b/.test(input.toLowerCase());
 }
 
-function summarizeToolPayload(payload: ResolvedIntent["payload"]) {
-  if (payload === null) {
-    return null;
-  }
-  if ("employees" in payload && Array.isArray(payload.employees)) {
-    return { ...payload, employees: payload.employees.slice(0, 8) };
-  }
-  if ("matches" in payload && Array.isArray(payload.matches)) {
-    return { ...payload, matches: payload.matches.slice(0, 3) };
-  }
-  if (Array.isArray(payload)) {
-    return payload.slice(0, 8);
-  }
-  return payload;
-}
-
 function extractModelText(content: unknown) {
   if (typeof content === "string") {
     const trimmed = content.trim();
@@ -436,23 +457,341 @@ function extractModelText(content: unknown) {
   return text.length > 0 ? text : null;
 }
 
+function parseToolArguments(argumentsText: string | undefined) {
+  if (!argumentsText) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(argumentsText);
+    return typeof parsed === "object" && parsed !== null ? parsed as Record<string, unknown> : {};
+  } catch {
+    return {};
+  }
+}
+
+function getToolLimit(argumentsText: string | undefined, fallback = 5, max = 10) {
+  const limit = parseToolArguments(argumentsText).limit;
+  if (typeof limit !== "number" || !Number.isFinite(limit)) {
+    return fallback;
+  }
+  return Math.max(1, Math.min(max, Math.floor(limit)));
+}
+
+function getResolvedRange(argumentsText: string | undefined, fallbackInput: string, defaultEndOffsetDays = 30) {
+  const parsed = parseToolArguments(argumentsText);
+  const fallback = extractDateRange(fallbackInput);
+  const today = new Date().toISOString().slice(0, 10);
+  const startDate = typeof parsed.startDate === "string" ? parsed.startDate : fallback.startDate ?? today;
+  const endDate = typeof parsed.endDate === "string" ? parsed.endDate : fallback.endDate ?? addDays(today, defaultEndOffsetDays);
+  return {
+    startDate,
+    endDate,
+  };
+}
+
+function buildAssistantTools(canSeeManagerData: boolean, isHrAdmin: boolean): MistralToolDefinition[] {
+  const tools: MistralToolDefinition[] = [
+    {
+      type: "function",
+      function: {
+        name: "get_leave_balances",
+        description: "Fetch the current employee leave balances and allocations.",
+        parameters: {
+          type: "object",
+          properties: {},
+          additionalProperties: false,
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_leave_history",
+        description: "Fetch recent leave requests and statuses for the current user.",
+        parameters: {
+          type: "object",
+          properties: {
+            limit: { type: "integer", minimum: 1, maximum: 10 },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_upcoming_holidays",
+        description: "Fetch configured upcoming public holidays.",
+        parameters: {
+          type: "object",
+          properties: {
+            limit: { type: "integer", minimum: 1, maximum: 10 },
+          },
+          additionalProperties: false,
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_smart_leave_suggestions",
+        description: "Fetch smart leave suggestions based on holiday bridging opportunities.",
+        parameters: {
+          type: "object",
+          properties: {},
+          additionalProperties: false,
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "search_policy",
+        description: "Search indexed HR policy documents for relevant snippets.",
+        parameters: {
+          type: "object",
+          properties: {
+            query: { type: "string" },
+          },
+          required: ["query"],
+          additionalProperties: false,
+        },
+      },
+    },
+    {
+      type: "function",
+      function: {
+        name: "get_my_burnout_check",
+        description: "Check burnout signals for the current user.",
+        parameters: {
+          type: "object",
+          properties: {},
+          additionalProperties: false,
+        },
+      },
+    },
+  ];
+
+  if (canSeeManagerData) {
+    tools.push(
+      {
+        type: "function",
+        function: {
+          name: "get_pending_approvals",
+          description: "Fetch pending approvals requiring manager or HR action.",
+          parameters: {
+            type: "object",
+            properties: {
+              limit: { type: "integer", minimum: 1, maximum: 10 },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_team_calendar",
+          description: "Fetch approved team leave for a date range.",
+          parameters: {
+            type: "object",
+            properties: {
+              startDate: { type: "string" },
+              endDate: { type: "string" },
+              limit: { type: "integer", minimum: 1, maximum: 10 },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_burnout_overview",
+          description: "Fetch burnout risk overview across the manager or HR-visible scope.",
+          parameters: {
+            type: "object",
+            properties: {},
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "check_coverage_conflicts",
+          description: "Check for leave coverage conflicts in a date range.",
+          parameters: {
+            type: "object",
+            properties: {
+              startDate: { type: "string" },
+              endDate: { type: "string" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+    );
+  }
+
+  if (isHrAdmin) {
+    tools.push(
+      {
+        type: "function",
+        function: {
+          name: "get_payroll_summary",
+          description: "Fetch payroll summary data for a date range.",
+          parameters: {
+            type: "object",
+            properties: {
+              startDate: { type: "string" },
+              endDate: { type: "string" },
+            },
+            additionalProperties: false,
+          },
+        },
+      },
+      {
+        type: "function",
+        function: {
+          name: "get_biometrics_audit",
+          description: "Fetch biometric configuration and sync audit status.",
+          parameters: {
+            type: "object",
+            properties: {},
+            additionalProperties: false,
+          },
+        },
+      },
+    );
+  }
+
+  return tools;
+}
+
+async function executeAssistantTool(
+  ctx: any,
+  currentUser: CurrentUser,
+  toolCall: MistralToolCall,
+  latestUserMessage: string,
+) {
+  const toolName = toolCall.function?.name;
+  const toolArgs = parseToolArguments(toolCall.function?.arguments);
+  const currentYear = new Date().getFullYear();
+  const today = new Date().toISOString().slice(0, 10);
+  const nextThirtyDays = addDays(today, 30);
+  const canSeeManagerData = currentUser.roles.includes("manager") || currentUser.roles.includes("hr_admin");
+  const isHrAdmin = currentUser.roles.includes("hr_admin");
+
+  switch (toolName) {
+    case "get_leave_balances":
+      return JSON.stringify(await ctx.runQuery(api.leave.getMyBalances, { year: currentYear }), null, 2);
+    case "get_leave_history":
+      return JSON.stringify((await ctx.runQuery(api.leave.getLeaveHistory, {})).slice(0, getToolLimit(toolCall.function?.arguments)), null, 2);
+    case "get_upcoming_holidays":
+      return JSON.stringify((await ctx.runQuery(api.admin.getHolidays, { year: currentYear })).slice(0, getToolLimit(toolCall.function?.arguments)), null, 2);
+    case "get_smart_leave_suggestions": {
+      const holidays = await ctx.runQuery(api.admin.getHolidays, { year: currentYear });
+      return JSON.stringify(buildSmartSuggestions(holidays), null, 2);
+    }
+    case "search_policy": {
+      const query = typeof toolArgs.query === "string" && toolArgs.query.trim().length > 0 ? toolArgs.query : latestUserMessage;
+      return JSON.stringify(await ctx.runAction(api.rag.searchPolicy, { query }), null, 2);
+    }
+    case "get_my_burnout_check":
+      return JSON.stringify(await ctx.runQuery(api.insights.detectBurnout, {}), null, 2);
+    case "get_pending_approvals":
+      if (!canSeeManagerData) {
+        return JSON.stringify({ error: "Pending approvals are only available to managers and HR admins." }, null, 2);
+      }
+      return JSON.stringify((await ctx.runQuery(api.leave.getPendingApprovals, {})).slice(0, getToolLimit(toolCall.function?.arguments)), null, 2);
+    case "get_team_calendar":
+      if (!canSeeManagerData) {
+        return JSON.stringify({ error: "Team calendar is only available to managers and HR admins." }, null, 2);
+      }
+      return JSON.stringify(
+        (
+          await ctx.runQuery(api.leave.getTeamCalendar, {
+            ...getResolvedRange(toolCall.function?.arguments, latestUserMessage),
+          })
+        ).slice(0, getToolLimit(toolCall.function?.arguments)),
+        null,
+        2,
+      );
+    case "get_burnout_overview":
+      if (!canSeeManagerData) {
+        return JSON.stringify({ error: "Burnout overview is only available to managers and HR admins." }, null, 2);
+      }
+      return JSON.stringify(await ctx.runQuery(api.insights.getBurnoutSummary, {}), null, 2);
+    case "check_coverage_conflicts":
+      if (!canSeeManagerData) {
+        return JSON.stringify({ error: "Coverage conflicts are only available to managers and HR admins." }, null, 2);
+      }
+      return JSON.stringify(
+        await ctx.runQuery(api.insights.checkCoverageConflict, {
+          ...getResolvedRange(toolCall.function?.arguments, latestUserMessage, 14),
+        }),
+        null,
+        2,
+      );
+    case "get_payroll_summary":
+      if (!isHrAdmin) {
+        return JSON.stringify({ error: "Payroll summaries are only available to HR admins." }, null, 2);
+      }
+      return JSON.stringify(
+        await ctx.runQuery(api.payroll.getPayrollSummary, {
+          ...getResolvedRange(toolCall.function?.arguments, latestUserMessage),
+        }),
+        null,
+        2,
+      );
+    case "get_biometrics_audit":
+      if (!isHrAdmin) {
+        return JSON.stringify({ error: "Biometric audit summaries are only available to HR admins." }, null, 2);
+      }
+      return JSON.stringify(await ctx.runQuery(api.admin.getBiometricsConfigs, {}), null, 2);
+    default:
+      return JSON.stringify({ error: `Unsupported tool: ${toolName ?? "unknown"}` }, null, 2);
+  }
+}
+
 async function maybeGenerateAiReply(
+  ctx: any,
   messages: ChatMessage[],
   currentUser: CurrentUser,
-  resolved: ResolvedIntent,
 ) {
-  const systemMessage = {
-    role: "system" as const,
+  const mistralApiKey = getMistralApiKey();
+  if (!mistralApiKey) {
+    return null;
+  }
+
+  const canSeeManagerData = currentUser.roles.includes("manager") || currentUser.roles.includes("hr_admin");
+  const isHrAdmin = currentUser.roles.includes("hr_admin");
+  const latestUserMessage = messages.filter((message) => message.role === "user").at(-1)?.content ?? "";
+  const systemMessage: MistralMessage = {
+    role: "system",
     content: `${BASE_SYSTEM_PROMPT}
 
 Role: ${getRoleLabel(currentUser)}
-Intent: ${resolved.intent}
-Tool result:
-${JSON.stringify(summarizeToolPayload(resolved.payload), null, 2)}`,
+Use tools for live data instead of answering from memory.
+Always use search_policy for questions about handbook, policy, remote work, or rules.
+Use get_payroll_summary only for HR admins.
+Use get_pending_approvals, get_team_calendar, get_burnout_overview, and check_coverage_conflicts only for manager or HR scopes.
+If the user asks to submit, apply, approve, or reject directly, redirect them to the BALANCE workflow screens.`,
   };
 
-  const mistralApiKey = getMistralApiKey();
-  if (mistralApiKey) {
+  const mistralMessages: MistralMessage[] = [
+    systemMessage,
+    ...messages.map((message) => ({
+      role: message.role,
+      content: message.content,
+    })),
+  ];
+
+  const tools = buildAssistantTools(canSeeManagerData, isHrAdmin);
+
+  for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
     const response = await fetch(MISTRAL_API_URL, {
       method: "POST",
       headers: {
@@ -462,60 +801,49 @@ ${JSON.stringify(summarizeToolPayload(resolved.payload), null, 2)}`,
       body: JSON.stringify({
         model: MISTRAL_CHAT_MODEL,
         temperature: 0.2,
-        messages: [
-          systemMessage,
-          ...messages.map((message) => ({
-            role: message.role,
-            content: message.content,
-          })),
-        ],
+        messages: mistralMessages,
+        tools,
       }),
     });
 
-    if (response.ok) {
-      const payload = await response.json();
-      const content = payload?.choices?.[0]?.message?.content;
-      const reply = extractModelText(content);
-      if (reply) {
-        return reply;
-      }
-    } else {
+    if (!response.ok) {
       console.error("Assistant Mistral request failed", await response.text());
+      return null;
+    }
+
+    const payload = await response.json() as MistralResponse;
+    const assistantMessage = payload.choices?.[0]?.message;
+    if (!assistantMessage) {
+      return null;
+    }
+
+    const toolCalls = assistantMessage.tool_calls ?? [];
+    const textReply = extractModelText(assistantMessage.content);
+
+    mistralMessages.push({
+      role: "assistant",
+      content: textReply ?? "",
+      tool_calls: toolCalls,
+    });
+
+    if (toolCalls.length === 0) {
+      return textReply;
+    }
+
+    for (const toolCall of toolCalls) {
+      if (!toolCall.id) {
+        continue;
+      }
+      mistralMessages.push({
+        role: "tool",
+        name: toolCall.function?.name,
+        tool_call_id: toolCall.id,
+        content: await executeAssistantTool(ctx, currentUser, toolCall, latestUserMessage),
+      });
     }
   }
 
-  const aiGatewayApiKey = getAiGatewayApiKey();
-  if (!aiGatewayApiKey) {
-    return null;
-  }
-
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${aiGatewayApiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "openai/gpt-4.1-mini",
-      temperature: 0.2,
-      messages: [
-        systemMessage,
-        ...messages.map((message) => ({
-          role: message.role,
-          content: message.content,
-        })),
-      ],
-    }),
-  });
-
-  if (!response.ok) {
-    console.error("Assistant gateway request failed", await response.text());
-    return null;
-  }
-
-  const payload = await response.json();
-  const content = payload?.choices?.[0]?.message?.content;
-  return typeof content === "string" && content.trim() ? content.trim() : null;
+  return null;
 }
 
 function formatBalanceReply(balances: BalanceSummary[]) {
@@ -806,16 +1134,16 @@ export const chat = action({
       fullName: currentUser.fullName,
       roles: currentUser.roles,
     });
-    const aiReply = await maybeGenerateAiReply(args.messages, {
+    const aiReply = await maybeGenerateAiReply(ctx, args.messages, {
       fullName: currentUser.fullName,
       roles: currentUser.roles,
-    }, resolved);
+    });
     const fallbackReply = buildDeterministicReply(resolved);
 
     return {
       intent: resolved.intent,
       message: aiReply ?? fallbackReply,
-      source: aiReply ? "gateway" : "deterministic",
+      source: aiReply ? "mistral" : "deterministic",
     };
   },
 });

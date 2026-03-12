@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
+    "mistral:ocr": "node scripts/mistral_ocr_to_markdown.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest"
