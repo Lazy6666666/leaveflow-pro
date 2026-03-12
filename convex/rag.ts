@@ -1,14 +1,21 @@
-import { action, mutation, query } from "./_generated/server";
-import { api } from "./_generated/api";
+import { action, internalQuery, mutation, query } from "./_generated/server";
+import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 import { getMistralApiKey } from "./lib/env";
 import { now } from "./lib/auth";
 import { getUserRoles, requireIdentity } from "./lib/auth";
+import type { QueryCtx } from "./_generated/server";
 
 const MISTRAL_EMBEDDING_MODEL = "mistral-embed";
 const MISTRAL_DIMENSIONS = 1024;
 const POLICY_VECTOR_SCORE_THRESHOLD = 0.55;
 const MISTRAL_TIMEOUT_MS = 15_000;
+
+type EmbeddingResponse = {
+  data?: Array<{
+    embedding?: number[];
+  }>;
+};
 
 function normalizeQuery(query: string) {
   return query.trim().toLowerCase();
@@ -65,7 +72,7 @@ async function embedText(input: string) {
     return null;
   }
 
-  let payload: any;
+  let payload: EmbeddingResponse;
   try {
     payload = await response.json();
   } catch (error) {
@@ -76,7 +83,7 @@ async function embedText(input: string) {
   return Array.isArray(embedding) ? embedding : null;
 }
 
-async function requirePolicyReader(ctx: Parameters<typeof query>[0]["handler"] extends never ? never : any) {
+async function requirePolicyReader(ctx: QueryCtx) {
   const identity = await requireIdentity(ctx);
   const roles = await getUserRoles(ctx, identity.subject);
   return { identity, roles, isHrAdmin: roles.includes("hr_admin") };
@@ -124,6 +131,26 @@ export const getPolicyDocumentsByIds = query({
       }),
     );
   },
+});
+
+export const getPolicyDocumentsForSearch = internalQuery({
+  args: {
+    ids: v.array(v.id("policyDocuments")),
+  },
+  handler: async (ctx, args) =>
+    await Promise.all(
+      args.ids.map(async (id) => {
+        const document = await ctx.db.get(id);
+        return document
+          ? {
+              id: document._id,
+              title: document.title,
+              content: document.content,
+              metadata: document.metadata ?? null,
+            }
+          : null;
+      }),
+    ),
 });
 
 export const searchPolicyLexical = query({
@@ -191,6 +218,29 @@ export const savePolicyDocument = mutation({
   },
 });
 
+export const deletePolicyDocument = mutation({
+  args: {
+    documentId: v.id("policyDocuments"),
+  },
+  handler: async (ctx, args) => {
+    const currentUser = await ctx.runQuery(api.users.current, {});
+    if (!currentUser || !currentUser.roles.includes("hr_admin")) {
+      throw new Error("Forbidden");
+    }
+
+    const existing = await ctx.db.get(args.documentId);
+    if (!existing) {
+      return { deleted: false };
+    }
+
+    await ctx.db.delete(args.documentId);
+    return {
+      deleted: true,
+      storageId: existing.storageId ?? null,
+    };
+  },
+});
+
 export const indexPolicyDocument = action({
   args: {
     documentId: v.optional(v.id("policyDocuments")),
@@ -221,6 +271,32 @@ export const indexPolicyDocument = action({
   },
 });
 
+export const removePolicyDocument = action({
+  args: {
+    documentId: v.id("policyDocuments"),
+  },
+  handler: async (ctx, args) => {
+    const currentUser = await ctx.runQuery(api.users.current, {});
+    if (!currentUser || !currentUser.roles.includes("hr_admin")) {
+      throw new Error("Forbidden");
+    }
+
+    const result = await ctx.runMutation(api.rag.deletePolicyDocument, {
+      documentId: args.documentId,
+    });
+
+    if (result.storageId) {
+      try {
+        await ctx.storage.delete(result.storageId);
+      } catch (error) {
+        console.error("Failed to delete policy storage asset", error);
+      }
+    }
+
+    return result;
+  },
+});
+
 export const searchPolicy = action({
   args: {
     query: v.string(),
@@ -245,7 +321,7 @@ export const searchPolicy = action({
       limit: 5,
     });
 
-    const documents = await ctx.runQuery(api.rag.getPolicyDocumentsByIds, {
+    const documents = await ctx.runQuery(internal.rag.getPolicyDocumentsForSearch, {
       ids: nearest.map((result) => result._id),
     });
 

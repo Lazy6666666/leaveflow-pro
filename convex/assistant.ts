@@ -4,6 +4,7 @@ import { action } from "./_generated/server";
 import { api } from "./_generated/api";
 import { v } from "convex/values";
 import { getMistralApiKey } from "./lib/env";
+import type { ActionCtx } from "./_generated/server";
 
 type BalanceSummary = {
   balance: number;
@@ -685,7 +686,7 @@ function buildAssistantTools(canSeeManagerData: boolean, isHrAdmin: boolean): Mi
 }
 
 async function executeAssistantTool(
-  ctx: any,
+  ctx: ActionCtx,
   currentUser: CurrentUser,
   toolCall: MistralToolCall,
   latestUserMessage: string,
@@ -771,7 +772,7 @@ async function executeAssistantTool(
 }
 
 async function maybeGenerateAiReply(
-  ctx: any,
+  ctx: ActionCtx,
   messages: ChatMessage[],
   currentUser: CurrentUser,
 ) {
@@ -1084,7 +1085,7 @@ function buildDeterministicReply(resolved: ResolvedIntent) {
   }
 }
 
-async function resolveIntent(ctx: any, latestMessage: string, currentUser: CurrentUser): Promise<ResolvedIntent> {
+async function resolveIntent(ctx: ActionCtx, latestMessage: string, currentUser: CurrentUser): Promise<ResolvedIntent> {
   const intent = detectIntent(latestMessage);
   const currentYear = new Date().getFullYear();
   const today = new Date().toISOString().slice(0, 10);
