@@ -1,0 +1,102 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e5]:
+    - link "Skip to main content" [ref=e6] [cursor=pointer]:
+      - /url: "#main-content"
+    - generic [ref=e7]:
+      - generic [ref=e11]:
+        - generic [ref=e12]:
+          - generic [ref=e13]:
+            - img "BALANCE" [ref=e15]
+            - generic [ref=e16]:
+              - paragraph [ref=e17]: Workspace
+              - heading "BALANCE" [level=2] [ref=e18]
+              - paragraph [ref=e19]: qa1773352905147+clerk_test@example.com
+          - generic [ref=e20]:
+            - generic [ref=e21]: Employee
+            - list [ref=e23]:
+              - listitem [ref=e24]:
+                - link "Dashboard" [ref=e25] [cursor=pointer]:
+                  - /url: /dashboard
+                  - img [ref=e26]
+                  - generic [ref=e31]: Dashboard
+              - listitem [ref=e32]:
+                - link "AI Workspace" [ref=e33] [cursor=pointer]:
+                  - /url: /ai-workspace
+                  - img [ref=e34]
+                  - generic [ref=e41]: AI Workspace
+              - listitem [ref=e42]:
+                - link "My Leave" [ref=e43] [cursor=pointer]:
+                  - /url: /my-leave
+                  - img [ref=e44]
+                  - generic [ref=e55]: My Leave
+              - listitem [ref=e56]:
+                - link "Request Leave" [ref=e57] [cursor=pointer]:
+                  - /url: /request-leave
+                  - img [ref=e58]
+                  - generic [ref=e62]: Request Leave
+              - listitem [ref=e63]:
+                - link "Leave History" [ref=e64] [cursor=pointer]:
+                  - /url: /leave-history
+                  - img [ref=e65]
+                  - generic [ref=e69]: Leave History
+              - listitem [ref=e70]:
+                - link "Attendance" [ref=e71] [cursor=pointer]:
+                  - /url: /attendance
+                  - img [ref=e72]
+                  - generic [ref=e82]: Attendance
+              - listitem [ref=e83]:
+                - link "Holidays" [ref=e84] [cursor=pointer]:
+                  - /url: /holidays
+                  - img [ref=e85]
+                  - generic [ref=e90]: Holidays
+              - listitem [ref=e91]:
+                - link "Profile" [ref=e92] [cursor=pointer]:
+                  - /url: /profile
+                  - img [ref=e93]
+                  - generic [ref=e105]: Profile
+        - button "Sign Out" [ref=e107] [cursor=pointer]:
+          - generic [ref=e108]:
+            - img
+            - generic [ref=e109]: Sign Out
+      - generic [ref=e110]:
+        - banner [ref=e111]:
+          - generic [ref=e112]:
+            - button "Toggle Sidebar" [ref=e113] [cursor=pointer]:
+              - generic [ref=e114]:
+                - img
+                - generic [ref=e115]: Toggle Sidebar
+            - generic [ref=e116]:
+              - paragraph [ref=e117]: BALANCE
+              - heading "Workforce control center" [level=1] [ref=e118]
+          - generic [ref=e119]:
+            - button "Open notifications" [ref=e120] [cursor=pointer]:
+              - generic [ref=e121]:
+                - img
+            - button "Switch to dark mode" [ref=e122] [cursor=pointer]:
+              - generic [ref=e123]:
+                - img
+        - main [ref=e124]:
+          - generic [ref=e128]:
+            - generic [ref=e129]:
+              - img [ref=e131]
+              - heading "Admin Setup" [level=3] [ref=e134]
+              - paragraph [ref=e135]: Bootstrap the first HR Admin account for this deployment. This can only be used once — before any admin exists.
+            - generic [ref=e137]:
+              - generic [ref=e138]:
+                - text: Logged in as
+                - textbox "Logged in as" [disabled] [ref=e139]: qa1773352905147+clerk_test@example.com
+              - generic [ref=e140]:
+                - text: Setup Token
+                - textbox "Setup Token" [ref=e141]:
+                  - /placeholder: Enter the admin setup token
+                - paragraph [ref=e142]: This is the secret token configured in your backend settings.
+              - button "Activate Admin" [disabled]:
+                - generic:
+                  - img
+                  - text: Activate Admin
+    - button "Open AI assistant" [ref=e143] [cursor=pointer]:
+      - generic [ref=e144]:
+        - img

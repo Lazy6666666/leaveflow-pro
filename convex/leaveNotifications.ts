@@ -1,14 +1,6 @@
 import { v } from "convex/values";
 import { internalQuery } from "./_generated/server";
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+import { escapeBalanceEmailHtml, renderBalanceEmail } from "./lib/emailTemplates";
 
 export const getLeaveNotificationEmailPayload = internalQuery({
   args: {
@@ -51,10 +43,18 @@ export const getLeaveNotificationEmailPayload = internalQuery({
       return {
         to: manager.email,
         subject: `New Leave Request from ${employeeName}`,
-        html: `<p>Hi ${escapeHtml(manager.fullName ?? "Manager")},</p>
-<p><strong>${escapeHtml(employeeName)}</strong> has submitted a <strong>${escapeHtml(leaveTypeName)}</strong> request from <strong>${escapeHtml(request.startDate)}</strong> to <strong>${escapeHtml(request.endDate)}</strong>.</p>
-<p>Reason: ${escapeHtml(request.reason ?? "Not specified")}</p>
-<p>Please review and take action.</p>`,
+        html: renderBalanceEmail({
+          title: `New leave request: ${employeeName}`,
+          preheader: `${employeeName} requested ${leaveTypeName} (${request.startDate} to ${request.endDate}).`,
+          greetingName: manager.fullName ?? "Manager",
+          bodyHtml: [
+            `<p style="margin:0 0 12px;">` +
+              `<strong>${escapeBalanceEmailHtml(employeeName)}</strong> submitted a <strong>${escapeBalanceEmailHtml(leaveTypeName)}</strong> request.</p>`,
+            `<p style="margin:0 0 12px;"><strong>Dates:</strong> ${escapeBalanceEmailHtml(request.startDate)} to ${escapeBalanceEmailHtml(request.endDate)}</p>`,
+            `<p style="margin:0 0 12px;"><strong>Reason:</strong> ${escapeBalanceEmailHtml(request.reason ?? "Not specified")}</p>`,
+            `<p style="margin:0;">Please open BALANCE to review and take action.</p>`,
+          ].join(""),
+        }),
       };
     }
 
@@ -68,9 +68,18 @@ export const getLeaveNotificationEmailPayload = internalQuery({
     return {
       to: employee.email,
       subject: `Your ${leaveTypeName} Request Has Been ${status}`,
-      html: `<p>Hi ${escapeHtml(employee.fullName ?? "Employee")},</p>
-<p>Your <strong>${escapeHtml(leaveTypeName)}</strong> request from <strong>${escapeHtml(request.startDate)}</strong> to <strong>${escapeHtml(request.endDate)}</strong> has been <strong>${status.toLowerCase()}</strong>.</p>
-${request.managerComment ? `<p>Comment: ${escapeHtml(request.managerComment)}</p>` : ""}`,
+      html: renderBalanceEmail({
+        title: `${leaveTypeName} request ${status.toLowerCase()}`,
+        preheader: `${leaveTypeName}: ${request.startDate} to ${request.endDate} (${status})`,
+        greetingName: employee.fullName ?? "Employee",
+        bodyHtml: [
+          `<p style="margin:0 0 12px;">Your <strong>${escapeBalanceEmailHtml(leaveTypeName)}</strong> request has been <strong>${escapeBalanceEmailHtml(status.toLowerCase())}</strong>.</p>`,
+          `<p style="margin:0 0 12px;"><strong>Dates:</strong> ${escapeBalanceEmailHtml(request.startDate)} to ${escapeBalanceEmailHtml(request.endDate)}</p>`,
+          request.managerComment
+            ? `<p style="margin:0;"><strong>Comment:</strong> ${escapeBalanceEmailHtml(request.managerComment)}</p>`
+            : `<p style="margin:0;">No manager comment was included.</p>`,
+        ].join(""),
+      }),
     };
   },
 });

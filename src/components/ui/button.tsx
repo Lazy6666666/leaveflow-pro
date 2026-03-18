@@ -54,8 +54,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       );
     }
 
+    const {
+      onAnimationStart: _onAnimationStart,
+      onDrag: _onDrag,
+      onDragStart: _onDragStart,
+      onDragEnd: _onDragEnd,
+      ...motionSafeProps
+    } = props;
+
     return (
       <motion.button
+        type="button"
         className={cn("relative overflow-hidden", buttonVariants({ variant, size, className }))}
         ref={ref}
         whileHover={{ scale: 1.02 }}
@@ -66,7 +75,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           pointerX.set(((event.clientX - rect.left) / rect.width) * 100);
           pointerY.set(((event.clientY - rect.top) / rect.height) * 100);
         }}
-        {...props}
+        {...motionSafeProps}
       >
         {variant === "ios-glass" ? (
           <>

@@ -2,7 +2,10 @@ import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
 import type { StorageId } from "@/lib/convexTypes";
 
-export async function uploadFileToConvex(file: Blob, fileClass: "avatar" | "leave_attachment" | "attendance_selfie") {
+export async function uploadFileToConvex(
+  file: Blob,
+  fileClass: "avatar" | "leave_attachment" | "attendance_selfie" | "policy_document",
+) {
   const uploadUrl = await convex.mutation(api.files.generateUploadUrl, { fileClass });
   const result = await fetch(uploadUrl, {
     method: "POST",

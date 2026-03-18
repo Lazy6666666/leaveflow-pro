@@ -3,42 +3,50 @@ const ENV_KEYS = [
   "CLERK_APPLICATION_ID",
   "CLERK_JWT_ISSUER_DOMAIN",
   "CLERK_WEBHOOK_SIGNING_SECRET",
-  "AI_GATEWAY_API_KEY",
   "CONVEX_SITE_URL",
-  "LOVABLE_API_KEY",
   "MISTRAL_API_KEY",
   "RESEND_API_KEY",
+  "RESEND_FROM_EMAIL",
   "VITE_CONVEX_SITE_URL",
 ] as const;
 
 export type EnvKey = (typeof ENV_KEYS)[number];
 
+const DEFAULT_CLERK_APPLICATION_ID = "convex";
+
 type ProcessWithEnv = {
   env: Record<string, string | undefined>;
 };
 
-function hasProcessEnv(value: unknown): value is ProcessWithEnv {
-  if (typeof value !== "object" || value === null || !("env" in value)) {
-    return false;
-  }
-
-  const { env } = value as { env?: unknown };
-  return typeof env === "object" && env !== null;
-}
-
 function getProcessEnv(): Record<string, string | undefined> | undefined {
-  const processValue = Reflect.get(globalThis, "process");
-  return hasProcessEnv(processValue) ? processValue.env : undefined;
+  if (typeof process !== "undefined") {
+    return (process as ProcessWithEnv).env;
+  }
+  return undefined;
 }
 
-export function getEnv(name: EnvKey): string | undefined {
-  const value = getProcessEnv()?.[name];
+function normalizeEnvValue(value: string | undefined) {
   if (typeof value !== "string") {
     return undefined;
   }
 
   const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
+  if (!trimmed) {
+    return undefined;
+  }
+
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
+    return trimmed.slice(1, -1).trim() || undefined;
+  }
+
+  return trimmed;
+}
+
+export function getEnv(name: EnvKey): string | undefined {
+  return normalizeEnvValue(getProcessEnv()?.[name]);
 }
 
 export function requireEnv(name: EnvKey): string {
@@ -54,10 +62,22 @@ export function getConvexSiteUrl(): string | undefined {
   return siteUrl?.replace(/\/+$/, "");
 }
 
-export function getAiGatewayApiKey(): string | undefined {
-  return getEnv("AI_GATEWAY_API_KEY") ?? getEnv("LOVABLE_API_KEY");
+export function getClerkIssuerDomain(): string | undefined {
+  return getEnv("CLERK_JWT_ISSUER_DOMAIN");
+}
+
+export function getClerkApplicationId(): string {
+  return getEnv("CLERK_APPLICATION_ID") ?? DEFAULT_CLERK_APPLICATION_ID;
 }
 
 export function getMistralApiKey(): string | undefined {
   return getEnv("MISTRAL_API_KEY");
+}
+
+export function getResendApiKey(): string | undefined {
+  return getEnv("RESEND_API_KEY");
+}
+
+export function getResendFromEmail(): string | undefined {
+  return getEnv("RESEND_FROM_EMAIL");
 }

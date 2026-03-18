@@ -72,7 +72,7 @@ const PaymentCard = () => {
                     className="w-full py-3 px-6 rounded-xl bg-foreground text-background font-bold hover:opacity-90 transition-opacity disabled:opacity-50 relative overflow-hidden group"
                 >
                     <span className="z-10 relative">
-                        {processing ? "Processing…" : succeeded ? "Succeeded!" : "Subscribe Now"}
+                        {processing ? "Processing..." : succeeded ? "Succeeded!" : "Subscribe Now"}
                     </span>
                     {succeeded && (
                         <motion.div

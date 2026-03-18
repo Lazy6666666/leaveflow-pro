@@ -7,18 +7,92 @@ import {
   getManagedEmployeeIds,
   getProfileByUserId,
   getUserRoles,
-  hasRole,
   now,
   recordAudit,
   requireIdentity,
 } from "./lib/auth";
 import { halfDayTypeValidator, leaveRequestStatusValidator, type LeaveRequestStatus } from "./constants";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
-import type { LeaveBalanceDoc, LeaveRequestDoc } from "./lib/types";
+import type { LeaveBalanceDoc, LeaveRequestDoc, LeaveTypeDoc, ProfileDoc } from "./lib/types";
+import { insertAnalyticsEvent } from "./lib/analytics";
 import { assertStorageFileOwnership, linkStorageFile } from "./lib/storage";
 
-async function serializeLeaveBalance(ctx: QueryCtx | MutationCtx, balance: LeaveBalanceDoc) {
-  const leaveType = await ctx.db.get(balance.leaveTypeId);
+async function getLeaveTypesById(
+  ctx: QueryCtx | MutationCtx,
+  leaveTypeIds: LeaveRequestDoc["leaveTypeId"][] | LeaveBalanceDoc["leaveTypeId"][],
+) {
+  const uniqueLeaveTypeIds = Array.from(new Set(leaveTypeIds));
+  const leaveTypes = await Promise.all(uniqueLeaveTypeIds.map((leaveTypeId) => ctx.db.get(leaveTypeId)));
+  return new Map(uniqueLeaveTypeIds.map((leaveTypeId, index) => [leaveTypeId, leaveTypes[index]]));
+}
+
+async function getProfilesByUserId(ctx: QueryCtx | MutationCtx, userIds: string[]) {
+  const uniqueUserIds = Array.from(new Set(userIds));
+  const profiles = await Promise.all(uniqueUserIds.map((userId) => getProfileByUserId(ctx, userId)));
+  return new Map(uniqueUserIds.map((userId, index) => [userId, profiles[index]]));
+}
+
+async function getVisibleLeaveRequestsByStatus(
+  ctx: QueryCtx | MutationCtx,
+  status: LeaveRequestStatus,
+  options: { isHrAdmin: boolean; employeeIds: string[] },
+) {
+  if (options.isHrAdmin) {
+    return await ctx.db.query("leaveRequests").withIndex("by_status", (q) => q.eq("status", status)).collect();
+  }
+
+  const uniqueEmployeeIds = Array.from(new Set(options.employeeIds));
+  if (uniqueEmployeeIds.length === 0) {
+    return [] as LeaveRequestDoc[];
+  }
+
+  const visibleRequests = await Promise.all(
+    uniqueEmployeeIds.map((employeeId) =>
+      ctx.db
+        .query("leaveRequests")
+        .withIndex("by_employeeId_status", (q) => q.eq("employeeId", employeeId).eq("status", status))
+        .collect()
+    ),
+  );
+  return visibleRequests.flat();
+}
+
+async function getVisibleOverlappingLeaveRequestsByStatus(
+  ctx: QueryCtx | MutationCtx,
+  status: LeaveRequestStatus,
+  options: { isHrAdmin: boolean; employeeIds: string[]; startDate: string; endDate: string },
+) {
+  if (options.isHrAdmin) {
+    const candidates = await ctx.db
+      .query("leaveRequests")
+      .withIndex("by_status_startDate", (q) => q.eq("status", status).lte("startDate", options.endDate))
+      .collect();
+
+    return candidates.filter((leaveRequest) => leaveRequest.endDate >= options.startDate);
+  }
+
+  const uniqueEmployeeIds = Array.from(new Set(options.employeeIds));
+  if (uniqueEmployeeIds.length === 0) {
+    return [] as LeaveRequestDoc[];
+  }
+
+  const visibleRequests = await Promise.all(
+    uniqueEmployeeIds.map((employeeId) =>
+      ctx.db
+        .query("leaveRequests")
+        .withIndex("by_employeeId_status_startDate", (q) =>
+          q.eq("employeeId", employeeId).eq("status", status).lte("startDate", options.endDate),
+        )
+        .collect(),
+    ),
+  );
+
+  return visibleRequests
+    .flat()
+    .filter((leaveRequest) => leaveRequest.endDate >= options.startDate);
+}
+
+function serializeLeaveBalance(balance: LeaveBalanceDoc, leaveType: LeaveTypeDoc | null | undefined) {
   return {
     id: balance._id,
     balance: balance.balance,
@@ -34,16 +108,11 @@ async function serializeLeaveBalance(ctx: QueryCtx | MutationCtx, balance: Leave
   };
 }
 
-async function serializeLeaveRequest(
-  ctx: QueryCtx | MutationCtx,
+function serializeLeaveRequest(
   leaveRequest: LeaveRequestDoc,
-  options?: { includeEmployee?: boolean },
+  leaveType: LeaveTypeDoc | null | undefined,
+  employeeProfile?: ProfileDoc | null,
 ) {
-  const leaveType = await ctx.db.get(leaveRequest.leaveTypeId);
-  const employeeProfile = options?.includeEmployee
-    ? await getProfileByUserId(ctx, leaveRequest.employeeId)
-    : null;
-
   return {
     id: leaveRequest._id,
     start_date: leaveRequest.startDate,
@@ -63,6 +132,32 @@ async function serializeLeaveRequest(
         }
       : null,
   };
+}
+
+async function serializeLeaveBalances(ctx: QueryCtx | MutationCtx, balances: LeaveBalanceDoc[]) {
+  const leaveTypesById = await getLeaveTypesById(ctx, balances.map((balance) => balance.leaveTypeId));
+  return balances.map((balance) => serializeLeaveBalance(balance, leaveTypesById.get(balance.leaveTypeId)));
+}
+
+async function serializeLeaveRequests(
+  ctx: QueryCtx | MutationCtx,
+  leaveRequests: LeaveRequestDoc[],
+  options?: { includeEmployee?: boolean },
+) {
+  const [leaveTypesById, profilesByUserId] = await Promise.all([
+    getLeaveTypesById(ctx, leaveRequests.map((leaveRequest) => leaveRequest.leaveTypeId)),
+    options?.includeEmployee
+      ? getProfilesByUserId(ctx, leaveRequests.map((leaveRequest) => leaveRequest.employeeId))
+      : Promise.resolve(new Map<string, ProfileDoc | null>()),
+  ]);
+
+  return leaveRequests.map((leaveRequest) =>
+    serializeLeaveRequest(
+      leaveRequest,
+      leaveTypesById.get(leaveRequest.leaveTypeId),
+      profilesByUserId.get(leaveRequest.employeeId),
+    )
+  );
 }
 
 async function updateBalanceForStatusChange(
@@ -143,7 +238,7 @@ export const getMyBalances = query({
       .query("leaveBalances")
       .withIndex("by_employeeId_year", (q) => q.eq("employeeId", identity.subject).eq("year", year))
       .collect();
-    return await Promise.all(balances.map((balance) => serializeLeaveBalance(ctx, balance)));
+    return await serializeLeaveBalances(ctx, balances);
   },
 });
 
@@ -157,7 +252,7 @@ export const getLeaveHistory = query({
       .collect();
 
     const sorted = leaveRequests.sort((a, b) => b.createdAt - a.createdAt);
-    return await Promise.all(sorted.map((leaveRequest) => serializeLeaveRequest(ctx, leaveRequest)));
+    return await serializeLeaveRequests(ctx, sorted);
   },
 });
 
@@ -172,10 +267,7 @@ export const getConflictSummary = query({
     const roles = await getUserRoles(ctx, identity.subject);
 
     let candidateUserIds: string[] = [];
-    if (roles.includes("hr_admin")) {
-      const profiles = await ctx.db.query("profiles").collect();
-      candidateUserIds = profiles.map((entry) => entry.userId);
-    } else if (roles.includes("manager")) {
+    if (roles.includes("manager")) {
       candidateUserIds = await getManagedEmployeeIds(ctx, identity.subject);
     } else if (profile?.managerUserId) {
       const profiles = await ctx.db
@@ -185,22 +277,32 @@ export const getConflictSummary = query({
       candidateUserIds = profiles.map((entry) => entry.userId);
     }
 
-    const approved = await ctx.db.query("leaveRequests").withIndex("by_status", (q) => q.eq("status", "approved")).collect();
+    const isHrAdmin = roles.includes("hr_admin");
+    const scopedCandidateUserIds = candidateUserIds.filter((userId) => userId !== identity.subject);
+    if (!isHrAdmin && scopedCandidateUserIds.length === 0) {
+      return {
+        count: 0,
+        names: [],
+      };
+    }
+
+    const approved = await getVisibleOverlappingLeaveRequestsByStatus(ctx, "approved", {
+      isHrAdmin,
+      employeeIds: scopedCandidateUserIds,
+      startDate: args.startDate,
+      endDate: args.endDate,
+    });
+    const candidateUserIdSet = new Set(scopedCandidateUserIds);
     const overlapping = approved.filter(
       (leaveRequest) =>
-        candidateUserIds.includes(leaveRequest.employeeId) &&
         leaveRequest.employeeId !== identity.subject &&
-        leaveRequest.startDate <= args.endDate &&
-        leaveRequest.endDate >= args.startDate,
+        (isHrAdmin || candidateUserIdSet.has(leaveRequest.employeeId)),
     );
 
-    const names = [];
-    for (const leaveRequest of overlapping) {
-      const employeeProfile = await getProfileByUserId(ctx, leaveRequest.employeeId);
-      if (employeeProfile?.fullName) {
-        names.push(employeeProfile.fullName);
-      }
-    }
+    const overlappingProfiles = await getProfilesByUserId(ctx, overlapping.map((leaveRequest) => leaveRequest.employeeId));
+    const names = overlapping
+      .map((leaveRequest) => overlappingProfiles.get(leaveRequest.employeeId)?.fullName)
+      .filter((fullName): fullName is string => Boolean(fullName));
 
     return {
       count: overlapping.length,
@@ -219,6 +321,14 @@ export const createRequest = mutation({
     attachmentUrl: v.optional(v.string()),
     attachmentName: v.optional(v.string()),
     halfDayType: v.optional(halfDayTypeValidator),
+    analytics: v.optional(v.object({
+      sessionId: v.string(),
+      path: v.optional(v.string()),
+      roleScope: v.optional(v.string()),
+      surface: v.string(),
+      durationDays: v.number(),
+      hasAttachment: v.boolean(),
+    })),
   },
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
@@ -289,6 +399,24 @@ export const createRequest = mutation({
       newData: leaveRequest,
     });
 
+    if (args.analytics) {
+      await insertAnalyticsEvent(ctx, {
+        eventName: "leave_request_submitted",
+        sessionId: args.analytics.sessionId,
+        userId: identity.subject,
+        roleScope: args.analytics.roleScope,
+        path: args.analytics.path,
+        surface: args.analytics.surface,
+        properties: {
+          request_id: String(leaveRequestId),
+          leave_type_id: String(args.leaveTypeId),
+          duration_days: args.analytics.durationDays,
+          half_day_type: args.halfDayType ?? null,
+          has_attachment: args.analytics.hasAttachment,
+        },
+      });
+    }
+
     return { id: leaveRequestId };
   },
 });
@@ -327,19 +455,15 @@ export const getPendingApprovals = query({
   handler: async (ctx) => {
     const identity = await requireIdentity(ctx);
     const roles = await getUserRoles(ctx, identity.subject);
-    const managedEmployeeIds = roles.includes("hr_admin")
-      ? null
-      : await getManagedEmployeeIds(ctx, identity.subject);
-
-    const pending = await ctx.db.query("leaveRequests").withIndex("by_status", (q) => q.eq("status", "pending")).collect();
-    const visible = roles.includes("hr_admin")
-      ? pending
-      : pending.filter((leaveRequest) => managedEmployeeIds.includes(leaveRequest.employeeId));
+    const isHrAdmin = roles.includes("hr_admin");
+    const managedEmployeeIds = isHrAdmin ? [] : await getManagedEmployeeIds(ctx, identity.subject);
+    const visible = await getVisibleLeaveRequestsByStatus(ctx, "pending", {
+      isHrAdmin,
+      employeeIds: managedEmployeeIds,
+    });
 
     const sorted = visible.sort((a, b) => a.createdAt - b.createdAt);
-    return await Promise.all(
-      sorted.map((leaveRequest) => serializeLeaveRequest(ctx, leaveRequest, { includeEmployee: true })),
-    );
+    return await serializeLeaveRequests(ctx, sorted, { includeEmployee: true });
   },
 });
 
@@ -348,6 +472,13 @@ export const updateRequestStatus = mutation({
     requestId: v.id("leaveRequests"),
     status: leaveRequestStatusValidator,
     managerComment: v.optional(v.string()),
+    analytics: v.optional(v.object({
+      sessionId: v.string(),
+      path: v.optional(v.string()),
+      roleScope: v.optional(v.string()),
+      surface: v.string(),
+      decisionLatencyHours: v.optional(v.number()),
+    })),
   },
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
@@ -395,6 +526,22 @@ export const updateRequestStatus = mutation({
       newData: { ...leaveRequest, status: args.status, managerComment: args.managerComment },
     });
 
+    if ((args.status === "approved" || args.status === "rejected") && args.analytics) {
+      await insertAnalyticsEvent(ctx, {
+        eventName: "leave_approval_submitted",
+        sessionId: args.analytics.sessionId,
+        userId: identity.subject,
+        roleScope: args.analytics.roleScope,
+        path: args.analytics.path,
+        surface: args.analytics.surface,
+        properties: {
+          request_id: String(args.requestId),
+          decision: args.status,
+          decision_latency_hours: args.analytics.decisionLatencyHours,
+        },
+      });
+    }
+
     return { ok: true };
   },
 });
@@ -407,32 +554,36 @@ export const getTeamCalendar = query({
   handler: async (ctx, args) => {
     const identity = await requireIdentity(ctx);
     const roles = await getUserRoles(ctx, identity.subject);
-    const managedEmployeeIds = roles.includes("hr_admin")
-      ? null
-      : await getManagedEmployeeIds(ctx, identity.subject);
-
-    const approved = await ctx.db.query("leaveRequests").withIndex("by_status", (q) => q.eq("status", "approved")).collect();
+    const isHrAdmin = roles.includes("hr_admin");
+    const managedEmployeeIds = isHrAdmin ? [] : await getManagedEmployeeIds(ctx, identity.subject);
+    const approved = await getVisibleOverlappingLeaveRequestsByStatus(ctx, "approved", {
+      isHrAdmin,
+      employeeIds: managedEmployeeIds,
+      startDate: args.startDate,
+      endDate: args.endDate,
+    });
     const overlapping = approved.filter(
       (leaveRequest) =>
-        leaveRequest.startDate <= args.endDate &&
-        leaveRequest.endDate >= args.startDate &&
-        (roles.includes("hr_admin") || managedEmployeeIds.includes(leaveRequest.employeeId)),
+        (isHrAdmin || managedEmployeeIds.includes(leaveRequest.employeeId)),
     );
 
-    return await Promise.all(
-      overlapping.map(async (leaveRequest) => {
-        const employeeProfile = await getProfileByUserId(ctx, leaveRequest.employeeId);
-        const leaveType = await ctx.db.get(leaveRequest.leaveTypeId);
-        return {
-          id: leaveRequest._id,
-          start_date: leaveRequest.startDate,
-          end_date: leaveRequest.endDate,
-          status: leaveRequest.status,
-          profiles: employeeProfile ? { full_name: employeeProfile.fullName ?? null } : null,
-          leave_types: leaveType ? { name: leaveType.name } : null,
-        };
-      }),
-    );
+    const [profilesByUserId, leaveTypesById] = await Promise.all([
+      getProfilesByUserId(ctx, overlapping.map((leaveRequest) => leaveRequest.employeeId)),
+      getLeaveTypesById(ctx, overlapping.map((leaveRequest) => leaveRequest.leaveTypeId)),
+    ]);
+
+    return overlapping.map((leaveRequest) => {
+      const employeeProfile = profilesByUserId.get(leaveRequest.employeeId);
+      const leaveType = leaveTypesById.get(leaveRequest.leaveTypeId);
+      return {
+        id: leaveRequest._id,
+        start_date: leaveRequest.startDate,
+        end_date: leaveRequest.endDate,
+        status: leaveRequest.status,
+        profiles: employeeProfile ? { full_name: employeeProfile.fullName ?? null } : null,
+        leave_types: leaveType ? { name: leaveType.name } : null,
+      };
+    });
   },
 });
 
@@ -451,41 +602,48 @@ export const getDashboardData = query({
     weekEndDate.setDate(weekEndDate.getDate() + 6);
     const weekEnd = weekEndDate.toISOString().slice(0, 10);
 
-    const balances = await ctx.db
-      .query("leaveBalances")
+    const [balances, recentRequests, holidays, roles, profile] = await Promise.all([
+      ctx.db
+        .query("leaveBalances")
         .withIndex("by_employeeId_year", (q) => q.eq("employeeId", identity.subject).eq("year", currentYear))
-      .collect();
-    const recentRequests = await ctx.db
-      .query("leaveRequests")
-      .withIndex("by_employeeId", (q) => q.eq("employeeId", identity.subject))
-      .collect();
-    const holidays = await ctx.db.query("publicHolidays").withIndex("by_date", (q) => q.gte("date", today)).collect();
-    const roles = await getUserRoles(ctx, identity.subject);
+        .collect(),
+      ctx.db
+        .query("leaveRequests")
+        .withIndex("by_employeeId", (q) => q.eq("employeeId", identity.subject))
+        .collect(),
+      ctx.db.query("publicHolidays").withIndex("by_date", (q) => q.gte("date", today)).collect(),
+      getUserRoles(ctx, identity.subject),
+      getProfileByUserId(ctx, identity.subject),
+    ]);
     const isHrAdmin = roles.includes("hr_admin");
     const managedEmployeeIds = isHrAdmin ? [] : await getManagedEmployeeIds(ctx, identity.subject);
-    const approved = await ctx.db.query("leaveRequests").withIndex("by_status", (q) => q.eq("status", "approved")).collect();
+    const approved = await getVisibleOverlappingLeaveRequestsByStatus(ctx, "approved", {
+      isHrAdmin,
+      employeeIds: managedEmployeeIds,
+      startDate: weekStart,
+      endDate: weekEnd,
+    });
     const teamAbsences = approved.filter(
       (leaveRequest) =>
-        leaveRequest.startDate <= weekEnd &&
-        leaveRequest.endDate >= weekStart &&
         (isHrAdmin || managedEmployeeIds.includes(leaveRequest.employeeId)),
     );
     const pendingCount = (isHrAdmin || managedEmployeeIds.length > 0)
-      ? (await ctx.db.query("leaveRequests").withIndex("by_status", (q) => q.eq("status", "pending")).collect()).filter(
-          (leaveRequest) => isHrAdmin || managedEmployeeIds.includes(leaveRequest.employeeId),
-        ).length
+      ? (await getVisibleLeaveRequestsByStatus(ctx, "pending", {
+          isHrAdmin,
+          employeeIds: managedEmployeeIds,
+        })).length
       : 0;
-
-    const profile = await getProfileByUserId(ctx, identity.subject);
+    const visibleTeamAbsences = teamAbsences.slice(0, 20);
+    const [serializedBalances, serializedRecentRequests, teamProfilesByUserId, teamLeaveTypesById] = await Promise.all([
+      serializeLeaveBalances(ctx, balances),
+      serializeLeaveRequests(ctx, recentRequests.sort((a, b) => b.createdAt - a.createdAt).slice(0, 5)),
+      getProfilesByUserId(ctx, visibleTeamAbsences.map((leaveRequest) => leaveRequest.employeeId)),
+      getLeaveTypesById(ctx, visibleTeamAbsences.map((leaveRequest) => leaveRequest.leaveTypeId)),
+    ]);
 
     return {
-      balances: await Promise.all(balances.map((balance) => serializeLeaveBalance(ctx, balance))),
-      recentRequests: await Promise.all(
-        recentRequests
-          .sort((a, b) => b.createdAt - a.createdAt)
-          .slice(0, 5)
-          .map((leaveRequest) => serializeLeaveRequest(ctx, leaveRequest)),
-      ),
+      balances: serializedBalances,
+      recentRequests: serializedRecentRequests,
       upcomingHolidays: holidays
         .sort((a, b) => a.date.localeCompare(b.date))
         .slice(0, 5)
@@ -494,24 +652,22 @@ export const getDashboardData = query({
           name: holiday.name,
           date: holiday.date,
         })),
-      teamAbsences: await Promise.all(
-        teamAbsences.slice(0, 20).map(async (leaveRequest) => {
-          const employeeProfile = await getProfileByUserId(ctx, leaveRequest.employeeId);
-          const leaveType = await ctx.db.get(leaveRequest.leaveTypeId);
-          return {
-            id: leaveRequest._id,
-            start_date: leaveRequest.startDate,
-            end_date: leaveRequest.endDate,
-            profiles: employeeProfile
-              ? {
-                  full_name: employeeProfile.fullName ?? null,
-                  email: employeeProfile.email ?? null,
-                }
-              : null,
-            leave_types: leaveType ? { name: leaveType.name } : null,
-          };
-        }),
-      ),
+      teamAbsences: visibleTeamAbsences.map((leaveRequest) => {
+        const employeeProfile = teamProfilesByUserId.get(leaveRequest.employeeId);
+        const leaveType = teamLeaveTypesById.get(leaveRequest.leaveTypeId);
+        return {
+          id: leaveRequest._id,
+          start_date: leaveRequest.startDate,
+          end_date: leaveRequest.endDate,
+          profiles: employeeProfile
+            ? {
+                full_name: employeeProfile.fullName ?? null,
+                email: employeeProfile.email ?? null,
+              }
+            : null,
+          leave_types: leaveType ? { name: leaveType.name } : null,
+        };
+      }),
       pendingCount,
       viewer: {
         firstName: profile?.fullName?.split(" ")[0] ?? identity.givenName ?? identity.email?.split("@")[0] ?? "there",

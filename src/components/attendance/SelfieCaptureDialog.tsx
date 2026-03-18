@@ -18,14 +18,17 @@ interface SelfieCaptureDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     type: "clock_in" | "clock_out";
-    onCaptureComplete: (imagePath: StorageId) => void;
+    onCaptureComplete: (imagePath?: StorageId, blob?: Blob) => void;
+    onPermissionDenied?: () => void;
 }
+
 
 export function SelfieCaptureDialog({
     open,
     onOpenChange,
     type,
     onCaptureComplete,
+    onPermissionDenied,
 }: SelfieCaptureDialogProps) {
     const { user } = useAuth();
     const videoRef = useRef<HTMLVideoElement>(null);
@@ -49,8 +52,9 @@ export function SelfieCaptureDialog({
         } catch (err) {
             console.error("Camera access error:", err);
             setErrorMsg("Camera access denied or unavailable. Please enable camera permissions.");
+            onPermissionDenied?.();
         }
-    }, []);
+    }, [onPermissionDenied]);
 
     const stopCamera = useCallback(() => {
         if (stream) {
@@ -108,17 +112,41 @@ export function SelfieCaptureDialog({
     const handleConfirm = async () => {
         if (!blob || !user) return;
         setUploading(true);
+        setErrorMsg("");
 
-        try {
-            const data = await uploadFileToConvex(blob, "attendance_selfie");
-            onCaptureComplete(data.storageId);
-            onOpenChange(false);
-        } catch (error) {
-            console.error("Selfie upload error:", error);
-            toast.error(getErrorMessage(error, "Failed to upload selfie."));
-        } finally {
+        if (!navigator.onLine) {
+            onCaptureComplete(undefined, blob);
             setUploading(false);
+            onOpenChange(false);
+            return;
         }
+
+        let attempt = 0;
+        const maxAttempts = 3;
+        
+        while (attempt < maxAttempts) {
+            try {
+                const data = await uploadFileToConvex(blob, "attendance_selfie");
+                onCaptureComplete(data.storageId);
+                onOpenChange(false);
+                return; // Success, exit
+            } catch (error) {
+                attempt++;
+                console.error(`Selfie upload attempt ${attempt} failed:`, error);
+                
+                if (attempt >= maxAttempts) {
+                    toast.error(getErrorMessage(error, "Failed to upload selfie after multiple attempts."));
+                    setErrorMsg("Upload failed. Please check your connection and try again.");
+                } else {
+                    // Exponential backoff: 1s, 2s
+                    const delay = Math.pow(2, attempt - 1) * 1000;
+                    toast.warning(`Upload failed. Retrying in ${delay / 1000}s...`);
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
+            }
+        }
+        
+        setUploading(false);
     };
 
     return (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,8 @@ import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
 import { uploadFileToConvex } from "@/lib/convexUpload";
 import { getErrorMessage } from "@/lib/errors";
+import { useConvexMutation } from "@/hooks/useConvexMutation";
+import { useConvexQuery } from "@/hooks/useConvexQuery";
 
 const MAX_NAME_LENGTH = 100;
 
@@ -23,37 +25,33 @@ const ProfileSettings = () => {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [departmentName, setDepartmentName] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [pageLoading, setPageLoading] = useState(true);
 
-  const loadProfile = useCallback(async () => {
-    const profile = await convex.query(api.users.getProfileSettings, {});
-    if (profile) {
-      setFullName(profile.full_name || "");
-      setEmail(profile.email || "");
-      setDepartmentName(profile.department_name || null);
-      setAvatarUrl(profile.avatar_url || null);
-    }
-  }, []);
+  const { data: profile, loading: pageLoading, refetch: refetchProfile } = useConvexQuery(
+    api.users.getProfileSettings,
+    {},
+    [user?.id],
+    { enabled: !!user },
+  );
 
   useEffect(() => {
-    if (!user) {
-      setPageLoading(false);
+    if (!profile) {
       return;
     }
+    setFullName(profile.full_name || "");
+    setEmail(profile.email || "");
+    setDepartmentName(profile.department_name || null);
+    setAvatarUrl(profile.avatar_url || null);
+  }, [profile]);
 
-    let cancelled = false;
+  const { mutate: updateAvatar } = useConvexMutation(api.users.updateAvatar, {
+    successMessage: "Avatar updated",
+    errorFallback: "Failed to upload avatar",
+  });
 
-    loadProfile().finally(() => {
-      if (!cancelled) {
-        setPageLoading(false);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [loadProfile, user]);
+  const { mutate: updateProfile, loading: saving } = useConvexMutation(api.users.updateProfile, {
+    successMessage: "Profile updated successfully",
+    errorFallback: "Failed to update profile",
+  });
 
   if (pageLoading) return <ProfileSkeleton />;
 
@@ -65,13 +63,10 @@ const ProfileSettings = () => {
     setUploading(true);
     try {
       const upload = await uploadFileToConvex(file, "avatar");
-      await convex.mutation(api.users.updateAvatar, {
-        storageId: upload.storageId,
-      });
-      await loadProfile();
-      toast.success("Avatar updated");
-    } catch {
-      toast.error("Failed to upload avatar");
+      const result = await updateAvatar({ storageId: upload.storageId });
+      if (result !== null) {
+        await refetchProfile();
+      }
     } finally {
       setUploading(false);
     }
@@ -81,15 +76,9 @@ const ProfileSettings = () => {
     if (!user) return;
     const trimmed = fullName.trim();
     if (trimmed.length > MAX_NAME_LENGTH) { toast.error(`Name must be under ${MAX_NAME_LENGTH} characters`); return; }
-    setSaving(true);
-    try {
-      await convex.mutation(api.users.updateProfile, { fullName: trimmed || undefined });
-      await loadProfile();
-      toast.success("Profile updated successfully");
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to update profile"));
-    } finally {
-      setSaving(false);
+    const result = await updateProfile({ fullName: trimmed || undefined });
+    if (result !== null) {
+      await refetchProfile();
     }
   };
 

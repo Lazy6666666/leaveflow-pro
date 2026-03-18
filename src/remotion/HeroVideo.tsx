@@ -17,14 +17,14 @@ export const HeroVideo: React.FC = () => {
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
-                    opacity: 0.5,
-                    filter: 'grayscale(100%) contrast(110%) brightness(0.8)'
+                    opacity: 0.8,
+                    filter: 'grayscale(60%) contrast(110%) brightness(1.0)'
                 }}
             />
 
             {/* Elegant Gradient Overlay */}
             <div className="absolute inset-0 bg-gradient-to-tr from-black/80 via-transparent to-black/40" />
-            <div className="absolute inset-0 bg-black/20" />
+            <div className="absolute inset-0 bg-black/10" />
 
             {/* Subtle Grid Pattern Overlay for texture */}
             <div

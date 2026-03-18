@@ -81,7 +81,7 @@ const LeaveHistory = () => {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">Leave</p>
           <h1 className="flex items-center gap-2 text-3xl font-serif font-semibold tracking-tight text-foreground">
@@ -90,7 +90,7 @@ const LeaveHistory = () => {
           <p className="mt-1 text-sm text-muted-foreground">View all your leave requests.</p>
         </div>
         {requests.length > 0 && (
-          <Button variant="outline" size="sm" className="gap-1" onClick={exportCSV}>
+          <Button variant="outline" size="sm" className="gap-1 self-start sm:self-auto" onClick={exportCSV}>
             <Download className="h-4 w-4" /> Export CSV
           </Button>
         )}

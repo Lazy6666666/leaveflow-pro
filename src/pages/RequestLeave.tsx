@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,11 @@ import { FormSkeleton } from "@/components/skeletons";
 import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
 import { uploadFileToConvex } from "@/lib/convexUpload";
+import { getDateSpanDays, normalizeAnalyticsError } from "@/lib/analytics";
 import { getErrorMessage } from "@/lib/errors";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useConflictCheck } from "@/hooks/useConflictCheck";
+import { useConvexQuery } from "@/hooks/useConvexQuery";
 import type { LeaveTypeId, StorageId } from "@/lib/convexTypes";
 import { normalizeLeaveDuration, toHalfDayType, type LeaveDurationOption } from "./requestLeaveDuration";
 
@@ -27,8 +31,9 @@ interface LeaveType { id: LeaveTypeId; name: string; annual_allocation: number; 
 const RequestLeave = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
-  const [pageLoading, setPageLoading] = useState(true);
+  const { sessionId, roleScope, surface, trackOnce, track } = useAnalytics();
+  const { data: leaveTypesData, loading: pageLoading } = useConvexQuery(api.leave.getLeaveTypes, {}, []);
+  const leaveTypes = (leaveTypesData as LeaveType[] | null) ?? [];
   const [leaveTypeId, setLeaveTypeId] = useState<LeaveTypeId | "">("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -36,90 +41,66 @@ const RequestLeave = () => {
   const [reason, setReason] = useState("");
   const [attachment, setAttachment] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [conflictWarning, setConflictWarning] = useState<string | null>(null);
-  const [checkingConflicts, setCheckingConflicts] = useState(false);
+  const { conflictWarning, checking: checkingConflicts } = useConflictCheck(startDate, endDate);
+  const lastDatesTrackedRef = useRef<string | null>(null);
+  const lastConflictTrackedRef = useRef<string | null>(null);
+  const dateError = startDate && endDate && endDate < startDate ? "End date must be on or after start date" : null;
 
   useEffect(() => {
-    let cancelled = false;
+    if (!pageLoading) {
+      void trackOnce("leave_request_form_viewed", "leave_request_form_viewed", {
+        available_leave_type_count: leaveTypes.length,
+      }, { surface: "leave", path: "/request-leave" });
+    }
+  }, [leaveTypes.length, pageLoading, trackOnce]);
 
-    const fetchTypes = async () => {
-      const data = await convex.query(api.leave.getLeaveTypes, {});
-      if (!cancelled) {
-        setLeaveTypes(data as LeaveType[]);
-      }
-    };
-
-    fetchTypes().finally(() => {
-      if (!cancelled) {
-        setPageLoading(false);
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Check for team conflicts when dates change
   useEffect(() => {
-    if (!startDate || !endDate || !user) {
-      setConflictWarning(null);
-      setCheckingConflicts(false);
+    if (!startDate || !endDate || dateError) {
       return;
     }
-    let cancelled = false;
-    setConflictWarning(null);
-    setCheckingConflicts(true);
 
-    const checkConflicts = async () => {
-      try {
-        const data = await convex.query(api.leave.getConflictSummary, { startDate, endDate });
-        if (cancelled) {
-          return;
-        }
-        if (data && data.count > 0) {
-          const names = data.names.filter(Boolean);
-          const count = data.count;
-          if (count >= 3) {
-            setConflictWarning(
-              `Warning: ${count} team members are already off during these dates${names.length > 0 ? `: ${names.slice(0, 3).join(", ")}${count > 3 ? ` and ${count - 3} more` : ""}` : ""}. Consider choosing different dates.`
-            );
-          } else if (count > 0) {
-            setConflictWarning(
-              `${count} team member${count > 1 ? "s" : ""} already off during these dates${names.length > 0 ? `: ${names.join(", ")}` : ""}.`
-            );
-          } else {
-            setConflictWarning(null);
-          }
-        } else {
-          setConflictWarning(null);
-        }
-      } catch {
-        if (!cancelled) {
-          setConflictWarning(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setCheckingConflicts(false);
-        }
-      }
-    };
+    const durationDays = getDateSpanDays(startDate, endDate);
+    if (!durationDays) {
+      return;
+    }
 
-    const timeout = setTimeout(checkConflicts, 500);
+    const key = `${startDate}:${endDate}:${halfDayType}`;
+    if (lastDatesTrackedRef.current === key) {
+      return;
+    }
 
-    return () => {
-      cancelled = true;
-      clearTimeout(timeout);
-    };
-  }, [startDate, endDate, user]);
+    lastDatesTrackedRef.current = key;
+    void track("leave_dates_selected", {
+      duration_days: durationDays,
+      half_day_type: toHalfDayType(halfDayType) ?? null,
+    }, { surface: "leave", path: "/request-leave" });
+  }, [dateError, endDate, halfDayType, startDate, track]);
+
+  useEffect(() => {
+    if (!startDate || !endDate || checkingConflicts || dateError) {
+      return;
+    }
+
+    const conflictCount = conflictWarning ? Number(conflictWarning.match(/\d+/)?.[0] ?? 0) : 0;
+    const severity = conflictCount >= 3 ? "high" : conflictCount > 0 ? "medium" : "none";
+    const key = `${startDate}:${endDate}:${conflictCount}:${severity}`;
+    if (lastConflictTrackedRef.current === key) {
+      return;
+    }
+
+    lastConflictTrackedRef.current = key;
+    void track("leave_conflict_result_viewed", {
+      conflict_count: conflictCount,
+      severity,
+      date_span_days: getDateSpanDays(startDate, endDate),
+    }, { surface: "leave", path: "/request-leave" });
+  }, [checkingConflicts, conflictWarning, dateError, endDate, startDate, track]);
 
   useEffect(() => {
     setHalfDayType((current) => normalizeLeaveDuration(current, startDate, endDate));
   }, [startDate, endDate]);
 
   if (pageLoading) return <FormSkeleton />;
-
-  const dateError = startDate && endDate && endDate < startDate ? "End date must be on or after start date" : null;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null;
@@ -166,10 +147,23 @@ const RequestLeave = () => {
         attachmentStorageId,
         attachmentName: attachment?.name,
         halfDayType: toHalfDayType(halfDayType),
+        analytics: {
+          sessionId,
+          roleScope,
+          surface,
+          path: "/request-leave",
+          durationDays: getDateSpanDays(startDate, endDate) ?? 1,
+          hasAttachment: Boolean(attachmentStorageId),
+        },
       });
       toast.success("Leave request submitted successfully");
       navigate("/leave-history");
     } catch (error) {
+      void track("leave_request_submit_failed", {
+        error_type: normalizeAnalyticsError(getErrorMessage(error, "Failed to submit leave request")),
+        has_attachment: Boolean(attachmentStorageId),
+        date_span_days: getDateSpanDays(startDate, endDate),
+      }, { surface: "leave", path: "/request-leave" });
       toast.error(getErrorMessage(error, "Failed to submit leave request"));
     }
     setIsSubmitting(false);

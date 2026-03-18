@@ -119,8 +119,8 @@ const Balances = () => {
       <Card>
         <CardHeader className="pb-3"><CardTitle className="text-lg">Select Employee & Year</CardTitle></CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4 items-end">
-            <div className="space-y-2 min-w-[240px]">
+          <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_120px] xl:grid-cols-[minmax(0,1fr)_120px_auto_auto]">
+            <div className="space-y-2 min-w-0">
               <Label htmlFor={EMPLOYEE_SELECT_ID}>Employee</Label>
               <Select value={selectedEmployee} onValueChange={setSelectedEmployee}>
                 <SelectTrigger id={EMPLOYEE_SELECT_ID} className="h-11" aria-label="Employee">
@@ -129,16 +129,16 @@ const Balances = () => {
                 <SelectContent>{employees.map((e) => <SelectItem key={e.id} value={e.id}>{employeeLabel(e)}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="space-y-2 w-[120px]">
+            <div className="space-y-2">
               <Label htmlFor={YEAR_INPUT_ID}>Year</Label>
               <Input id={YEAR_INPUT_ID} name="year" type="number" inputMode="numeric" value={year} onChange={(e) => setYear(e.target.value)} min={2020} max={2030} className="h-11" />
             </div>
             {selectedEmployee && (
-              <Button variant="outline" className="h-11" onClick={initializeForEmployee} disabled={initializing}>
+              <Button variant="outline" className="h-11 w-full xl:w-auto" onClick={initializeForEmployee} disabled={initializing}>
                 <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" /> Initialize Year
               </Button>
             )}
-            <Button variant="secondary" className="h-11" onClick={bulkInitialize} disabled={initializing}>
+            <Button variant="secondary" className="h-11 w-full xl:w-auto" onClick={bulkInitialize} disabled={initializing}>
               {initializing ? "Initializing..." : "Bulk Initialize All"}
             </Button>
           </div>

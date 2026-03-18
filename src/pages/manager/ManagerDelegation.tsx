@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
@@ -41,7 +41,7 @@ const ManagerDelegation = () => {
   const [submitting, setSubmitting] = useState(false);
   const isHrAdmin = hasExplicitRole("hr_admin");
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
     const [data, employeesData] = await Promise.all([
       convex.query(api.manager.getDelegationsPageData, {}),
@@ -62,9 +62,12 @@ const ManagerDelegation = () => {
       setManagerCandidates([]);
       setManagerId("");
     }
-  };
+  }, [isHrAdmin, user]);
 
-  useEffect(() => { fetchData().finally(() => setLoading(false)); }, [user]);
+  useEffect(() => {
+    setLoading(true);
+    fetchData().finally(() => setLoading(false));
+  }, [fetchData]);
 
   const profileName = (id: string) => {
     const p = profiles.find((p) => p.id === id);
@@ -160,7 +163,7 @@ const ManagerDelegation = () => {
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-11" />
               {dateError && <p className="text-xs text-destructive">{dateError}</p>}
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end lg:col-span-4">
               <Button onClick={handleCreate} disabled={submitting || !delegateId || !startDate || !endDate || !!dateError || (isHrAdmin && !managerId)} className="h-11 w-full">
                 {submitting ? "Creating..." : "Create"}
               </Button>

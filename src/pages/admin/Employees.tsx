@@ -22,22 +22,25 @@ type AppRole = "employee" | "manager" | "hr_admin";
 
 interface Employee {
   id: string; full_name: string | null; email: string | null;
-  department_id: string | null; manager_id: string | null;
+  department_id: DepartmentId | null; site_id: string | null; manager_id: string | null;
   hourly_rate: number | null; base_salary: number | null;
-  departments: { name: string } | null; manager: { full_name: string | null } | null;
+  departments: { name: string } | null; site: { id: string; name: string | null } | null; manager: { full_name: string | null } | null;
 }
 
 interface UserRole { user_id: string; role: AppRole; }
 interface Department { id: string; name: string; }
+interface Site { id: string; name: string; }
 
 const Employees = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [roles, setRoles] = useState<UserRole[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
   const [allProfiles, setAllProfiles] = useState<{ id: string; full_name: string | null }[]>([]);
   const [editEmployee, setEditEmployee] = useState<Employee | null>(null);
   const [editDeptId, setEditDeptId] = useState<DepartmentId | "">("");
+  const [editSiteId, setEditSiteId] = useState("");
   const [editManagerId, setEditManagerId] = useState("");
   const [editRole, setEditRole] = useState<AppRole>("employee");
   const [editHourlyRate, setEditHourlyRate] = useState("");
@@ -50,6 +53,7 @@ const Employees = () => {
     setAllProfiles(data.employees.map((p) => ({ id: p.id, full_name: p.full_name })));
     setRoles(data.roles as UserRole[]);
     setDepartments(data.departments as Department[]);
+    setSites(data.sites as Site[]);
   };
 
   useEffect(() => { fetchAll().finally(() => setPageLoading(false)); }, []);
@@ -66,14 +70,17 @@ const Employees = () => {
 
   const exportCSV = () => {
     const csv = buildCSV(
-      ["Name", "Email", "Department", "Roles"],
-      employees.map((e) => [e.full_name, e.email, e.departments?.name, getRoles(e.id).join(", ")])
+      ["Name", "Email", "Site", "Department", "Roles"],
+      employees.map((e) => [e.full_name, e.email, e.site?.name, e.departments?.name, getRoles(e.id).join(", ")])
     );
     downloadCSV(csv, "employees.csv");
   };
 
   const openEdit = (emp: Employee) => {
-    setEditEmployee(emp); setEditDeptId(emp.department_id || ""); setEditManagerId(emp.manager_id || "");
+    setEditEmployee(emp);
+    setEditDeptId((emp.department_id ?? "") as DepartmentId | "");
+    setEditSiteId(emp.site_id || "");
+    setEditManagerId(emp.manager_id || "");
     setEditHourlyRate(emp.hourly_rate?.toString() ?? "");
     setEditBaseSalary(emp.base_salary?.toString() ?? "");
     const empRoles = getRoles(emp.id);
@@ -87,6 +94,7 @@ const Employees = () => {
       await convex.mutation(api.admin.updateEmployee, {
         employeeId: editEmployee.id,
         departmentId: editDeptId || undefined,
+        siteId: editSiteId || undefined,
         managerId: editManagerId || undefined,
         hourlyRate: editHourlyRate.trim() ? Number(editHourlyRate) : undefined,
         baseSalary: editBaseSalary.trim() ? Number(editBaseSalary) : undefined,
@@ -107,7 +115,7 @@ const Employees = () => {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">HR Admin</p>
           <h1 className="text-3xl font-serif font-semibold tracking-tight text-foreground flex items-center gap-2">
@@ -115,7 +123,7 @@ const Employees = () => {
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">Manage employees, roles, and departments.</p>
         </div>
-        <Button variant="outline" size="sm" className="gap-1" onClick={exportCSV}>
+        <Button variant="outline" size="sm" className="gap-1 self-start sm:self-auto" onClick={exportCSV}>
           <Download className="h-4 w-4" /> Export CSV
         </Button>
       </div>
@@ -132,6 +140,7 @@ const Employees = () => {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead className="hidden md:table-cell">Email</TableHead>
+                <TableHead className="hidden md:table-cell">Site</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead className="hidden lg:table-cell">Manager</TableHead>
                 <TableHead>Roles</TableHead>
@@ -143,6 +152,7 @@ const Employees = () => {
                 <TableRow key={emp.id}>
                   <TableCell className="font-medium">{emp.full_name || "—"}</TableCell>
                   <TableCell className="text-muted-foreground hidden md:table-cell">{emp.email}</TableCell>
+                  <TableCell className="hidden md:table-cell">{emp.site?.name || <span className="text-muted-foreground">â€”</span>}</TableCell>
                   <TableCell>{emp.departments?.name || <span className="text-muted-foreground">—</span>}</TableCell>
                   <TableCell className="hidden lg:table-cell">{allProfiles.find((p) => p.id === emp.manager_id)?.full_name || <span className="text-muted-foreground">—</span>}</TableCell>
                   <TableCell>
@@ -162,7 +172,7 @@ const Employees = () => {
       </Card>
 
       <Dialog open={!!editEmployee} onOpenChange={() => setEditEmployee(null)}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Edit Employee: {editEmployee?.full_name || editEmployee?.email}</DialogTitle>
             <DialogDescription>
@@ -175,6 +185,16 @@ const Employees = () => {
                 <Select value={editDeptId} onValueChange={(value) => setEditDeptId(value as DepartmentId)}>
                 <SelectTrigger className="h-11"><SelectValue placeholder="No department" /></SelectTrigger>
                 <SelectContent>{departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Site</Label>
+              <Select value={editSiteId || "none"} onValueChange={(value) => setEditSiteId(value === "none" ? "" : value)}>
+                <SelectTrigger className="h-11"><SelectValue placeholder="No site" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No site</SelectItem>
+                  {sites.map((site) => <SelectItem key={site.id} value={site.id}>{site.name}</SelectItem>)}
+                </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">

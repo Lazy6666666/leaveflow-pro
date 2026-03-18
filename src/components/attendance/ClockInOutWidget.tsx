@@ -1,27 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { AnimatePresence, motion, useDragControls } from "framer-motion";
-import { format, differenceInMinutes } from "date-fns";
-import { useMutation, useQuery } from "convex/react";
+import { format } from "date-fns";
 import { ArrowRight, Clock, LogOut, Sparkles } from "lucide-react";
-import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/contexts/AuthContext";
-import { getErrorMessage } from "@/lib/errors";
-import { api } from "@/lib/convexApi";
-import type { AttendanceLogId, StorageId } from "@/lib/convexTypes";
 
 import { SelfieCaptureDialog } from "./SelfieCaptureDialog";
-
-interface AttendanceLog {
-  id: AttendanceLogId;
-  clock_in: string | null;
-  clock_out: string | null;
-  status: string;
-  date: string;
-}
+import { useClockInOutController } from "./useClockInOutController";
 
 const SLIDE_THRESHOLD = 0.8;
 
@@ -138,129 +125,23 @@ function SlideToAction({
 }
 
 export function ClockInOutWidget() {
-  const { user } = useAuth();
-  const [acting, setActing] = useState(false);
-  const [elapsed, setElapsed] = useState("");
-  const [selfieOpen, setSelfieOpen] = useState(false);
-  const [selfieType, setSelfieType] = useState<"clock_in" | "clock_out">("clock_in");
-  const data = useQuery(api.attendance.getClockWidgetData, user ? {} : "skip");
-  const clockInMutation = useMutation(api.attendance.clockIn);
-  const clockOutMutation = useMutation(api.attendance.clockOut);
-  const todayLog = data?.todayLog as AttendanceLog | null;
-  const requireSelfie = !!data?.settings?.require_selfie;
-  const requireLocation = !!data?.settings?.require_location;
-  const requireClockInLocation = requireLocation || !!data?.settings?.geofence_enabled;
-  const requireClockOutLocation = requireLocation;
-  const loading = data === undefined;
-
-  useEffect(() => {
-    if (!todayLog?.clock_in || todayLog?.clock_out) {
-      setElapsed("");
-      return;
-    }
-
-    const update = () => {
-      const minutes = differenceInMinutes(new Date(), new Date(todayLog.clock_in!));
-      const hours = Math.floor(minutes / 60);
-      const remainder = minutes % 60;
-      setElapsed(`${hours}h ${remainder}m`);
-    };
-
-    update();
-    const interval = setInterval(update, 60000);
-    return () => clearInterval(interval);
-  }, [todayLog?.clock_in, todayLog?.clock_out]);
-
-  const getLocation = (): Promise<{ lat: number; lng: number } | null> =>
-    new Promise((resolve, reject) => {
-      if (!requireLocation) {
-        resolve(null);
-        return;
-      }
-
-      if (!navigator.geolocation) {
-        toast.error("Geolocation is not supported by your browser");
-        reject(new Error("Geolocation not supported"));
-        return;
-      }
-
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          resolve({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          });
-        },
-        (error) => {
-          toast.error("Location access denied. Please enable location permissions to clock in or out.");
-          reject(error);
-        },
-        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
-      );
-    });
-
-  const processClockIn = async (selfiePath?: StorageId) => {
-    if (!user) return;
-    setActing(true);
-    try {
-      const location = requireClockInLocation ? await getLocation() : null;
-      const result = await clockInMutation({
-        selfieClockInStorageId: selfiePath,
-        locationClockIn: location ?? undefined,
-      });
-      toast.success(result.status === "late" ? "Clocked in late" : "Clocked in successfully");
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to clock in"));
-    } finally {
-      setActing(false);
-    }
-  };
-
-  const processClockOut = async (selfiePath?: StorageId) => {
-    if (!todayLog) return;
-    setActing(true);
-    try {
-      const location = requireClockOutLocation ? await getLocation() : null;
-      await clockOutMutation({
-        logId: todayLog.id,
-        selfieClockOutStorageId: selfiePath,
-        locationClockOut: location ?? undefined,
-      });
-      toast.success("Clocked out successfully");
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to clock out"));
-    } finally {
-      setActing(false);
-    }
-  };
-
-  const handleClockIn = () => {
-    if (requireSelfie) {
-      setSelfieType("clock_in");
-      setSelfieOpen(true);
-      return;
-    }
-    void processClockIn();
-  };
-
-  const handleClockOut = () => {
-    if (requireSelfie) {
-      setSelfieType("clock_out");
-      setSelfieOpen(true);
-      return;
-    }
-    void processClockOut();
-  };
-
-  const isClockedIn = Boolean(todayLog?.clock_in && !todayLog?.clock_out);
-  const sessionTotal = useMemo(() => {
-    if (!todayLog?.clock_in || !todayLog?.clock_out) return "";
-    const minutes = differenceInMinutes(new Date(todayLog.clock_out), new Date(todayLog.clock_in));
-    if (minutes >= 60) {
-      return `${Math.floor(minutes / 60)}h ${minutes % 60}m`;
-    }
-    return `${minutes}m`;
-  }, [todayLog?.clock_in, todayLog?.clock_out]);
+  const {
+    acting,
+    elapsed,
+    loading,
+    todayLog,
+    permissionState,
+    selfieDialog,
+    isClockedIn,
+    sessionTotal,
+    requestCameraPermission,
+    handleClockIn,
+    handleClockOut,
+    setSelfieDialogOpen,
+    handleSelfieCaptureComplete,
+    handleSelfiePermissionDenied,
+    acknowledgePermissionRecovered,
+  } = useClockInOutController();
 
   const statusColor = (status: string) => {
     switch (status) {
@@ -330,17 +211,46 @@ export function ClockInOutWidget() {
           </div>
         )}
 
+        {permissionState === "location_denied" && (
+          <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-center">
+            <p className="text-sm font-medium text-amber-600 dark:text-amber-500">Location Access Required</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Please allow location access in your browser settings, then try again.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3 w-full border-amber-500/30 font-medium text-foreground hover:bg-amber-500/20"
+              onClick={acknowledgePermissionRecovered}
+            >
+              I've enabled it
+            </Button>
+          </div>
+        )}
+
+        {permissionState === "camera_denied" && (
+          <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-center">
+            <p className="text-sm font-medium text-amber-600 dark:text-amber-500">Camera Access Required</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              A selfie is required. Please allow camera access in your browser URL bar.
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3 w-full border-amber-500/30 font-medium text-foreground hover:bg-amber-500/20"
+              onClick={requestCameraPermission}
+            >
+              Re-request Camera
+            </Button>
+          </div>
+        )}
+
         <SelfieCaptureDialog
-          open={selfieOpen}
-          onOpenChange={setSelfieOpen}
-          type={selfieType}
-          onCaptureComplete={(path) => {
-            if (selfieType === "clock_in") {
-              void processClockIn(path);
-            } else {
-              void processClockOut(path);
-            }
-          }}
+          open={selfieDialog.open}
+          onOpenChange={setSelfieDialogOpen}
+          type={selfieDialog.type}
+          onCaptureComplete={handleSelfieCaptureComplete}
+          onPermissionDenied={handleSelfiePermissionDenied}
         />
       </CardContent>
     </Card>

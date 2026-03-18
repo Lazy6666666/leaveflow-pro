@@ -14,17 +14,9 @@ import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { buildCSV, downloadCSV } from "@/lib/csv";
 import type { BadgeProps } from "@/components/ui/badge";
+import type { FunctionReturnType } from "convex/server";
 
-interface AuditEntry {
-  id: string;
-  table_name: string;
-  record_id: string;
-  action: string;
-  changed_by: string | null;
-  old_data: Record<string, unknown> | null;
-  new_data: Record<string, unknown> | null;
-  created_at: string;
-}
+type AuditEntry = FunctionReturnType<typeof api.admin.getAuditLogData>[number];
 
 const ACTION_COLORS: Record<string, NonNullable<BadgeProps["variant"]>> = {
   INSERT: "default",
@@ -47,7 +39,7 @@ const AuditLog = () => {
         convex.query(api.admin.getAuditLogData, {}),
         convex.query(api.admin.getEmployeesData, {}),
       ]);
-      if (logsRes) setLogs(logsRes as unknown as AuditEntry[]);
+      if (logsRes) setLogs(logsRes);
       if (profilesRes?.employees) {
         const map: Record<string, string> = {};
         profilesRes.employees.forEach((p) => { map[p.id] = p.full_name || p.email || p.id; });
@@ -84,7 +76,7 @@ const AuditLog = () => {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">HR Admin</p>
           <h1 className="text-3xl font-serif font-semibold tracking-tight text-foreground flex items-center gap-2">
@@ -92,9 +84,9 @@ const AuditLog = () => {
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">Track all changes to balances, roles, attendance, and leave requests.</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-center">
           <Select value={tableFilter} onValueChange={setTableFilter}>
-            <SelectTrigger className="w-44 h-9"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 w-full sm:w-44"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All tables</SelectItem>
               {tables.map((t) => <SelectItem key={t} value={t}>{t.replace(/_/g, " ")}</SelectItem>)}

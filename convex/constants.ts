@@ -12,7 +12,7 @@ export const BIOMETRICS_VENDORS = [
 ] as const;
 export const NOTIFICATION_TYPES = ["info", "success", "warning", "error"] as const;
 export const HALF_DAY_TYPES = ["start", "end", "single"] as const;
-export const STORAGE_FILE_CLASSES = ["avatar", "leave_attachment", "attendance_selfie"] as const;
+export const STORAGE_FILE_CLASSES = ["avatar", "leave_attachment", "attendance_selfie", "policy_document"] as const;
 
 export type AppRole = (typeof APP_ROLES)[number];
 export type LeaveRequestStatus = (typeof LEAVE_REQUEST_STATUSES)[number];
@@ -68,6 +68,7 @@ export const storageFileClassValidator = v.union(
   v.literal("avatar"),
   v.literal("leave_attachment"),
   v.literal("attendance_selfie"),
+  v.literal("policy_document"),
 );
 
 export const locationValidator = v.object({

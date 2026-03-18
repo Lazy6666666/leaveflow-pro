@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
 import { endOfWeek, parseISO, startOfToday, startOfWeek } from "date-fns";
@@ -16,6 +17,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Link } from "react-router-dom";
 
 import { ClockInOutWidget } from "@/components/attendance/ClockInOutWidget";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -68,6 +70,7 @@ const weekdayMonthDayFormatter = new Intl.DateTimeFormat(undefined, {
 
 const Dashboard = () => {
   const { user, hasExplicitRole, hasManagerAccess, hasRole } = useAuth();
+  const { trackOnce } = useAnalytics();
   const { data, isLoading } = useQuery({
     queryKey: ["dashboard", user?.id],
     queryFn: async () => convex.query(api.leave.getDashboardData, {}),
@@ -133,6 +136,15 @@ const Dashboard = () => {
     { name: "Remaining", value: totalRemaining },
     { name: "Used", value: totalUsed },
   ];
+
+  useEffect(() => {
+    if (!isLoading && data && user?.id) {
+      void trackOnce(`dashboard_viewed:${user.id}`, "dashboard_viewed", {
+        pending_count: pendingCount,
+        has_manager_access: hasManagerAccess,
+      }, { surface: "dashboard", path: "/dashboard" });
+    }
+  }, [data, hasManagerAccess, isLoading, pendingCount, trackOnce, user?.id]);
 
   if (isLoading) return <DashboardSkeleton />;
 
@@ -266,7 +278,7 @@ const Dashboard = () => {
                     <p className="sr-only">
                       Leave balance summary: {totalRemaining} days remaining out of {totalAllocation}, with {totalUsed} days used.
                     </p>
-                    <div className="flex items-center gap-8">
+                    <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:gap-8">
                       <div className="relative h-32 w-32 shrink-0">
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
@@ -356,7 +368,7 @@ const Dashboard = () => {
                 ) : (
                   <div className="space-y-1">
                     {recentRequests.map((request) => (
-                      <div key={request.id} className="flex items-center justify-between border-b border-border/40 py-3 last:border-0">
+                      <div key={request.id} className="flex flex-col gap-2 border-b border-border/40 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
                         <div>
                           <p className="text-sm text-foreground">{request.leave_types?.name}</p>
                           <p className="mt-0.5 text-xs text-muted-foreground">
@@ -400,7 +412,7 @@ const Dashboard = () => {
                       const label = days === 0 ? "Today" : days === 1 ? "Tomorrow" : `${days}d`;
 
                       return (
-                        <div key={holiday.id} className="flex items-center justify-between border-b border-border/40 py-3 last:border-0">
+                        <div key={holiday.id} className="flex flex-col gap-2 border-b border-border/40 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
                           <div>
                             <p className="text-sm text-foreground">{holiday.name}</p>
                             <p className="mt-0.5 text-xs text-muted-foreground">{weekdayMonthDayFormatter.format(parseISO(holiday.date))}</p>

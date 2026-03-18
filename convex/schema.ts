@@ -23,6 +23,7 @@ export default defineSchema({
     avatarStorageId: v.optional(v.id("_storage")),
     avatarUrl: v.optional(v.string()),
     departmentId: v.optional(v.id("departments")),
+    siteId: v.optional(v.id("sites")),
     managerUserId: v.optional(v.string()),
     hourlyRate: v.optional(v.number()),
     baseSalary: v.optional(v.number()),
@@ -31,6 +32,7 @@ export default defineSchema({
   })
     .index("by_userId", ["userId"])
     .index("by_managerUserId", ["managerUserId"])
+    .index("by_siteId", ["siteId"])
     .index("by_departmentId", ["departmentId"])
     .index("by_avatarStorageId", ["avatarStorageId"]),
 
@@ -83,6 +85,8 @@ export default defineSchema({
     .index("by_employeeId", ["employeeId"])
     .index("by_status", ["status"])
     .index("by_employeeId_status", ["employeeId", "status"])
+    .index("by_status_startDate", ["status", "startDate"])
+    .index("by_employeeId_status_startDate", ["employeeId", "status", "startDate"])
     .index("by_createdAt", ["createdAt"])
     .index("by_attachmentStorageId", ["attachmentStorageId"]),
 
@@ -102,18 +106,44 @@ export default defineSchema({
     status: attendanceStatusValidator,
     source: v.string(),
     notes: v.optional(v.string()),
+    offlineSyncId: v.optional(v.string()),
     selfieClockInStorageId: v.optional(v.id("_storage")),
     selfieClockOutStorageId: v.optional(v.id("_storage")),
     locationClockIn: v.optional(locationValidator),
     locationClockOut: v.optional(locationValidator),
+    trustState: v.optional(v.union(
+      v.literal("unverified"),
+      v.literal("supervised"),
+      v.literal("flagged"),
+      v.literal("verified")
+    )),
+    reviewedBy: v.optional(v.string()),
+    reviewedAt: v.optional(v.number()),
+    reviewNotes: v.optional(v.string()),
+    siteId: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
+    .index("by_trustState", ["trustState"])
     .index("by_employeeId_date", ["employeeId", "date"])
     .index("by_date", ["date"])
     .index("by_employeeId", ["employeeId"])
+    .index("by_offlineSyncId", ["offlineSyncId"])
     .index("by_selfieClockInStorageId", ["selfieClockInStorageId"])
     .index("by_selfieClockOutStorageId", ["selfieClockOutStorageId"]),
+
+  offlineQueuedLogs: defineTable({
+    employeeId: v.string(),
+    offlineSyncId: v.string(),
+    eventType: v.union(v.literal("clock_in"), v.literal("clock_out")),
+    timestamp: v.number(),
+    selfieStorageId: v.optional(v.id("_storage")),
+    locationData: v.optional(locationValidator),
+    replayStatus: v.union(v.literal("pending"), v.literal("replayed"), v.literal("failed")),
+    replayedAt: v.optional(v.number()),
+    failureReason: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_employeeId_status", ["employeeId", "replayStatus"]),
 
   attendanceSettings: defineTable({
     singleton: v.string(),
@@ -128,6 +158,7 @@ export default defineSchema({
     geofenceCenter: v.optional(locationValidator),
     geofenceRadiusMeters: v.optional(v.number()),
     geofenceLabel: v.optional(v.string()),
+    siteId: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_singleton", ["singleton"]),
@@ -147,6 +178,7 @@ export default defineSchema({
     lastSyncRecords: v.optional(v.number()),
     webhookSecret: v.optional(v.string()),
     extraConfig: v.optional(v.any()),
+    siteId: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   })
@@ -199,12 +231,61 @@ export default defineSchema({
     .index("by_tableName", ["tableName"])
     .index("by_createdAt", ["createdAt"]),
 
+  analyticsEvents: defineTable({
+    eventName: v.string(),
+    sessionId: v.string(),
+    userId: v.optional(v.string()),
+    roleScope: v.optional(v.string()),
+    path: v.optional(v.string()),
+    surface: v.string(),
+    properties: v.optional(v.any()),
+    timestamp: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_eventName", ["eventName"])
+    .index("by_createdAt", ["createdAt"])
+    .index("by_userId_createdAt", ["userId", "createdAt"])
+    .index("by_sessionId_createdAt", ["sessionId", "createdAt"]),
+
+  assistantRateLimits: defineTable({
+    userId: v.string(),
+    scope: v.union(v.literal("assistant_chat"), v.literal("assistant_tool")),
+    count: v.number(),
+    windowStartedAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_userId_scope", ["userId", "scope"]),
+
+  backendIncidents: defineTable({
+    source: v.string(),
+    message: v.string(),
+    severity: v.union(v.literal("error"), v.literal("warning"), v.literal("info")),
+    details: v.optional(v.any()),
+    fingerprint: v.optional(v.array(v.string())),
+    createdAt: v.number(),
+  })
+    .index("by_createdAt", ["createdAt"])
+    .index("by_source", ["source"]),
+
+  httpRateLimits: defineTable({
+    bucketKey: v.string(),
+    scope: v.union(
+      v.literal("biometrics_webhook_ip"),
+      v.literal("biometrics_webhook_replay"),
+      v.literal("clerk_onboarding_ip"),
+      v.literal("clerk_onboarding_replay"),
+    ),
+    count: v.number(),
+    windowStartedAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_bucketKey_scope", ["bucketKey", "scope"]),
+
   storageFiles: defineTable({
     storageId: v.id("_storage"),
     fileClass: v.union(
       v.literal("avatar"),
       v.literal("leave_attachment"),
       v.literal("attendance_selfie"),
+      v.literal("policy_document"),
     ),
     ownerUserId: v.string(),
     linkedTable: v.optional(v.string()),
@@ -232,4 +313,109 @@ export default defineSchema({
       vectorField: "embedding",
       filterFields: ["title"],
     }),
+
+  shifts: defineTable({
+    name: v.string(),
+    startTime: v.string(),           // "HH:MM"
+    endTime: v.string(),             // "HH:MM"
+    gracePeriodMinutes: v.number(),
+    overtimeThresholdMinutes: v.number(),
+    workDays: v.array(v.number()),   // 0=Sun ... 6=Sat
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_isActive", ["isActive"]),
+
+  shiftRosters: defineTable({
+    employeeId: v.string(),
+    shiftId: v.id("shifts"),
+    effectiveFrom: v.string(),
+    effectiveTo: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_employeeId", ["employeeId"]).index("by_shiftId", ["shiftId"]),
+
+  weeklyOffRules: defineTable({
+    scope: v.union(v.literal("employee"), v.literal("department")),
+    scopeId: v.string(),            // employeeId or departmentId
+    offDays: v.array(v.number()),   // day numbers to treat as off
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_scopeId", ["scopeId"]),
+
+  attendanceExceptions: defineTable({
+    logId: v.id("attendanceLogs"),
+    employeeId: v.string(),
+    exceptionType: v.union(
+      v.literal("late"), v.literal("half_day"), v.literal("absent"),
+      v.literal("overtime"), v.literal("missed_punch")
+    ),
+    autoDetected: v.boolean(),
+    resolvedAt: v.optional(v.number()),
+    resolvedBy: v.optional(v.string()),
+    notes: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_employeeId", ["employeeId"]).index("by_logId", ["logId"]),
+
+  payrollPeriods: defineTable({
+    startDate: v.string(),
+    endDate: v.string(),
+    status: v.union(v.literal("open"), v.literal("locked")),
+    lockedAt: v.optional(v.number()),
+    lockedBy: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_status", ["status"]).index("by_startDate", ["startDate"]),
+
+  payrollExceptions: defineTable({
+    periodId: v.id("payrollPeriods"),
+    employeeId: v.string(),
+    exceptionType: v.string(),
+    description: v.string(),
+    resolvedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  }).index("by_periodId", ["periodId"]).index("by_employeeId", ["employeeId"]),
+
+  sites: defineTable({
+    name: v.string(),
+    address: v.optional(v.string()),
+    geofenceCenter: v.optional(locationValidator),
+    geofenceRadiusMeters: v.optional(v.number()),
+    timezone: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_isActive", ["isActive"]),
+
+  siteSupervisors: defineTable({
+    siteId: v.id("sites"),
+    userId: v.string(),
+    createdAt: v.number(),
+  }).index("by_siteId", ["siteId"]).index("by_userId", ["userId"]),
+
+  faceEnrollments: defineTable({
+    employeeId: v.string(),
+    storageId: v.id("_storage"),
+    enrolledAt: v.number(),
+    status: v.union(v.literal("pending"), v.literal("active"), v.literal("revoked")),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_employeeId", ["employeeId"]).index("by_status", ["status"]),
+
+  verificationResults: defineTable({
+    attendanceLogId: v.id("attendanceLogs"),
+    confidence: v.number(),
+    result: v.union(v.literal("match"), v.literal("no_match"), v.literal("manual")),
+    processedAt: v.number(),
+    createdAt: v.number(),
+  }).index("by_attendanceLogId", ["attendanceLogId"]),
+
+  payrollMappingConfig: defineTable({
+    singleton: v.string(),
+    overtimeThresholdHours: v.number(),
+    overtimeMultiplier: v.number(),
+    defaultCurrency: v.string(),
+    payPeriod: v.union(v.literal("monthly"), v.literal("biweekly"), v.literal("weekly")),
+    deductUnpaidLeaveFromGross: v.boolean(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_singleton", ["singleton"]),
 });

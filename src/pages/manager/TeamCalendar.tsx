@@ -7,15 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronLeft, ChevronRight, CalendarRange } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isWithinInterval, parseISO, addMonths, subMonths, isToday } from "date-fns";
 import { PageHeaderSkeleton, CardSkeleton } from "@/components/skeletons";
+import type { FunctionReturnType } from "convex/server";
 
-interface TeamLeave {
-  id: string;
-  start_date: string;
-  end_date: string;
-  status: string;
-  profiles: { full_name: string | null } | null;
-  leave_types: { name: string } | null;
-}
+type TeamLeave = FunctionReturnType<typeof api.leave.getTeamCalendar>[number];
 
 const TeamCalendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -27,7 +21,7 @@ const TeamCalendar = () => {
       const monthStart = format(startOfMonth(currentMonth), "yyyy-MM-dd");
       const monthEnd = format(endOfMonth(currentMonth), "yyyy-MM-dd");
       const data = await convex.query(api.leave.getTeamCalendar, { startDate: monthStart, endDate: monthEnd });
-      if (data) setLeaves(data as unknown as TeamLeave[]);
+      if (data) setLeaves(data);
     };
     fetchLeaves().finally(() => setPageLoading(false));
   }, [currentMonth]);

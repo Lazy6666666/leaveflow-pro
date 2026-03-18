@@ -2,6 +2,7 @@ import type { AppRole, HalfDayType } from "../constants";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import type { NotificationType } from "../constants";
 import type { ManagerDelegationDoc, ProfileDoc } from "./types";
+import { filterRecordsBySiteScope } from "../siteScope";
 
 type ReadCtx = QueryCtx | MutationCtx;
 
@@ -42,6 +43,42 @@ export async function canManageEmployee(
   }
 
   return (await getManagedEmployeeIds(ctx, viewerUserId)).includes(employeeId);
+}
+
+export async function getAssignedSiteIds(ctx: ReadCtx, userId: string) {
+  const assignments = await ctx.db
+    .query("siteSupervisors")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+
+  return Array.from(new Set(assignments.map((assignment) => String(assignment.siteId))));
+}
+
+export async function getAccessibleSiteIds(
+  ctx: ReadCtx,
+  userId: string,
+  roles?: AppRole[],
+) {
+  const resolvedRoles = roles ?? await getUserRoles(ctx, userId);
+  if (resolvedRoles.includes("hr_admin")) {
+    return null;
+  }
+
+  return await getAssignedSiteIds(ctx, userId);
+}
+
+export function assertRequestedSiteInScope(requestedSiteId: string | undefined, accessibleSiteIds: string[] | null) {
+  if (requestedSiteId && accessibleSiteIds && !accessibleSiteIds.includes(requestedSiteId)) {
+    throw new Error("Forbidden");
+  }
+}
+
+export function applySiteScope<T extends { siteId?: string | null }>(
+  records: T[],
+  accessibleSiteIds: string[] | null,
+  requestedSiteId?: string,
+): T[] {
+  return filterRecordsBySiteScope<T>(records, accessibleSiteIds, requestedSiteId);
 }
 
 export async function requireAnyRole(ctx: ReadCtx, allowedRoles: AppRole[]) {

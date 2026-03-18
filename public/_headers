@@ -1,0 +1,19 @@
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/sw.js
+  Cache-Control: no-cache
+
+/registerSW.js
+  Cache-Control: no-cache
+
+/manifest.webmanifest
+  Cache-Control: public, max-age=3600
+
+/*
+  Cache-Control: no-cache
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(self), payment=()
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://clerk.balanceapp.io https://*.clerk.accounts.dev https://clerk.dev https://challenges.cloudflare.com https://js.sentry-cdn.com https://browser.sentry-cdn.com https://cdn.puter.com https://js.puter.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob: https://*.convex.cloud https://*.clerk.accounts.dev https://img.clerk.com https://*.cloudinary.com https://workers.paper.design https://images.unsplash.com https://www.vectorlogo.zone; connect-src 'self' https://*.convex.cloud wss://*.convex.cloud https://*.clerk.accounts.dev https://clerk.dev https://api.clerk.dev https://clerk-telemetry.com https://*.ingest.de.sentry.io https://*.ingest.sentry.io https://api.puter.com https://api.mistral.ai; worker-src 'self' blob:; media-src 'self' blob:; frame-src 'self' https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;
