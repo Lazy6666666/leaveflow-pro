@@ -42,24 +42,19 @@ export const Logo = ({ className, size = 'md', variant = 'default', showText = f
         <PulsingBorder 
           speed={1} 
           roundness={1} 
-          thickness={0.13} 
-          softness={0.75} 
-          intensity={0.3} 
-          bloom={0.6} 
-          spots={2} 
-          spotSize={0.92} 
-          pulse={0.6} 
-          smoke={0.68} 
-          smokeSize={0} 
-          scale={0.8} 
-          rotation={0} 
-          aspectRatio="square" 
-          frame={325924.3279999401} 
-          colors={['#0DC1FD', '#7C7B7C', '#C12F22CC']} 
+          thickness={0.08} 
+          softness={0.8} 
+          intensity={0.2} 
+          bloom={0.4} 
+          spots={0} 
+          pulse={0.4} 
+          smoke={0} 
+          scale={0.9} 
+          colors={['#C9A962', '#1A1815']} 
           colorBack="#00000000" 
           className="w-full h-full bg-contain bg-center bg-no-repeat relative z-10" 
           style={{ 
-            backgroundImage: 'url(https://workers.paper.design/file-assets/01KKA0QJFF6TZMCXBMMSD3RBPP/01KKRMGWWYEGZPQB5SJ2DFBYPH.png)' 
+            backgroundImage: 'url(/logo.svg)' 
           }} 
         />
       </div>
