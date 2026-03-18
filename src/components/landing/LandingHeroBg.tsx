@@ -6,6 +6,7 @@ import {
   useTransform,
   useSpring,
   MotionValue,
+  type Variants,
 } from "framer-motion";
 
 export const products = [
@@ -106,36 +107,43 @@ export const LandingHeroBg = () => {
     useTransform(scrollYProgress, [0, 1], [0, -1000]),
     springConfig
   );
-  const rotateX = useSpring(
-    useTransform(scrollYProgress, [0, 0.2], [15, 0]),
+  const scale = useSpring(
+    useTransform(scrollYProgress, [0, 0.2], [1, 0.9]),
     springConfig
   );
   const opacity = useSpring(
-    useTransform(scrollYProgress, [0, 0.2], [0.2, 1]),
+    useTransform(scrollYProgress, [0, 0.15], [1, 0]),
     springConfig
   );
-  const rotateZ = useSpring(
-    useTransform(scrollYProgress, [0, 0.2], [20, 0]),
+  const backgroundOpacity = useSpring(
+    useTransform(scrollYProgress, [0, 0.2], [0.1, 1]),
+    springConfig
+  );
+  const rotateXValue = useSpring(
+    useTransform(scrollYProgress, [0, 0.3], [0, 15]),
     springConfig
   );
   const translateY = useSpring(
-    useTransform(scrollYProgress, [0, 0.2], [-700, 500]),
+    useTransform(scrollYProgress, [0, 0.3], [0, -200]),
     springConfig
   );
+
   return (
     <div
       ref={ref}
-      className="h-[300vh] py-10 overflow-hidden antialiased relative flex flex-col self-auto [perspective:1000px] [transform-style:preserve-3d] bg-[#FDFBF7]"
+      className="h-[250vh] py-10 overflow-hidden antialiased relative flex flex-col self-auto [perspective:1000px] [transform-style:preserve-3d] bg-[#FDFBF7]"
     >
-      <Header />
+      <motion.div style={{ scale, opacity: opacity }} className="sticky top-0 z-50">
+        <Header />
+      </motion.div>
+
       <motion.div
         style={{
-          rotateX,
-          rotateZ,
+          rotateX: rotateXValue,
           translateY,
-          opacity,
+          opacity: backgroundOpacity,
         }}
-        className=""
+        className="mt-[-10vh]"
       >
         <motion.div className="flex flex-row-reverse space-x-reverse space-x-20 mb-20">
           {firstRow.map((product) => (
@@ -170,30 +178,90 @@ export const LandingHeroBg = () => {
 };
 
 export const Header = () => {
+  const words = "Elevate your capital.".split(" ");
+  const itemEase: [number, number, number, number] = [0.23, 1, 0.32, 1];
+
+  const container = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.12,
+        delayChildren: 0.4,
+      },
+    },
+  };
+
+  const item: Variants = {
+    hidden: { y: 100, opacity: 0 },
+    show: { 
+      y: 0, 
+      opacity: 1,
+      transition: {
+        duration: 1.2,
+        ease: itemEase
+      }
+    },
+  };
+
   return (
-    <div className="max-w-7xl relative mx-auto py-20 md:py-40 px-6 w-full left-0 top-0">
+    <div className="max-w-[1400px] relative mx-auto py-32 md:py-56 px-6 w-full flex flex-col items-center text-center">
       <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, delay: 0.2 }}
+        className="mb-12 flex items-center gap-4 justify-center"
+      >
+        <span className="w-8 h-[1px] bg-[#C9A962] block"></span>
+        <span className="text-[10px] tracking-[0.4em] font-bold uppercase text-[#1A1815]/40 italic font-['Cormorant_Garamond']">
+          The New Standard
+        </span>
+        <span className="w-8 h-[1px] bg-[#C9A962] block"></span>
+      </motion.div>
+
+      <motion.h1 
+        variants={container}
+        initial="hidden"
+        whileInView="show"
+        viewport={{ once: true }}
+        className="font-['Outfit'] text-[4rem] md:text-[7.5rem] lg:text-[10rem] font-black leading-[0.85] tracking-[-0.05em] text-[#1A1815] mb-16"
+      >
+        {words.map((word, i) => (
+          <span key={i} className="inline-block overflow-hidden pb-4 mr-4 last:mr-0">
+             <motion.span variants={item} className="inline-block">
+                {i === words.length - 1 || i === words.length - 2 ? (
+                   <span className={i === words.length - 1 ? "font-['Cormorant_Garamond'] font-light italic text-[#C9A962]" : ""}>
+                    {word}
+                   </span>
+                ) : word}
+             </motion.span>
+          </span>
+        ))}
+      </motion.h1>
+
+      <motion.p 
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1 }}
-        className="mb-8 flex items-center gap-4"
+        transition={{ duration: 1, delay: 1 }}
+        className="max-w-2xl text-lg md:text-2xl mt-4 font-light text-[#1A1815]/60 leading-relaxed font-['Outfit'] mb-20"
       >
-        <span className="w-12 h-[1px] bg-[#1A1815]/20 block"></span>
-        <span className="text-[10px] tracking-[0.3em] font-bold uppercase text-[#1A1815]/50">
-          The Standard
-        </span>
+        Engineering flawless orchestration for forward-thinking enterprise. 
+        Transform your workforce into a masterclass of strategic motion.
+      </motion.p>
+
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1, delay: 1.2 }}
+        className="flex flex-col sm:flex-row gap-6 mt-8"
+      >
+        <button className="px-12 py-5 rounded-full bg-[#1A1815] text-[#FDFBF7] font-['DM_Sans'] text-xs font-black uppercase tracking-[0.2em] hover:bg-[#C9A962] transition-all duration-700 shadow-xl hover:shadow-[#C9A962]/20">
+          Begin Onboarding
+        </button>
+        <button className="px-12 py-5 rounded-full border border-[#1A1815]/10 text-[#1A1815] font-['DM_Sans'] text-xs font-black uppercase tracking-[0.2em] hover:bg-[#1A1815]/5 transition-all duration-700">
+          View Infrastructure
+        </button>
       </motion.div>
-      <h1 className="font-['Outfit'] text-[4rem] md:text-[6.5rem] lg:text-[8rem] font-black leading-[0.9] tracking-[-0.04em] text-[#1A1815]">
-        Elevate<br />
-        <span className="font-['Cormorant_Garamond'] font-light italic text-[#C9A962]">
-          your capital.
-        </span>
-      </h1>
-      <p className="max-w-xl text-base md:text-xl mt-12 font-light text-[#1A1815]/60 leading-relaxed font-['Outfit']">
-        Engineering flawless orchestration for modern human resources. 
-        Redefining enterprise friction into pure aesthetic motion through 
-        advanced digital ecosystems and strategic growth frameworks.
-      </p>
     </div>
   );
 };

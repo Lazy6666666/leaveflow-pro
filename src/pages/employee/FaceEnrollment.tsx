@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type MotionProps } from "framer-motion";
 import { ScanFace, ShieldCheck, RefreshCw, CheckCircle2, AlertCircle, Camera } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SelfieCaptureDialog } from "@/components/attendance/SelfieCaptureDialog";
@@ -13,12 +13,13 @@ import type { StorageId } from "@/lib/convexTypes";
 type Step = "idle" | "capture" | "confirm" | "enrolling" | "done";
 
 const SPRING = { type: "spring", stiffness: 300, damping: 30 } as const;
+const EASING: [number, number, number, number] = [0.32, 0.72, 0, 1];
 const FADE_UP = {
   initial: { opacity: 0, y: 24, filter: "blur(8px)" },
   animate: { opacity: 1, y: 0, filter: "blur(0px)" },
   exit: { opacity: 0, y: -16, filter: "blur(4px)" },
-  transition: { duration: 0.5, ease: [0.32, 0.72, 0, 1] },
-};
+  transition: { duration: 0.5, ease: EASING },
+} satisfies MotionProps;
 
 // Animated scanning ring
 const ScanRing = ({ active }: { active: boolean }) => (
