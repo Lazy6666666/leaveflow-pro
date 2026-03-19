@@ -25,7 +25,12 @@
 - [x] A3: Verify deploy path end-to-end
 - [x] A4: Apply Cloudflare security headers
 - [x] A5: Audit `wrangler.toml` / `_headers`
-- [ ] A6: Run staging smoke tests per [docs/staging-smoke-tests.md](file:///C:/Users/NeilEdwardBaja/Desktop/New%20folder/leaveflow-pro/docs/staging-smoke-tests.md)
+- [x] Refine Hero to 1:1 React Bits Pro "Hero-7" (Image Carousel) <!-- id: 16 -->
+- [x] Refine Features to Pro Bento Grid with Luxury States <!-- id: 17 -->
+- [x] Integrate Shadcn Badge Component into Hero <!-- id: 19 -->
+- [x] Replace all featured images with curated "B&W vs Color" assets <!-- id: 18 -->
+- [x] Verify animations and layout across devices <!-- id: 15 -->
+- [x] A6: Run staging smoke tests per [docs/staging-smoke-tests.md](file:///C:/Users/NeilEdwardBaja/Desktop/New%20folder/leaveflow-pro/docs/staging-smoke-tests.md)
 - [ ] A7: Confirm Sentry receiving real production events
 
 ---
