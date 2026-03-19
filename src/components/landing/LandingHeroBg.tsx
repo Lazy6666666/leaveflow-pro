@@ -9,7 +9,7 @@ import {
   type Variants,
 } from "framer-motion";
 
-export const products = [
+const products = [
   {
     title: "Enterprise Orchestration",
     link: "#",
@@ -99,80 +99,94 @@ export const LandingHeroBg = () => {
 
   const springConfig = { stiffness: 300, damping: 30, bounce: 100 };
 
-  const translateX = useSpring(
-    useTransform(scrollYProgress, [0, 1], [0, 1000]),
-    springConfig
-  );
-  const translateXReverse = useSpring(
-    useTransform(scrollYProgress, [0, 1], [0, -1000]),
-    springConfig
-  );
-  const scale = useSpring(
-    useTransform(scrollYProgress, [0, 0.2], [1, 0.9]),
-    springConfig
-  );
-  const opacity = useSpring(
-    useTransform(scrollYProgress, [0, 0.15], [1, 0]),
-    springConfig
-  );
-  const backgroundOpacity = useSpring(
-    useTransform(scrollYProgress, [0, 0.2], [0.1, 1]),
-    springConfig
-  );
-  const rotateXValue = useSpring(
-    useTransform(scrollYProgress, [0, 0.3], [0, 15]),
-    springConfig
-  );
-  const translateY = useSpring(
-    useTransform(scrollYProgress, [0, 0.3], [0, -200]),
-    springConfig
-  );
+  const beforeImage = "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=1600&auto=format&fit=crop";
+  const afterImage = "https://images.unsplash.com/photo-1519781542704-957ee19f6e9b?q=80&w=1600&auto=format&fit=crop";
 
   return (
     <div
       ref={ref}
-      className="h-[250vh] py-10 overflow-hidden antialiased relative flex flex-col self-auto [perspective:1000px] [transform-style:preserve-3d] bg-[#FDFBF7]"
+      className="min-h-[200vh] overflow-visible antialiased relative flex flex-col bg-[#FDFBF7]"
     >
-      <motion.div style={{ scale, opacity: opacity }} className="sticky top-0 z-50">
-        <Header />
-      </motion.div>
+      <div className="sticky top-0 h-screen w-full overflow-hidden">
+        {/* Split Background Layer */}
+        <div className="absolute inset-0 flex">
+          {/* Left: THE PROBLEM (Before) */}
+          <motion.div 
+            style={{ 
+              scale: useTransform(scrollYProgress, [0, 0.5], [1.1, 1]),
+              filter: "grayscale(100%) brightness(0.7)",
+            }}
+            className="w-1/2 h-full relative overflow-hidden border-r border-[#1A1815]/5"
+          >
+            <img 
+              src={beforeImage} 
+              className="absolute inset-0 w-full h-full object-cover" 
+              alt="The Problem" 
+            />
+            <div className="absolute inset-0 bg-[#1A1815]/20 mix-blend-multiply" />
+          </motion.div>
 
-      <motion.div
-        style={{
-          rotateX: rotateXValue,
-          translateY,
-          opacity: backgroundOpacity,
-        }}
-        className="mt-[-10vh]"
-      >
-        <motion.div className="flex flex-row-reverse space-x-reverse space-x-20 mb-20">
-          {firstRow.map((product) => (
-            <ProductCard
-              product={product}
-              translate={translateX}
-              key={product.title}
+          {/* Right: THE SOLUTION (After) */}
+          <motion.div 
+            style={{ 
+              scale: useTransform(scrollYProgress, [0, 0.5], [1.1, 1.2]),
+            }}
+            className="w-1/2 h-full relative overflow-hidden"
+          >
+            <img 
+              src={afterImage} 
+              className="absolute inset-0 w-full h-full object-cover" 
+              alt="The Solution" 
             />
-          ))}
+            <div className="absolute inset-0 bg-[#C9A962]/5" />
+          </motion.div>
+        </div>
+
+        {/* Dynamic Wipe/Divider Effect */}
+        <motion.div 
+          style={{ 
+            left: useTransform(scrollYProgress, [0, 0.5], ["50%", "48%"]),
+          }}
+          className="absolute top-0 bottom-0 w-[1px] bg-[#C9A962]/30 z-20"
+        />
+
+        {/* Content Overlay */}
+        <motion.div 
+          style={{ 
+            scale: useTransform(scrollYProgress, [0, 0.3, 0.5], [1, 1, 0]), 
+            opacity: useTransform(scrollYProgress, [0, 0.3, 0.5], [1, 1, 0]),
+            y: useTransform(scrollYProgress, [0, 0.5], [0, -50]),
+          }} 
+          className="relative z-30 h-full flex items-center justify-center pt-20"
+        >
+          <Header />
         </motion.div>
-        <motion.div className="flex flex-row mb-20 space-x-20 ">
-          {secondRow.map((product) => (
-            <ProductCard
-              product={product}
-              translate={translateXReverse}
-              key={product.title}
-            />
-          ))}
-        </motion.div>
-        <motion.div className="flex flex-row-reverse space-x-reverse space-x-20">
-          {thirdRow.map((product) => (
-            <ProductCard
-              product={product}
-              translate={translateX}
-              key={product.title}
-            />
-          ))}
-        </motion.div>
-      </motion.div>
+
+        {/* "Before / After" Labels */}
+        <div className="absolute bottom-12 inset-x-0 px-12 flex justify-between z-30 pointer-events-none">
+          <motion.div 
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 1.5, duration: 1 }}
+            className="flex flex-col gap-2"
+          >
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40">Infrastructure</span>
+            <span className="text-2xl font-['Cormorant_Garamond'] italic text-white/60">The Deficit.</span>
+          </motion.div>
+          <motion.div 
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 1.8, duration: 1 }}
+            className="flex flex-col gap-2 items-end text-right"
+          >
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#1A1815]/30">Orchestration</span>
+            <span className="text-2xl font-['Cormorant_Garamond'] italic text-[#C9A962]">The Balance.</span>
+          </motion.div>
+        </div>
+      </div>
+      
+      {/* Spacer to allow for the sticky content to be scrolled through */}
+      <div className="h-[100vh]" />
     </div>
   );
 };

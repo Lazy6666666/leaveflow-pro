@@ -170,6 +170,10 @@
 }
 
 @layer components {
+  .ease-premium {
+    transition-timing-function: cubic-bezier(0.32, 0.72, 0, 1);
+  }
+
   .glass {
     background: hsl(var(--background-elevated));
     backdrop-filter: none;

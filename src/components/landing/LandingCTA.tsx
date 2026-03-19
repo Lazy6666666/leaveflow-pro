@@ -52,11 +52,11 @@ export const LandingCTA = () => {
             >
               <Link
                 to="/auth/register"
-                className="group relative flex items-center justify-between gap-8 pl-8 pr-2 py-2 bg-[#FDFBF7] text-[#1A1815] rounded-[2.5rem] active:scale-[0.98] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.3)] hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.4)]"
+                className="group relative flex items-center justify-between gap-8 pl-8 pr-2 py-2 bg-[#FDFBF7] text-[#1A1815] rounded-[2.5rem] active:scale-[0.98] transition-all duration-500 ease-premium shadow-[0_20px_40px_-12px_rgba(0,0,0,0.3)] hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.4)]"
               >
                 <span className="text-sm uppercase font-bold tracking-[0.2em]">Start Trial</span>
                 <div className="w-12 h-12 rounded-full bg-[#1A1815] flex items-center justify-center transition-all duration-500 group-hover:bg-[#C9A962] group-hover:scale-105">
-                  <ArrowUpRight strokeWidth={1.5} size={20} className="text-[#FDFBF7] transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
+                  <ArrowUpRight strokeWidth={1.5} size={20} className="text-[#FDFBF7] transition-transform duration-500 ease-premium group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
                 </div>
               </Link>
               

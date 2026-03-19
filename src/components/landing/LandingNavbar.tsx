@@ -9,7 +9,7 @@ import {
   IconChevronRight as ChevronRight,
 } from "@tabler/icons-react";
 
-export const navLinks = [
+const navLinks = [
   { name: "Product", href: "#product" },
   { name: "Engine", href: "#engine" },
   { name: "Global", href: "#global" },
@@ -50,12 +50,12 @@ export const LandingNavbar = () => {
   return (
     <>
       <header
-        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[60] w-[90%] max-w-[900px] transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        className={`fixed top-6 left-1/2 -translate-x-1/2 z-[60] w-[90%] max-w-[900px] transition-all duration-700 ease-premium ${
           scrolled ? "top-4" : "top-8"
         }`}
       >
         <div
-          className={`flex items-center justify-between p-2 pl-6 bg-white/70 backdrop-blur-3xl border border-black/[0.04] rounded-[2rem] shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+          className={`flex items-center justify-between p-2 pl-6 bg-white/70 backdrop-blur-3xl border border-black/[0.04] rounded-[2rem] shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] transition-all duration-700 ease-premium ${
             scrolled ? "py-1.5 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.12)]" : "py-2"
           }`}
         >
@@ -98,11 +98,11 @@ export const LandingNavbar = () => {
           <div className="flex items-center gap-2 relative z-20">
             <Link
               to="/auth/register"
-              className="hidden md:flex group relative items-center justify-between gap-6 pl-6 pr-1.5 py-1.5 bg-[#1A1815] text-[#FDFBF7] rounded-[2rem] active:scale-[0.98] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] shadow-[0_4px_16px_-4px_rgba(26,24,21,0.4)]"
+              className="hidden md:flex group relative items-center justify-between gap-6 pl-6 pr-1.5 py-1.5 bg-[#1A1815] text-[#FDFBF7] rounded-[2rem] active:scale-[0.98] transition-all duration-500 ease-premium shadow-[0_4px_16px_-4px_rgba(26,24,21,0.4)]"
             >
               <span className="text-[10px] uppercase font-bold tracking-[0.2em]">Start Trial</span>
               <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center transition-all duration-500 group-hover:bg-[#C9A962] group-hover:scale-105">
-                <ArrowUpRight strokeWidth={1} size={16} className="transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
+                <ArrowUpRight strokeWidth={1} size={16} className="transition-transform duration-500 ease-premium group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
               </div>
             </Link>
 
@@ -114,17 +114,17 @@ export const LandingNavbar = () => {
             >
               <div className="relative w-5 h-5 flex flex-col justify-center items-center">
                 <span
-                  className={`absolute h-[1px] w-5 bg-[#1A1815] transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                  className={`absolute h-[1px] w-5 bg-[#1A1815] transition-all duration-700 ease-premium ${
                     isOpen ? "rotate-45" : "-translate-y-1.5"
                   }`}
                 />
                 <span
-                  className={`absolute h-[1px] w-4 bg-[#1A1815] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                  className={`absolute h-[1px] w-4 bg-[#1A1815] transition-all duration-500 ease-premium ${
                     isOpen ? "opacity-0 scale-x-0" : "opacity-100 scale-x-100"
                   }`}
                 />
                 <span
-                  className={`absolute h-[1px] w-5 bg-[#1A1815] transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                  className={`absolute h-[1px] w-5 bg-[#1A1815] transition-all duration-700 ease-premium ${
                     isOpen ? "-rotate-45" : "translate-y-1.5"
                   }`}
                 />
@@ -180,11 +180,11 @@ export const LandingNavbar = () => {
                 <Link
                   to="/auth/register"
                   onClick={() => setIsOpen(false)}
-                  className="group relative flex items-center justify-between gap-8 pl-8 pr-2 py-3 bg-[#1A1815] text-[#FDFBF7] rounded-[2.5rem] active:scale-[0.98] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] shadow-[0_20px_40px_-12px_rgba(26,24,21,0.3)]"
+                  className="group relative flex items-center justify-between gap-8 pl-8 pr-2 py-3 bg-[#1A1815] text-[#FDFBF7] rounded-[2.5rem] active:scale-[0.98] transition-all duration-500 ease-premium shadow-[0_20px_40px_-12px_rgba(26,24,21,0.3)]"
                 >
                   <span className="text-sm uppercase font-bold tracking-[0.2em]">Join Balance</span>
                   <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center transition-all duration-500 group-hover:bg-[#C9A962] group-hover:scale-105">
-                    <ArrowUpRight strokeWidth={1.5} size={20} className="transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
+                    <ArrowUpRight strokeWidth={1.5} size={20} className="transition-transform duration-500 ease-premium group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
                   </div>
                 </Link>
               </motion.div>

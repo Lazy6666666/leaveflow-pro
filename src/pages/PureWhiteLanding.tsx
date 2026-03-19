@@ -53,7 +53,7 @@ const FluidIslandNav = () => {
   return (
     <>
       <header className="fixed top-6 left-1/2 -translate-x-1/2 z-[60] w-[90%] max-w-[800px] pointer-events-none">
-        <div className="flex items-center justify-between p-2 pl-6 bg-white/70 backdrop-blur-3xl border border-black/[0.04] rounded-full shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] pointer-events-auto transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]">
+        <div className="flex items-center justify-between p-2 pl-6 bg-white/70 backdrop-blur-3xl border border-black/[0.04] rounded-full shadow-[0_8px_32px_-12px_rgba(0,0,0,0.08)] pointer-events-auto transition-all duration-700 ease-premium">
           {/* Logo */}
           <div className="flex items-center gap-3 relative z-20">
             <span className="font-['Cormorant_Garamond'] text-xl font-medium tracking-[0.08em] uppercase text-[#1A1815]">
@@ -74,11 +74,11 @@ const FluidIslandNav = () => {
           <div className="flex items-center gap-2 relative z-20">
             <Link
               to="/auth/register"
-              className="hidden md:flex group relative items-center justify-between gap-6 pl-6 pr-1.5 py-1.5 bg-[#1A1815] text-[#FDFBF7] rounded-full active:scale-[0.98] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] shadow-[0_4px_16px_-4px_rgba(26,24,21,0.4)]"
+              className="hidden md:flex group relative items-center justify-between gap-6 pl-6 pr-1.5 py-1.5 bg-[#1A1815] text-[#FDFBF7] rounded-full active:scale-[0.98] transition-all duration-500 ease-premium shadow-[0_4px_16px_-4px_rgba(26,24,21,0.4)]"
             >
               <span className="text-[10px] uppercase font-bold tracking-[0.2em]">Start Trial</span>
               <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center transition-all duration-500 group-hover:bg-white/20 group-hover:scale-105">
-                <ArrowUpRight strokeWidth={1} size={16} className="transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
+                <ArrowUpRight strokeWidth={1} size={16} className="transition-transform duration-500 ease-premium group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
               </div>
             </Link>
             
@@ -87,9 +87,9 @@ const FluidIslandNav = () => {
               className="md:hidden w-12 h-12 rounded-full bg-black/5 flex items-center justify-center relative active:scale-95 transition-all duration-500"
             >
               <div className="relative w-5 h-5 flex flex-col justify-center items-center">
-                <span className={`absolute h-[1px] w-5 bg-black transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${isOpen ? 'rotate-45' : '-translate-y-1.5'}`} />
-                <span className={`absolute h-[1px] w-5 bg-black transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${isOpen ? 'opacity-0 scale-x-0' : 'opacity-100 scale-x-100'}`} />
-                <span className={`absolute h-[1px] w-5 bg-black transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] ${isOpen ? '-rotate-45' : 'translate-y-1.5'}`} />
+                <span className={`absolute h-[1px] w-5 bg-black transition-all duration-700 ease-premium ${isOpen ? 'rotate-45' : '-translate-y-1.5'}`} />
+                <span className={`absolute h-[1px] w-5 bg-black transition-all duration-500 ease-premium ${isOpen ? 'opacity-0 scale-x-0' : 'opacity-100 scale-x-100'}`} />
+                <span className={`absolute h-[1px] w-5 bg-black transition-all duration-700 ease-premium ${isOpen ? '-rotate-45' : 'translate-y-1.5'}`} />
               </div>
             </button>
           </div>
@@ -128,11 +128,11 @@ const FluidIslandNav = () => {
               >
                 <Link
                   to="/auth/register"
-                  className="group relative flex items-center justify-between gap-8 pl-8 pr-2 py-2 bg-[#1A1815] text-[#FDFBF7] rounded-full active:scale-[0.98] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"
+                  className="group relative flex items-center justify-between gap-8 pl-8 pr-2 py-2 bg-[#1A1815] text-[#FDFBF7] rounded-full active:scale-[0.98] transition-all duration-500 ease-premium"
                 >
                   <span className="text-xs uppercase font-bold tracking-[0.2em]">Start Trial</span>
                   <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center transition-all duration-500 group-hover:bg-white/20 group-hover:scale-105">
-                    <ArrowUpRight strokeWidth={1} size={18} className="transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
+                    <ArrowUpRight strokeWidth={1} size={18} className="transition-transform duration-500 ease-premium group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
                   </div>
                 </Link>
               </motion.div>
@@ -242,7 +242,7 @@ const DoubleBezelEcosystem = () => {
                 <h3 className="font-['Cormorant_Garamond'] text-4xl font-medium mb-4">Effortless Tracking</h3>
                 <p className="font-light text-black/50 text-sm leading-relaxed">Real-time attendance that runs entirely in the background. GPS verification matched with autonomous privacy guards.</p>
               </div>
-              <div className="absolute right-0 bottom-0 w-2/3 h-2/3 translate-x-12 translate-y-12 bg-zinc-50 rounded-tl-3xl border-t border-l border-zinc-100 p-6 transition-transform duration-1000 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:-translate-x-4 group-hover:-translate-y-4">
+              <div className="absolute right-0 bottom-0 w-2/3 h-2/3 translate-x-12 translate-y-12 bg-zinc-50 rounded-tl-3xl border-t border-l border-zinc-100 p-6 transition-transform duration-1000 ease-premium group-hover:-translate-x-4 group-hover:-translate-y-4">
                 <img src="/images/landing/feature_dashboard.png" className="w-full h-full object-cover rounded-xl shadow-2xl" alt="Dashboard" />
               </div>
             </div>
@@ -427,11 +427,11 @@ const FinalCTA = () => {
         
         <Link
           to="/auth/register"
-          className="group relative flex items-center justify-between gap-12 pl-12 pr-2 py-2 bg-[#1A1815] text-[#FDFBF7] rounded-full active:scale-[0.98] transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] shadow-[0_20px_40px_-10px_rgba(26,24,21,0.2)]"
+          className="group relative flex items-center justify-between gap-12 pl-12 pr-2 py-2 bg-[#1A1815] text-[#FDFBF7] rounded-full active:scale-[0.98] transition-all duration-500 ease-premium shadow-[0_20px_40px_-10px_rgba(26,24,21,0.2)]"
         >
           <span className="text-sm uppercase font-bold tracking-[0.2em] relative z-10">Start Enterprise Trial</span>
           <div className="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center transition-all duration-500 group-hover:bg-[#C9A962] group-hover:scale-105 relative z-10">
-            <ArrowUpRight strokeWidth={1} size={24} className="transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
+            <ArrowUpRight strokeWidth={1} size={24} className="transition-transform duration-500 ease-premium group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
           </div>
         </Link>
       </motion.div>
