@@ -15,6 +15,7 @@ import {
 import { motion } from "framer-motion";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { SidebarBody, SidebarLink, useSidebar } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { Logo } from "@/components/ui/Logo";
@@ -41,8 +42,16 @@ export function AppSidebar() {
   const { open, setOpen } = useSidebar();
   const location = useLocation();
   const { hasManagerAccess, hasRole, signOut, needsAdminSetup } = useAuth();
+  const { track } = useAnalytics();
 
   const isActive = (path: string) => location.pathname === path;
+  const trackSidebarClick = (item: string, toPath: string) => {
+    void track(
+      "sidebar_nav_clicked",
+      { item, from_path: location.pathname, to_path: toPath },
+      { path: location.pathname },
+    );
+  };
 
   return (
     <SidebarBody className="bg-[#171411] border-r border-white/5 text-white">
@@ -66,6 +75,7 @@ export function AppSidebar() {
             <SidebarLink
               key={idx}
               link={link}
+              onClick={() => trackSidebarClick(link.label, link.href)}
               className={cn(
                 "hover:bg-white/5 rounded-xl px-2 py-2.5 transition-all duration-200",
                 isActive(link.href) && "bg-white/10 text-white font-bold"
@@ -82,6 +92,7 @@ export function AppSidebar() {
                 <SidebarLink
                   key={idx}
                   link={link}
+                  onClick={() => trackSidebarClick(link.label, link.href)}
                   className={cn(
                     "hover:bg-white/5 rounded-xl px-2 py-2.5 transition-all duration-200",
                     isActive(link.href) && "bg-white/10 text-white font-bold"
@@ -100,6 +111,7 @@ export function AppSidebar() {
                 <SidebarLink
                   key={idx}
                   link={link}
+                  onClick={() => trackSidebarClick(link.label, link.href)}
                   className={cn(
                     "hover:bg-white/5 rounded-xl px-2 py-2.5 transition-all duration-200",
                     isActive(link.href) && "bg-white/10 text-white font-bold"
@@ -116,6 +128,7 @@ export function AppSidebar() {
             <SidebarGroup label="Setup" open={open}>
               <SidebarLink
                 link={{ label: "Admin Setup", href: "/admin-setup", icon: <Settings className="h-5 w-5" /> }}
+                onClick={() => trackSidebarClick("Admin Setup", "/admin-setup")}
                 className={cn(
                   "hover:bg-white/5 rounded-xl px-2 py-2.5 transition-all duration-200",
                   isActive("/admin-setup") && "bg-white/10 text-white font-bold"

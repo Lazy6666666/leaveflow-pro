@@ -43,6 +43,13 @@ The goal is to make launch, adoption, workflow quality, and operational outcomes
   - admin setup
   - employee management
   - balances, biometrics, badge mappings, attendance management
+- A generic analytics event pipeline exists in frontend and backend:
+  - `leaveflow-pro/src/hooks/useAnalytics.ts`
+  - `leaveflow-pro/src/lib/analytics.ts`
+  - `leaveflow-pro/convex/analytics.ts`
+  - `leaveflow-pro/convex/lib/analytics.ts`
+- Frontend page-view and CTA instrumentation exists for the current landing, auth, dashboard, AI workspace, attendance widget, leave request flow, admin setup, reports, employees, and policies surfaces.
+- Backend success-path instrumentation exists for leave submission/approval, attendance success events, admin setup, employee updates, and leave policy saves.
 - Audit log writes for many admin and operational mutations
 - Notifications for leave actions
 - Derived insight queries:
@@ -52,17 +59,14 @@ The goal is to make launch, adoption, workflow quality, and operational outcomes
 
 ### What Does Not Exist Today
 
-- No product analytics SDK or generic event emitter in frontend or backend
-- No page view tracking
-- No click or CTA tracking
-- No funnel step tracking for auth, navigation, or form progression
-- No AI usage telemetry beyond the chat action itself
-- No explicit failure events for abandoned workflows
+- No complete manager + notification instrumentation pass yet
+- No full P2 read-only adoption coverage yet
+- No KPI dashboard or release-audit layer that consumes the emitted analytics events yet
 - No experiment assignment or exposure events
 
 ### Practical Consequence
 
-BALANCE can currently measure many lagging operational outcomes from domain tables, but it cannot reliably measure product adoption, conversion, workflow friction, or UX-level funnel drop-off.
+BALANCE can now measure core landing, auth, leave, attendance, AI, and several HR-admin adoption flows, but it still cannot claim full-funnel product measurement until the manager/notification/read-only gaps and KPI dashboards are completed.
 
 ## KPI Definitions
 
@@ -650,4 +654,3 @@ BALANCE can currently measure many lagging operational outcomes from domain tabl
 - The current admin reports page shows aggregates, but several are operational summaries rather than product KPIs.
 - Audit logs are useful for forensic review, but they are not substitutes for intent-aware analytics events.
 - AI adoption and AI usefulness are currently unmeasurable beyond anecdotal usage because prompts, responses, and follow-through are not persisted as product telemetry.
-

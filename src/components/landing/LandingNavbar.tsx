@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import {
   IconMenu2 as Menu,
   IconX as X,
@@ -30,6 +31,7 @@ export const LandingNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [activeItem, setActiveItem] = useState(navLinks[0].name);
   const [scrolled, setScrolled] = useState(false);
+  const { track } = useAnalytics();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -97,6 +99,13 @@ export const LandingNavbar = () => {
           <div className="flex items-center gap-2 relative z-20">
             <Link
               to="/auth/register"
+              onClick={() => {
+                void track(
+                  "landing_cta_clicked",
+                  { cta_location: "navbar_primary", target_path: "/auth/register" },
+                  { surface: "landing", path: "/" },
+                );
+              }}
               className="hidden md:flex group relative items-center justify-between gap-6 pl-6 pr-1.5 py-1.5 bg-[#1A1815] text-[#FDFBF7] rounded-[2rem] active:scale-[0.98] transition-all duration-500 ease-premium shadow-[0_4px_16px_-4px_rgba(26,24,21,0.4)]"
             >
               <span className="text-[10px] uppercase font-bold tracking-[0.2em]">Start Trial</span>
@@ -179,7 +188,14 @@ export const LandingNavbar = () => {
               >
                 <Link
                   to="/auth/register"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => {
+                    setIsOpen(false);
+                    void track(
+                      "landing_cta_clicked",
+                      { cta_location: "navbar_mobile_primary", target_path: "/auth/register" },
+                      { surface: "landing", path: "/" },
+                    );
+                  }}
                   className="group relative flex items-center justify-between gap-8 pl-8 pr-2 py-3 bg-[#1A1815] text-[#FDFBF7] rounded-[2.5rem] active:scale-[0.98] transition-all duration-500 ease-premium shadow-[0_20px_40px_-12px_rgba(26,24,21,0.3)]"
                 >
                   <span className="text-sm uppercase font-bold tracking-[0.2em]">Join Balance</span>

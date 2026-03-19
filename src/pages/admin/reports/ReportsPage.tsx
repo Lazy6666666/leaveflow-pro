@@ -10,6 +10,7 @@ import { convex } from "@/lib/convex";
 import { PayrollExceptionPanel, type PayrollException } from "@/components/payroll/PayrollExceptionPanel";
 import { useConvexMutation } from "@/hooks/useConvexMutation";
 import { useConvexParallelQuery } from "@/hooks/useConvexParallelQuery";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { getErrorMessage } from "@/lib/errors";
 
 import type { AnalyticsSummary, BurnoutSummary, CountDatum, CoverageSummary, MonthlyDatum, PayrollSummary, SummaryCard } from "../reportsTypes";
@@ -22,6 +23,7 @@ type PayrollPeriod = FunctionReturnType<typeof api.payroll.getPayrollPeriods>[nu
 type SiteOption = FunctionReturnType<typeof api.sites.listSites>[number];
 
 export function ReportsPage() {
+  const { track, trackOnce } = useAnalytics();
   const [siteFilter, setSiteFilter] = useState("all");
   const [lockingPeriodId, setLockingPeriodId] = useState<PayrollPeriod["_id"] | null>(null);
   const [exceptionsPanel, setExceptionsPanel] = useState<{
@@ -88,6 +90,18 @@ export function ReportsPage() {
     lastErrorToastRef.current = errorMessage;
     toast.error(errorMessage);
   }, [errorMessage]);
+
+  useEffect(() => {
+    if (pageLoading || !reportData) {
+      return;
+    }
+
+    void trackOnce("reports_page_viewed", "reports_page_viewed", {
+      has_payroll: Boolean(payrollSummary),
+      has_burnout: Boolean(burnoutSummary),
+      has_coverage: Boolean(coverageSummary),
+    });
+  }, [burnoutSummary, coverageSummary, pageLoading, payrollSummary, reportData, trackOnce]);
 
   const { mutate: lockPayrollPeriod } = useConvexMutation(api.payroll.lockPayrollPeriod, {
     successMessage: "Period locked",
@@ -293,6 +307,19 @@ export function ReportsPage() {
         sites={sites.map((site) => ({ id: String(site._id), name: site.name }))}
         onSiteFilterChange={setSiteFilter}
         onExport={() => {
+          void track("reports_csv_exported", {
+            sections_included: [
+              "leave_status",
+              "leave_type",
+              "attendance",
+              "monthly_leave_trends",
+              "analytics",
+              "payroll",
+              "burnout",
+              "coverage",
+            ],
+            site_id: siteFilter === "all" ? null : siteFilter,
+          });
           exportReportsCsv({
             attendanceData,
             analyticsSummary,

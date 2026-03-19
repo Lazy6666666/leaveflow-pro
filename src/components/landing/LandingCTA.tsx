@@ -3,8 +3,11 @@ import React from "react";
 import { motion } from "framer-motion";
 import { ArrowUpRight } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 export const LandingCTA = () => {
+  const { track } = useAnalytics();
+
   return (
     <section className="relative bg-[#1A1815] py-24 md:py-40 overflow-hidden">
       {/* Background patterns / mesh */}
@@ -52,6 +55,13 @@ export const LandingCTA = () => {
             >
               <Link
                 to="/auth/register"
+                onClick={() => {
+                  void track(
+                    "landing_cta_clicked",
+                    { cta_location: "final_cta_primary", target_path: "/auth/register" },
+                    { surface: "landing", path: "/" },
+                  );
+                }}
                 className="group relative flex items-center justify-between gap-8 pl-8 pr-2 py-2 bg-[#FDFBF7] text-[#1A1815] rounded-[2.5rem] active:scale-[0.98] transition-all duration-500 ease-premium shadow-[0_20px_40px_-12px_rgba(0,0,0,0.3)] hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.4)]"
               >
                 <span className="text-sm uppercase font-bold tracking-[0.2em]">Start Trial</span>
@@ -60,7 +70,17 @@ export const LandingCTA = () => {
                 </div>
               </Link>
               
-              <a href="#product" className="group flex items-center gap-2 text-[#FDFBF7]/40 hover:text-[#FDFBF7] transition-all duration-500 text-xs uppercase font-bold tracking-widest">
+              <a
+                href="#product"
+                onClick={() => {
+                  void track(
+                    "landing_cta_clicked",
+                    { cta_location: "final_cta_secondary", target_path: "#product" },
+                    { surface: "landing", path: "/" },
+                  );
+                }}
+                className="group flex items-center gap-2 text-[#FDFBF7]/40 hover:text-[#FDFBF7] transition-all duration-500 text-xs uppercase font-bold tracking-widest"
+              >
                 Explore Engine
                 <motion.span
                   animate={{ x: [0, 4, 0] }}

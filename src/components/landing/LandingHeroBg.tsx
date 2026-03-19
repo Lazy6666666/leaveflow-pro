@@ -11,6 +11,7 @@ import { cn } from "../../lib/utils";
 import { Badge } from "../ui/badge";
 import { IconArrowRight } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 const heroImages = [
   "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?q=80&w=1200",
@@ -122,6 +123,7 @@ const ApertureCard = ({
 
 export const LandingHeroBg = () => {
   const [mouseX, setMouseX] = useState(0);
+  const { track } = useAnalytics();
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -178,6 +180,13 @@ export const LandingHeroBg = () => {
         >
           <Link
             to="/auth/register"
+            onClick={() => {
+              void track(
+                "landing_cta_clicked",
+                { cta_location: "hero_primary", target_path: "/auth/register" },
+                { surface: "landing", path: "/" },
+              );
+            }}
             className="group relative inline-flex px-14 py-6 rounded-full bg-[#FDFBF7] text-[#1A1815] font-['DM_Sans'] text-xs font-black uppercase tracking-[0.3em] overflow-hidden transition-all duration-700 hover:shadow-[0_20px_40px_rgba(201,169,98,0.4)]"
           >
             <span className="relative z-10 flex items-center gap-3">
@@ -188,6 +197,13 @@ export const LandingHeroBg = () => {
         </motion.div>
         <a
           href="#engine"
+          onClick={() => {
+            void track(
+              "landing_cta_clicked",
+              { cta_location: "hero_secondary", target_path: "#engine" },
+              { surface: "landing", path: "/" },
+            );
+          }}
           className="text-[11px] uppercase tracking-[0.35em] font-black text-[#FDFBF7]/50 hover:text-[#FDFBF7] transition-colors duration-500"
         >
           View Infrastructure

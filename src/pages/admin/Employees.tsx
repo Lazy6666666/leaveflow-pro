@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,6 +33,7 @@ interface Department { id: string; name: string; }
 interface Site { id: string; name: string; }
 
 const Employees = () => {
+  const { sessionId, roleScope, surface, trackOnce } = useAnalytics();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
   const [roles, setRoles] = useState<UserRole[]>([]);
@@ -57,6 +59,16 @@ const Employees = () => {
   };
 
   useEffect(() => { fetchAll().finally(() => setPageLoading(false)); }, []);
+
+  useEffect(() => {
+    if (pageLoading) {
+      return;
+    }
+
+    void trackOnce("employees_page_viewed", "employees_page_viewed", {
+      employee_count: employees.length,
+    });
+  }, [employees.length, pageLoading, trackOnce]);
 
   const getRoles = (userId: string) => roles.filter((r) => r.user_id === userId).map((r) => r.role);
   const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(employees, 10);
@@ -91,6 +103,17 @@ const Employees = () => {
     if (!editEmployee) return;
     setSaving(true);
     try {
+      const changedFields = [
+        editEmployee.department_id !== (editDeptId || null) ? "department_id" : null,
+        editEmployee.site_id !== (editSiteId || null) ? "site_id" : null,
+        editEmployee.manager_id !== (editManagerId || null) ? "manager_id" : null,
+        (editEmployee.hourly_rate ?? null) !== (editHourlyRate.trim() ? Number(editHourlyRate) : null) ? "hourly_rate" : null,
+        (editEmployee.base_salary ?? null) !== (editBaseSalary.trim() ? Number(editBaseSalary) : null) ? "base_salary" : null,
+        !getRoles(editEmployee.id).includes(editRole) || getRoles(editEmployee.id).length !== (editRole === "hr_admin" ? 3 : editRole === "manager" ? 2 : 1)
+          ? "role"
+          : null,
+      ].filter((value): value is string => Boolean(value));
+
       await convex.mutation(api.admin.updateEmployee, {
         employeeId: editEmployee.id,
         departmentId: editDeptId || undefined,
@@ -99,6 +122,13 @@ const Employees = () => {
         hourlyRate: editHourlyRate.trim() ? Number(editHourlyRate) : undefined,
         baseSalary: editBaseSalary.trim() ? Number(editBaseSalary) : undefined,
         role: editRole,
+        analytics: {
+          sessionId,
+          roleScope,
+          surface,
+          path: "/admin/hr-operations",
+          changedFields,
+        },
       });
       toast.success("Employee updated");
       setEditEmployee(null);

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +61,7 @@ function formatUpdatedAt(value: number) {
 }
 
 const Policies = () => {
+  const { sessionId, roleScope, surface, trackOnce } = useAnalytics();
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [policyDocuments, setPolicyDocuments] = useState<PolicyDocumentSummary[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
@@ -98,6 +100,17 @@ const Policies = () => {
     Promise.all([fetchLeaveTypes(), fetchPolicyDocuments()]).finally(() => setPageLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (pageLoading) {
+      return;
+    }
+
+    void trackOnce("policies_page_viewed", "policies_page_viewed", {
+      policy_count: leaveTypes.length,
+      document_count: policyDocuments.length,
+    });
+  }, [leaveTypes.length, pageLoading, policyDocuments.length, trackOnce]);
+
   if (pageLoading) {
     return (
       <div className="space-y-6">
@@ -133,6 +146,12 @@ const Policies = () => {
         annualAllocation: allocation,
         carryForwardLimit: carryForward,
         isActive,
+        analytics: {
+          sessionId,
+          roleScope,
+          surface,
+          path: "/admin/system",
+        },
       });
       toast.success(editingLeaveType ? "Leave type updated" : "Leave type created");
       setLeaveDialogOpen(false);

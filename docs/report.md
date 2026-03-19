@@ -1,6 +1,6 @@
 ﻿# BALANCE Project Status Report
 
-Last updated: 2026-03-17
+Last updated: 2026-03-19
 
 This report summarizes delivered work and the remaining roadmap items for the BALANCE attendance + roster track in `leaveflow-pro/`.
 
@@ -135,8 +135,8 @@ Important note:
 Remaining work buckets (source: `leaveflow-pro/docs/balance-vs-truein-master-plan.md`):
 - Production readiness: finish the production environment rollout (Clerk/Convex/Pages/Sentry/Puter), document rollback, and re-verify the full set of core flows on real devices.
 - Roadmap work packages: complete Payroll exports + review (H), Multi-site operations (G), AI attendance copilot follow-through (I), and Identity verification + final hardening (E/P).
-- KPI instrumentation: add reliability/trust/ops/AI KPIs so launch decisions can be data-driven (not anecdote-driven).
-- Engineering/product gates: ensure typecheck + tests + manual prod-flow verification are executed for each release, and that primary success/failure paths have analytics.
+- KPI instrumentation: core landing/auth/leave/attendance/AI/HR events are now emitted; remaining work is manager/notification/read-only adoption coverage plus the KPI dashboards and audit sign-off.
+- Engineering/product gates: ensure typecheck + tests + manual prod-flow verification are executed for each release, and that the remaining manager/notification/read-only paths are covered by analytics.
 
 Concrete production items still pending (high level):
 - Production auth + role routes: verify sign-in/out, role-based routes for employee/manager/hr_admin, and onboarding webhook provisioning.
@@ -166,8 +166,9 @@ Status:
 
 ### Sprint 9 - Work Package I: AI Attendance Copilot
 
-- Backend: Implement I1-I6 (extend `leaveflow-pro/convex/assistant.ts` with attendance analysis tools).
+- Backend: I1-I6 are implemented in `leaveflow-pro/convex/assistant.ts` (attendance anomalies, biometrics sync explanation, payroll delta, staffing/coverage recommendations, and policy-aware answers).
 - Frontend: I7 implemented (refactored `leaveflow-pro/src/components/AIChatPanel.tsx` into `leaveflow-pro/src/components/ai-chat/**` with `useAIChatController` and presentational components; behavior preserved), and I8 now opens the admin AI panel with a record-specific attendance review prompt from flagged attendance rows.
+- Remaining: validate the AI guidance flow against production data and decide which AI success/follow-through KPIs should be release-gating.
 
 ### Sprint 10 - Work Package E: Identity Verification + Final Production Hardening
 

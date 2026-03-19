@@ -2,11 +2,17 @@
 
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { LandingCTA } from "./LandingCTA";
 import { LandingFeatures } from "./LandingFeatures";
 import { LandingHeroBg } from "./LandingHeroBg";
+
+vi.mock("@/hooks/useAnalytics", () => ({
+  useAnalytics: () => ({
+    track: vi.fn(),
+  }),
+}));
 
 const renderWithRouter = (ui: React.ReactElement) =>
   render(

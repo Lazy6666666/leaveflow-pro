@@ -218,6 +218,12 @@ export const saveLeaveType = mutation({
     annualAllocation: v.number(),
     carryForwardLimit: v.number(),
     isActive: v.boolean(),
+    analytics: v.optional(v.object({
+      sessionId: v.string(),
+      path: v.optional(v.string()),
+      roleScope: v.optional(v.string()),
+      surface: v.string(),
+    })),
   },
   handler: async (ctx, args) => {
     const { identity } = await requireAdmin(ctx);
@@ -237,6 +243,20 @@ export const saveLeaveType = mutation({
         changedBy: identity.subject,
         newData: await ctx.db.get(leaveTypeId),
       });
+      if (args.analytics) {
+        await insertAnalyticsEvent(ctx, {
+          eventName: "leave_policy_saved",
+          sessionId: args.analytics.sessionId,
+          userId: identity.subject,
+          roleScope: args.analytics.roleScope,
+          path: args.analytics.path,
+          surface: args.analytics.surface,
+          properties: {
+            is_active: args.isActive,
+            allocation_days: args.annualAllocation,
+          },
+        });
+      }
       return { id: leaveTypeId };
     }
 
@@ -250,6 +270,20 @@ export const saveLeaveType = mutation({
       oldData: current,
       newData: { ...current, ...payload },
     });
+    if (args.analytics) {
+      await insertAnalyticsEvent(ctx, {
+        eventName: "leave_policy_saved",
+        sessionId: args.analytics.sessionId,
+        userId: identity.subject,
+        roleScope: args.analytics.roleScope,
+        path: args.analytics.path,
+        surface: args.analytics.surface,
+        properties: {
+          is_active: args.isActive,
+          allocation_days: args.annualAllocation,
+        },
+      });
+    }
     return { id: args.leaveTypeId };
   },
 });
@@ -296,6 +330,13 @@ export const updateEmployee = mutation({
     hourlyRate: v.optional(v.number()),
     baseSalary: v.optional(v.number()),
     role: appRoleValidator,
+    analytics: v.optional(v.object({
+      sessionId: v.string(),
+      path: v.optional(v.string()),
+      roleScope: v.optional(v.string()),
+      surface: v.string(),
+      changedFields: v.array(v.string()),
+    })),
   },
   handler: async (ctx, args) => {
     const { identity } = await requireAdmin(ctx);
@@ -345,6 +386,21 @@ export const updateEmployee = mutation({
       oldData: profile,
       newData: { ...profile, ...profilePatch },
     });
+
+    if (args.analytics) {
+      await insertAnalyticsEvent(ctx, {
+        eventName: "employee_updated",
+        sessionId: args.analytics.sessionId,
+        userId: identity.subject,
+        roleScope: args.analytics.roleScope,
+        path: args.analytics.path,
+        surface: args.analytics.surface,
+        properties: {
+          changed_fields: args.analytics.changedFields,
+          target_role: args.role,
+        },
+      });
+    }
 
     return { ok: true };
   },
