@@ -82,6 +82,10 @@ export const LandingCTA = () => {
                 <img
                   src="https://images.unsplash.com/photo-1557804506-669a67965ba0?auto=format&fit=crop&q=80&w=400&h=600"
                   alt="Professional collaboration"
+                  width="400"
+                  height="600"
+                  loading="lazy"
+                  decoding="async"
                   className="aspect-[2/3] w-full object-cover"
                 />
               </motion.div>
@@ -95,6 +99,10 @@ export const LandingCTA = () => {
                 <img
                   src="https://images.unsplash.com/photo-1485217988980-11786ced9454?auto=format&fit=crop&q=80&w=400&h=600"
                   alt="Enterprise strategy"
+                  width="400"
+                  height="600"
+                  loading="lazy"
+                  decoding="async"
                   className="aspect-[2/3] w-full object-cover"
                 />
               </motion.div>
@@ -105,6 +113,10 @@ export const LandingCTA = () => {
                 <img
                   src="https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&q=80&w=400&h=600"
                   alt="Modern office"
+                  width="400"
+                  height="600"
+                  loading="lazy"
+                  decoding="async"
                   className="aspect-[2/3] w-full object-cover"
                 />
               </motion.div>
@@ -118,6 +130,10 @@ export const LandingCTA = () => {
                 <img
                   src="https://images.unsplash.com/photo-1670272504528-790c24957dda?auto=format&fit=crop&q=80&w=400&h=600"
                   alt="Human capital"
+                  width="400"
+                  height="600"
+                  loading="lazy"
+                  decoding="async"
                   className="aspect-[2/3] w-full object-cover"
                 />
               </motion.div>
@@ -128,6 +144,10 @@ export const LandingCTA = () => {
                 <img
                   src="https://images.unsplash.com/photo-1670272505284-8faba1c31f7d?auto=format&fit=crop&q=80&w=400&h=600"
                   alt="Growth"
+                  width="400"
+                  height="600"
+                  loading="lazy"
+                  decoding="async"
                   className="aspect-[2/3] w-full object-cover"
                 />
               </motion.div>

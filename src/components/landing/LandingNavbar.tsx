@@ -72,8 +72,7 @@ export const LandingNavbar = () => {
               <motion.a
                 key={link.name}
                 href={link.href}
-                onClick={(e) => {
-                  e.preventDefault();
+                onClick={() => {
                   setActiveItem(link.name);
                 }}
                 className={`relative px-4 py-2 text-[10px] font-bold uppercase tracking-[0.2em] transition-colors duration-500 ${
@@ -146,8 +145,9 @@ export const LandingNavbar = () => {
           >
             <nav className="flex flex-col gap-4">
               {navLinks.map((link, i) => (
-                <motion.button
+                <motion.a
                   key={link.name}
+                  href={link.href}
                   onClick={() => {
                     setActiveItem(link.name);
                     setIsOpen(false);
@@ -168,7 +168,7 @@ export const LandingNavbar = () => {
                       activeItem === link.name ? "text-[#C9A962] translate-x-1" : "text-[#1A1815]/20"
                     }`}
                   />
-                </motion.button>
+                </motion.a>
               ))}
               
               <motion.div
