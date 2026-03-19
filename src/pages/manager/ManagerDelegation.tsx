@@ -15,6 +15,7 @@ import { UserCheck, Plus, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getErrorMessage } from "@/lib/errors";
 import type { ManagerDelegationId } from "@/lib/convexTypes";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 interface Delegation {
   id: ManagerDelegationId;
@@ -30,6 +31,7 @@ interface ProfileMin { id: string; full_name: string | null; email: string | nul
 
 const ManagerDelegation = () => {
   const { user, hasExplicitRole } = useAuth();
+  const { sessionId, roleScope, surface } = useAnalytics();
   const [delegations, setDelegations] = useState<Delegation[]>([]);
   const [profiles, setProfiles] = useState<ProfileMin[]>([]);
   const [managerCandidates, setManagerCandidates] = useState<ProfileMin[]>([]);
@@ -86,6 +88,12 @@ const ManagerDelegation = () => {
         delegateId,
         startDate,
         endDate,
+        analytics: {
+          sessionId,
+          roleScope,
+          surface,
+          path: "/manager/delegation",
+        },
       });
       toast.success("Delegation created");
       setDelegateId(""); setStartDate(""); setEndDate("");
@@ -98,7 +106,15 @@ const ManagerDelegation = () => {
 
   const handleDeactivate = async (id: ManagerDelegationId) => {
     try {
-      await convex.mutation(api.manager.deactivateDelegation, { delegationId: id });
+      await convex.mutation(api.manager.deactivateDelegation, {
+        delegationId: id,
+        analytics: {
+          sessionId,
+          roleScope,
+          surface,
+          path: "/manager/delegation",
+        },
+      });
       toast.success("Delegation deactivated");
       fetchData();
     } catch (error) {

@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { PageHeaderSkeleton, BalanceCardSkeleton } from "@/components/skeletons";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useEffect } from "react";
 
 interface LeaveBalance {
   balance: number;
@@ -16,6 +18,7 @@ interface LeaveBalance {
 const MyLeave = () => {
   const { user } = useAuth();
   const currentYear = new Date().getFullYear();
+  const { trackOnce } = useAnalytics();
 
   const { data: balances = [], isLoading } = useQuery({
     queryKey: ["leave-balances", user?.id, currentYear],
@@ -23,6 +26,15 @@ const MyLeave = () => {
     enabled: !!user,
     staleTime: 5 * 60 * 1000,
   });
+
+  useEffect(() => {
+    if (!isLoading) {
+      void trackOnce(`my_leave_viewed:${currentYear}`, "my_leave_viewed", {
+        balance_count: balances.length,
+        current_year: currentYear,
+      }, { surface: "leave", path: "/my-leave" });
+    }
+  }, [balances.length, currentYear, isLoading, trackOnce]);
 
   if (isLoading) return (
     <div className="space-y-6">

@@ -8,6 +8,7 @@ import { ChevronLeft, ChevronRight, CalendarRange } from "lucide-react";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isWithinInterval, parseISO, addMonths, subMonths, isToday } from "date-fns";
 import { PageHeaderSkeleton, CardSkeleton } from "@/components/skeletons";
 import type { FunctionReturnType } from "convex/server";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 type TeamLeave = FunctionReturnType<typeof api.leave.getTeamCalendar>[number];
 
@@ -15,6 +16,7 @@ const TeamCalendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [leaves, setLeaves] = useState<TeamLeave[]>([]);
   const [pageLoading, setPageLoading] = useState(true);
+  const { trackOnce } = useAnalytics();
 
   useEffect(() => {
     const fetchLeaves = async () => {
@@ -25,6 +27,15 @@ const TeamCalendar = () => {
     };
     fetchLeaves().finally(() => setPageLoading(false));
   }, [currentMonth]);
+
+  useEffect(() => {
+    if (!pageLoading) {
+      void trackOnce(`team_calendar_viewed:${format(currentMonth, "yyyy-MM")}`, "team_calendar_viewed", {
+        month: format(currentMonth, "yyyy-MM"),
+        visible_event_count: leaves.length,
+      }, { surface: "manager", path: "/manager/team-calendar" });
+    }
+  }, [currentMonth, leaves.length, pageLoading, trackOnce]);
 
   if (pageLoading) return (
     <div className="space-y-6">

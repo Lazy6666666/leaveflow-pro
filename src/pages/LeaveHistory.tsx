@@ -16,6 +16,8 @@ import PaginationControls from "@/components/PaginationControls";
 import { buildCSV, downloadCSV } from "@/lib/csv";
 import { getErrorMessage } from "@/lib/errors";
 import type { LeaveRequestId } from "@/lib/convexTypes";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useEffect } from "react";
 
 interface LeaveRequest {
   id: LeaveRequestId;
@@ -31,6 +33,7 @@ interface LeaveRequest {
 const LeaveHistory = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { trackOnce } = useAnalytics();
 
   const { data: requests = [], isLoading } = useQuery({
     queryKey: ["leave-history", user?.id],
@@ -38,6 +41,14 @@ const LeaveHistory = () => {
     enabled: !!user,
     staleTime: 2 * 60 * 1000,
   });
+
+  useEffect(() => {
+    if (!isLoading) {
+      void trackOnce("leave_history_viewed", "leave_history_viewed", {
+        request_count: requests.length,
+      }, { surface: "leave", path: "/leave-history" });
+    }
+  }, [isLoading, requests.length, trackOnce]);
 
   const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(requests, 10);
 

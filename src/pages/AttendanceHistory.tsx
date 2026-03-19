@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import PaginationControls from "@/components/PaginationControls";
 import { SelfieLightbox } from "@/components/attendance/SelfieLightbox";
 import { useConvexQuery } from "@/hooks/useConvexQuery";
 import type { LatLng, StorageId } from "@/lib/convexTypes";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 type AttendanceLog = {
   id: string;
@@ -28,6 +30,7 @@ type AttendanceLog = {
 
 const AttendanceHistory = () => {
   const { user } = useAuth();
+  const { trackOnce } = useAnalytics();
   const [monthOffset, setMonthOffset] = useState("0");
   const [lightboxPath, setLightboxPath] = useState<StorageId | null>(null);
   const monthOffsetNumber = useMemo(() => Number.parseInt(monthOffset, 10), [monthOffset]);
@@ -39,6 +42,15 @@ const AttendanceHistory = () => {
   );
   const logs = (logsData as AttendanceLog[] | null) ?? [];
   const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(logs, 20);
+
+  useEffect(() => {
+    if (!loading) {
+      void trackOnce(`attendance_history_viewed:${monthOffsetNumber}`, "attendance_history_viewed", {
+        month_offset: monthOffsetNumber,
+        log_count: logs.length,
+      }, { surface: "attendance", path: "/attendance-history" });
+    }
+  }, [loading, logs.length, monthOffsetNumber, trackOnce]);
 
   const statusColor = (s: string) => {
     switch (s) {

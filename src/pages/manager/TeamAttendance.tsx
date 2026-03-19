@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { format, subDays } from "date-fns";
 import { Users, Clock } from "lucide-react";
 import type { FunctionReturnType } from "convex/server";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 type TeamLog = FunctionReturnType<typeof api.attendance.getTeamAttendance>[number];
 
@@ -15,6 +16,7 @@ const TeamAttendance = () => {
   const [logs, setLogs] = useState<TeamLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState("0");
+  const { trackOnce } = useAnalytics();
 
   useEffect(() => {
     const fetchTeam = async () => {
@@ -25,6 +27,15 @@ const TeamAttendance = () => {
     };
     fetchTeam();
   }, [selectedDate]);
+
+  useEffect(() => {
+    if (!loading) {
+      void trackOnce(`team_attendance_viewed:${selectedDate}`, "team_attendance_viewed", {
+        day_offset: Number.parseInt(selectedDate, 10),
+        visible_employee_count: logs.length,
+      }, { surface: "manager", path: "/manager/team-attendance" });
+    }
+  }, [loading, logs.length, selectedDate, trackOnce]);
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return "?";

@@ -2,6 +2,7 @@ import { useId, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useMutation, useQuery } from "convex/react";
 import { Bell, CheckCheck } from "lucide-react";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -24,6 +25,7 @@ const NotificationBell = () => {
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const headingId = useId();
+  const { track } = useAnalytics();
   const notifications = (useQuery(api.notifications.listCurrent, user ? {} : "skip") ?? []) as AppNotification[];
   const markReadMutation = useMutation(api.notifications.markRead);
   const markAllReadMutation = useMutation(api.notifications.markAllRead);
@@ -40,11 +42,18 @@ const NotificationBell = () => {
   const markAllRead = async () => {
     if (!notifications.some((notification) => !notification.is_read)) return;
     await markAllReadMutation({});
+    void track("notifications_mark_all_read", {
+      unread_count: unreadCount,
+    });
   };
 
   const handleNotificationClick = async (notification: AppNotification) => {
     if (notification.is_read) return;
     await markAsRead(notification.id);
+    void track("notification_marked_read", {
+      notification_type: notification.type,
+      notification_age_bucket: getNotificationAgeBucket(notification.created_at),
+    });
   };
 
   const typeIcon = (type: string) => {
@@ -57,7 +66,17 @@ const NotificationBell = () => {
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover
+      open={open}
+      onOpenChange={(nextOpen) => {
+        setOpen(nextOpen);
+        if (nextOpen) {
+          void track("notification_center_opened", {
+            unread_count: unreadCount,
+          });
+        }
+      }}
+    >
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
@@ -131,5 +150,15 @@ const NotificationBell = () => {
     </Popover>
   );
 };
+
+function getNotificationAgeBucket(createdAt: string) {
+  const ageMs = Date.now() - new Date(createdAt).getTime();
+  const ageHours = ageMs / 3_600_000;
+
+  if (ageHours < 1) return "under_1h";
+  if (ageHours < 24) return "under_24h";
+  if (ageHours < 72) return "under_72h";
+  return "72h_plus";
+}
 
 export default NotificationBell;
