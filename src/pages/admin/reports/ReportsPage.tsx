@@ -20,6 +20,7 @@ import { PayrollPeriodsTab } from "./PayrollPeriodsTab";
 import { ReportsHeader } from "./ReportsHeader";
 
 type PayrollPeriod = FunctionReturnType<typeof api.payroll.getPayrollPeriods>[number];
+type PayrollExportRecord = FunctionReturnType<typeof api.payroll.getPayrollExportHistory>[number];
 type SiteOption = FunctionReturnType<typeof api.sites.listSites>[number];
 
 export function ReportsPage() {
@@ -61,6 +62,7 @@ export function ReportsPage() {
       burnoutData: [api.insights.getBurnoutSummary, { siteId: siteFilter === "all" ? undefined : siteFilter }],
       coverageData: [api.insights.checkCoverageConflict, { ...coverageRange, siteId: siteFilter === "all" ? undefined : siteFilter }],
       periodsData: [api.payroll.getPayrollPeriods, {}],
+      exportHistoryData: [api.payroll.getPayrollExportHistory, { siteId: siteFilter === "all" ? undefined : siteFilter }],
       sitesData: [api.sites.listSites, {}],
     },
     [coverageRange, payrollRange, siteFilter],
@@ -76,6 +78,7 @@ export function ReportsPage() {
   const burnoutSummary = (data.burnoutData ?? null) as BurnoutSummary | null;
   const coverageSummary = (data.coverageData ?? null) as CoverageSummary | null;
   const payrollPeriods = (data.periodsData ?? []) as PayrollPeriod[];
+  const exportHistory = (data.exportHistoryData ?? []) as PayrollExportRecord[];
   const sites = (data.sitesData ?? []) as SiteOption[];
 
   const lastErrorToastRef = useRef<string | null>(null);
@@ -342,6 +345,7 @@ export function ReportsPage() {
         <TabsContent value="payroll">
           <PayrollPeriodsTab
             creatingPeriod={creatingPeriod}
+            exportHistory={exportHistory}
             lockingPeriodId={lockingPeriodId}
             payrollPeriods={payrollPeriods}
             siteId={siteFilter === "all" ? undefined : siteFilter}

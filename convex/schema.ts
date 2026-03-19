@@ -374,6 +374,22 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_periodId", ["periodId"]).index("by_employeeId", ["employeeId"]),
 
+  payrollExports: defineTable({
+    periodId: v.optional(v.id("payrollPeriods")),
+    startDate: v.string(),
+    endDate: v.string(),
+    siteId: v.optional(v.string()),
+    exportedBy: v.string(),
+    format: v.union(v.literal("csv")),
+    fileName: v.string(),
+    rowCount: v.number(),
+    totalGrossPay: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_createdAt", ["createdAt"])
+    .index("by_periodId", ["periodId"])
+    .index("by_siteId", ["siteId"]),
+
   sites: defineTable({
     name: v.string(),
     address: v.optional(v.string()),

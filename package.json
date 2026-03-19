@@ -15,6 +15,7 @@
     "preview": "vite preview",
     "resend:template:create": "node scripts/resend_templates_create.mjs --publish",
     "prod:check": "node scripts/prod_readiness_check.mjs",
+    "prod:check:strict": "node scripts/prod_readiness_check.mjs --strict-production",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test"

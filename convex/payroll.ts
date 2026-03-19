@@ -13,6 +13,7 @@ import {
 import type { Doc } from "./_generated/dataModel";
 import type { AttendanceLogDoc, AttendanceSettingsDoc, DepartmentDoc, LeaveRequestDoc, LeaveTypeDoc, ProfileDoc, ReaderCtx } from "./lib/types";
 import { collectEmployeeIdsForSiteScope, filterProfilesBySiteScope, filterRecordsBySiteScope } from "./siteScope";
+import { buildPayrollExceptions, calculatePayrollOvertime } from "./payrollHelpers";
 
 type PayrollEmployeeSummary = {
   employeeId: string;
@@ -28,6 +29,8 @@ type PayrollEmployeeSummary = {
   unpaidLeaveDays: number;
   payableHours: number;
   payableDaysEquivalent: number;
+  overtimeHours: number;
+  overtimePremiumPay: number;
   grossPay: number | null;
 };
 
@@ -47,56 +50,19 @@ type PayrollSummaryResult = {
   };
 };
 
-type PayrollExceptionSeed = {
-  employeeId: string;
-  exceptionType: string;
-  description: string;
-};
-
 type PayrollExceptionDoc = Doc<"payrollExceptions">;
+type PayrollExportDoc = Doc<"payrollExports">;
 type PayrollSiteScope = {
   accessibleSiteIds: string[] | null;
   siteId?: string;
 };
-
-function buildPayrollExceptions(employees: PayrollEmployeeSummary[]): PayrollExceptionSeed[] {
-  const out: PayrollExceptionSeed[] = [];
-
-  for (const employee of employees) {
-    if (employee.rateSource === "missing") {
-      out.push({
-        employeeId: employee.employeeId,
-        exceptionType: "missing_compensation_rate",
-        description: "No hourly rate or base salary is set for this employee. Gross pay cannot be estimated reliably.",
-      });
-    }
-
-    if (employee.grossPay === null) {
-      out.push({
-        employeeId: employee.employeeId,
-        exceptionType: "missing_gross_pay",
-        description: "Gross pay could not be calculated for this employee (missing or invalid compensation inputs).",
-      });
-    }
-
-    if (employee.payableHours === 0 && (employee.workedHours > 0 || employee.paidLeaveDays > 0)) {
-      out.push({
-        employeeId: employee.employeeId,
-        exceptionType: "zero_payable_hours",
-        description: "Payable hours resolved to 0 even though worked hours or paid leave days exist. Verify attendance settings and leave allocation logic.",
-      });
-    }
-  }
-
-  return out;
-}
 
 async function computePayrollSummary(
   ctx: ReaderCtx,
   args: { startDate: string; endDate: string },
   siteScope: PayrollSiteScope = { accessibleSiteIds: null },
 ): Promise<PayrollSummaryResult> {
-  const [profiles, departments, attendanceLogs, leaveRequests, leaveTypes, settings] = await Promise.all([
+  const [profiles, departments, attendanceLogs, leaveRequests, leaveTypes, settings, payrollMapping] = await Promise.all([
     ctx.db.query("profiles").collect() as Promise<ProfileDoc[]>,
     ctx.db.query("departments").collect() as Promise<DepartmentDoc[]>,
     ctx.db.query("attendanceLogs").collect() as Promise<AttendanceLogDoc[]>,
@@ -106,6 +72,10 @@ async function computePayrollSummary(
       .query("attendanceSettings")
       .withIndex("by_singleton", (q) => q.eq("singleton", "default"))
       .unique() as Promise<AttendanceSettingsDoc | null>,
+    ctx.db
+      .query("payrollMappingConfig")
+      .withIndex("by_singleton", (q) => q.eq("singleton", "global"))
+      .first(),
   ]);
   const scopedProfiles = filterProfilesBySiteScope(
     profiles,
@@ -133,6 +103,8 @@ async function computePayrollSummary(
   const standardDailyHours = getStandardDailyHours(settings?.workStartTime ?? "09:00", settings?.workEndTime ?? "17:00");
   const halfDayHours = settings?.halfDayHours ?? standardDailyHours / 2;
   const scheduledWorkdays = countWeekdaysInRange(args.startDate, args.endDate);
+  const overtimeThresholdHours = payrollMapping?.overtimeThresholdHours ?? DEFAULT_PAYROLL_MAPPING.overtimeThresholdHours;
+  const overtimeMultiplier = payrollMapping?.overtimeMultiplier ?? DEFAULT_PAYROLL_MAPPING.overtimeMultiplier;
 
   const attendanceByEmployee = new Map<string, AttendanceLogDoc[]>();
   for (const log of scopedAttendanceLogsInRange) {
@@ -186,11 +158,19 @@ async function computePayrollSummary(
       const payableHours = Number((workedHours + paidLeaveDays * standardDailyHours).toFixed(2));
       const workedDaysEquivalent = Number((workedHours / standardDailyHours).toFixed(2));
       const payableDaysEquivalent = Number((workedDaysEquivalent + paidLeaveDays).toFixed(2));
+      const { overtimeHours, overtimePremiumPay } = calculatePayrollOvertime(
+        employeeLogs,
+        standardDailyHours,
+        halfDayHours,
+        overtimeThresholdHours,
+        profile.hourlyRate ?? null,
+        overtimeMultiplier,
+      );
 
       let grossPay: number | null = null;
       let rateSource: "hourly_rate" | "base_salary" | "missing" = "missing";
       if (typeof profile.hourlyRate === "number") {
-        grossPay = Number((payableHours * profile.hourlyRate).toFixed(2));
+        grossPay = Number((payableHours * profile.hourlyRate + overtimePremiumPay).toFixed(2));
         rateSource = "hourly_rate";
       } else if (typeof profile.baseSalary === "number") {
         const proratedShare = scheduledWorkdays > 0 ? payableDaysEquivalent / scheduledWorkdays : 0;
@@ -212,6 +192,8 @@ async function computePayrollSummary(
         unpaidLeaveDays,
         payableHours,
         payableDaysEquivalent,
+        overtimeHours,
+        overtimePremiumPay,
         grossPay,
       };
     })
@@ -282,6 +264,8 @@ export const getPayrollSummary = query({
       ...summary,
       assumptions: {
         hourlyRateFallbackHoursPerMonth: DEFAULT_MONTHLY_WORK_HOURS,
+        overtimeThresholdHours: DEFAULT_PAYROLL_MAPPING.overtimeThresholdHours,
+        overtimeMultiplier: DEFAULT_PAYROLL_MAPPING.overtimeMultiplier,
         unpaidLeaveRule:
           "Leave types with names matching unpaid/without pay/lwop/lop are excluded from payable leave days.",
       },
@@ -407,25 +391,104 @@ export const resolvePayrollException = mutation({
   },
 });
 
+export const getPayrollExportHistory = query({
+  args: {
+    siteId: v.optional(v.string()),
+    periodId: v.optional(v.id("payrollPeriods")),
+  },
+  handler: async (ctx, args) => {
+    const { identity, roles } = await requireAnyRole(ctx, ["hr_admin"]);
+    const accessibleSiteIds = await getAccessibleSiteIds(ctx, identity.subject, roles);
+    assertRequestedSiteInScope(args.siteId, accessibleSiteIds);
+
+    const allExports = args.periodId
+      ? await ctx.db.query("payrollExports").withIndex("by_periodId", (q) => q.eq("periodId", args.periodId)).order("desc").collect()
+      : await ctx.db.query("payrollExports").withIndex("by_createdAt").order("desc").take(50);
+
+    return (allExports as PayrollExportDoc[])
+      .filter((record) => !args.siteId || record.siteId === args.siteId)
+      .map((record) => ({
+        _id: record._id,
+        periodId: record.periodId,
+        startDate: record.startDate,
+        endDate: record.endDate,
+        siteId: record.siteId ?? null,
+        exportedBy: record.exportedBy,
+        format: record.format,
+        fileName: record.fileName,
+        rowCount: record.rowCount,
+        totalGrossPay: record.totalGrossPay,
+        createdAt: record.createdAt,
+      }));
+  },
+});
+
+export const recordPayrollExport = mutation({
+  args: {
+    periodId: v.optional(v.id("payrollPeriods")),
+    startDate: v.string(),
+    endDate: v.string(),
+    siteId: v.optional(v.string()),
+    format: v.union(v.literal("csv")),
+    fileName: v.string(),
+    rowCount: v.number(),
+    totalGrossPay: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const { identity, roles } = await requireAnyRole(ctx, ["hr_admin"]);
+    const accessibleSiteIds = await getAccessibleSiteIds(ctx, identity.subject, roles);
+    assertRequestedSiteInScope(args.siteId, accessibleSiteIds);
+
+    return ctx.db.insert("payrollExports", {
+      ...args,
+      exportedBy: identity.subject,
+      createdAt: Date.now(),
+    });
+  },
+});
+
 export const exportPayrollCsv = action({
-  args: { startDate: v.string(), endDate: v.string(), siteId: v.optional(v.string()) },
-  handler: async (ctx, args): Promise<string> => {
+  args: {
+    periodId: v.optional(v.id("payrollPeriods")),
+    startDate: v.string(),
+    endDate: v.string(),
+    siteId: v.optional(v.string()),
+  },
+  handler: async (ctx, args): Promise<{
+    csv: string;
+    employeeCount: number;
+    fileName: string;
+    rowCount: number;
+    totalGrossPay: number;
+  }> => {
     const data = await ctx.runQuery(api.payroll.getPayrollSummary, {
       startDate: args.startDate,
       endDate: args.endDate,
       siteId: args.siteId,
     });
-    const header = "Name,Department,Worked Hours,Paid Leave Days,Gross Pay";
+    const fileName = `payroll${args.siteId ? `-${args.siteId}` : ""}-${args.startDate}-${args.endDate}.csv`;
+    const header = "Name,Department,Rate Source,Worked Hours,Overtime Hours,Overtime Premium,Payable Hours,Paid Leave Days,Unpaid Leave Days,Gross Pay";
     const rows = data.employees.map((e) =>
       [
         `"${e.employeeName}"`,
         `"${e.departmentName ?? ""}"`,
+        e.rateSource,
         e.workedHours,
+        e.overtimeHours,
+        e.overtimePremiumPay,
+        e.payableHours,
         e.paidLeaveDays,
+        e.unpaidLeaveDays,
         e.grossPay ?? "",
       ].join(",")
     );
-    return [header, ...rows].join("\n");
+    return {
+      csv: [header, ...rows].join("\n"),
+      employeeCount: data.employees.length,
+      fileName,
+      rowCount: rows.length,
+      totalGrossPay: data.totals.grossPay,
+    };
   },
 });
 

@@ -100,6 +100,7 @@ Add a minimal product analytics layer that captures acquisition, activation, lea
 | `coverage_conflicts_viewed` | Coverage query result shown | `start_date`, `end_date`, `conflict_count` | `convex/insights.ts`, `src/pages/admin/Reports.tsx` |
 | `delegation_created` | Delegation succeeds | `duration_days`, `created_by_role` | `convex/manager.ts` |
 | `delegation_deactivated` | Deactivation succeeds | `delegation_age_days` | `convex/manager.ts` |
+| `payroll_exported` | Payroll CSV export succeeds | `period_id`, `site_id`, `row_count`, `employee_count`, `total_gross_pay`, `export_format` | `src/components/payroll/PayrollExportButton.tsx` |
 
 ### HR Admin Workflow
 
@@ -177,4 +178,3 @@ Keep product analytics separate from domain tables, but use common ids to join l
 - Events use a shared schema and naming convention
 - Session id is stable across a signed-in session
 - KPI dashboards can be computed without ambiguous business logic
-

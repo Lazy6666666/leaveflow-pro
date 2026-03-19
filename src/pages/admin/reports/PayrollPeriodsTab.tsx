@@ -8,9 +8,11 @@ import { PayrollExportButton } from "@/components/payroll/PayrollExportButton";
 import { api } from "@/lib/convexApi";
 
 type PayrollPeriod = FunctionReturnType<typeof api.payroll.getPayrollPeriods>[number];
+type PayrollExportRecord = FunctionReturnType<typeof api.payroll.getPayrollExportHistory>[number];
 
 type PayrollPeriodsTabProps = {
   creatingPeriod: boolean;
+  exportHistory: PayrollExportRecord[];
   lockingPeriodId: PayrollPeriod["_id"] | null;
   payrollPeriods: PayrollPeriod[];
   siteId?: string;
@@ -21,6 +23,7 @@ type PayrollPeriodsTabProps = {
 
 export function PayrollPeriodsTab({
   creatingPeriod,
+  exportHistory,
   lockingPeriodId,
   payrollPeriods,
   siteId,
@@ -28,6 +31,16 @@ export function PayrollPeriodsTab({
   onLockPeriod,
   onViewExceptions,
 }: PayrollPeriodsTabProps) {
+  const exportHistoryByPeriodId = new Map<string, PayrollExportRecord[]>();
+  for (const record of exportHistory) {
+    if (!record.periodId) {
+      continue;
+    }
+    const bucket = exportHistoryByPeriodId.get(record.periodId) ?? [];
+    bucket.push(record);
+    exportHistoryByPeriodId.set(record.periodId, bucket);
+  }
+
   return (
     <div className="mt-6 space-y-4">
       <div className="flex items-center justify-between">
@@ -46,6 +59,11 @@ export function PayrollPeriodsTab({
         payrollPeriods.map((period) => (
           <Card key={period._id}>
             <CardHeader className="pb-2">
+              {(() => {
+                const periodExports = exportHistoryByPeriodId.get(period._id) ?? [];
+                const latestExport = periodExports[0];
+
+                return (
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <CardTitle className="text-base">
@@ -60,9 +78,14 @@ export function PayrollPeriodsTab({
                       <Badge variant="outline">Open</Badge>
                     )}
                   </CardDescription>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {latestExport
+                      ? `Latest export ${new Date(latestExport.createdAt).toLocaleString()} • ${periodExports.length} saved export${periodExports.length === 1 ? "" : "s"}`
+                      : "No saved exports for this period yet."}
+                  </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  <PayrollExportButton startDate={period.startDate} endDate={period.endDate} siteId={siteId} />
+                  <PayrollExportButton periodId={period._id} startDate={period.startDate} endDate={period.endDate} siteId={siteId} />
 
                   {period.status === "locked" ? (
                     <Button size="sm" variant="outline" onClick={() => onViewExceptions(period)}>
@@ -79,6 +102,8 @@ export function PayrollPeriodsTab({
                   ) : null}
                 </div>
               </div>
+                );
+              })()}
             </CardHeader>
           </Card>
         ))

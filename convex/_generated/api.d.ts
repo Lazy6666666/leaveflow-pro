@@ -48,6 +48,7 @@ import type * as manager from "../manager.js";
 import type * as notificationScheduler from "../notificationScheduler.js";
 import type * as notifications from "../notifications.js";
 import type * as payroll from "../payroll.js";
+import type * as payrollHelpers from "../payrollHelpers.js";
 import type * as rag from "../rag.js";
 import type * as rosters from "../rosters.js";
 import type * as shifts from "../shifts.js";
@@ -102,6 +103,7 @@ declare const fullApi: ApiFromModules<{
   notificationScheduler: typeof notificationScheduler;
   notifications: typeof notifications;
   payroll: typeof payroll;
+  payrollHelpers: typeof payrollHelpers;
   rag: typeof rag;
   rosters: typeof rosters;
   shifts: typeof shifts;

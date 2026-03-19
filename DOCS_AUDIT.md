@@ -38,8 +38,8 @@ Work that was started but not completed.
 | `docs/staging-smoke-tests.md` | Doc is complete. Staging verified. Production run has not happened. |
 | `docs/prod-launch-audit.md` | Audit doc is accurate but the production go/no-go it describes has not been executed |
 | `docs/SUPABASE_MIGRATION_GAPS.md` | Migration is 95%+ done. Remaining: non-critical audit review on untouched low-risk mutations |
-| `docs/instrumentation-checklist.md` | Core landing/auth/leave/attendance/AI/HR instrumentation is wired. Remaining: manager notifications, P2 read-only adoption events, KPI dashboards, and release-signoff audit. |
-| `docs/product-measurement-audit.md` | Analytics layer is partially wired. Remaining: close the manager/notifications/read-only gaps and compute the launch KPIs from the emitted events. |
+| `docs/instrumentation-checklist.md` | Core landing/auth/leave/attendance/AI/HR instrumentation is wired. Remaining: KPI dashboards, payroll export KPI rollups, and release-signoff audit. |
+| `docs/product-measurement-audit.md` | Analytics layer is partially wired. Remaining: compute the launch KPIs from the emitted events and close the release-signoff audit. |
 | `docs/balance-vs-truein-master-plan.md` | Living roadmap. Still open: offline real-device verification, face verification end-to-end, payroll export formats, production auth flow verification |
 
 ---

@@ -140,7 +140,7 @@ Remaining work buckets (source: `leaveflow-pro/docs/balance-vs-truein-master-pla
 
 Concrete production items still pending (high level):
 - Production auth + role routes: verify sign-in/out, role-based routes for employee/manager/hr_admin, and onboarding webhook provisioning.
-- Production hosting + env alignment: Cloudflare Pages production deploy, `VITE_CONVEX_URL`/`VITE_CONVEX_SITE_URL` point to production, and production Sentry environment + DSN are set intentionally.
+- Production hosting + env alignment: Cloudflare Pages production deploy, `VITE_CONVEX_URL`/`VITE_CONVEX_SITE_URL` point to production, and production Sentry environment + DSN are set intentionally. `npm run prod:check:strict` now validates the production env matrix and currently flags a test Clerk key, `VITE_SENTRY_ENVIRONMENT=staging`, and missing `RESEND_FROM_EMAIL`.
 - Secrets and integrations: set Resend sender (`RESEND_FROM_EMAIL`) if email is intended to be live; confirm Convex backend envs match the documented matrix.
 - Monitoring/ops: confirm real production Sentry events, ensure operators can inspect webhook/assistant/email failures, and document rollback path.
 - Real-device verification: run the core attendance flows on Android Chrome + iPhone Safari (camera permissions, selfie capture, offline queue drain on reconnect), plus admin review/edit flows.
@@ -156,7 +156,8 @@ Note: F12 schedule compliance display is implemented locally; verify in staging 
 
 Status:
 - Implemented: Payroll period CRUD + locking, payroll summary calculation, CSV export action, and payroll exceptions review (exceptions are snapshotted when a period is locked, queryable per period, and resolvable) in `leaveflow-pro/convex/payroll.ts`, with UI surfaced in HR Admin Reports (locked periods expose an "Exceptions" drawer).
-- Remaining: deepen the exception taxonomy/rules, decide whether exports require retention/storage, and staging/production verification with real compensation + policy data.
+- Implemented follow-through: overtime-aware payroll summaries now include overtime premium logic for hourly staff, lock-time exceptions flag overtime/unpaid-leave review cases, and payroll exports are now recorded for retention/audit history.
+- Remaining: finalize export retention policy decisions and staging/production verification with real compensation + policy data.
 
 ### Sprint 8 - Work Package G: Multi-Site Operations
 
@@ -168,7 +169,7 @@ Status:
 
 - Backend: I1-I6 are implemented in `leaveflow-pro/convex/assistant.ts` (attendance anomalies, biometrics sync explanation, payroll delta, staffing/coverage recommendations, and policy-aware answers).
 - Frontend: I7 implemented (refactored `leaveflow-pro/src/components/AIChatPanel.tsx` into `leaveflow-pro/src/components/ai-chat/**` with `useAIChatController` and presentational components; behavior preserved), and I8 now opens the admin AI panel with a record-specific attendance review prompt from flagged attendance rows.
-- Remaining: validate the AI guidance flow against production data and decide which AI success/follow-through KPIs should be release-gating.
+- Remaining: validate the AI guidance flow against production data and decide which AI success/follow-through KPIs should be release-gating. Backend tool exposure and role boundaries now have dedicated regression coverage.
 
 ### Sprint 10 - Work Package E: Identity Verification + Final Production Hardening
 
