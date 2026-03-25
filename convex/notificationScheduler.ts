@@ -10,8 +10,30 @@ export const sendPendingApprovalDigest = internalAction({
   args: {
     dryRun: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
-    const digest = await ctx.runQuery(internal.notifications.getPendingApprovalDigestPayload, {});
+  handler: async (ctx, args): Promise<{
+    dryRun: boolean;
+    generatedAt: string;
+    totalPendingRequests: number;
+    managersNotified: number;
+    notificationsCreated: number;
+    emailsSent: number;
+    emailEnabled: boolean;
+  }> => {
+    const digest = (await ctx.runQuery(internal.notifications.getPendingApprovalDigestPayload, {})) as {
+      generatedAt: string;
+      totalPendingRequests: number;
+      groups: Array<{
+        managerId: string;
+        managerEmail: string | null;
+        managerName: string;
+        requests: Array<{
+          employeeName: string;
+          leaveTypeName: string;
+          startDate: string;
+          endDate: string;
+        }>;
+      }>;
+    };
     const resendApiKey = getResendApiKey();
     const resendFromEmail = getResendFromEmail();
     let emailsSent = 0;

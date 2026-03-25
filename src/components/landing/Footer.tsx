@@ -30,9 +30,9 @@ const socialLinks = [
 
 export const Footer = () => {
   return (
-    <footer className="px-6 lg:px-10 pb-12 pt-16 bg-gradient-to-b from-[#f7f3ec] to-[#FDFDFB]">
+    <footer className="px-6 border-t border-white/5 lg:px-10 pb-12 pt-16 bg-[#09090b]">
       <div className="mx-auto max-w-[1440px]">
-        <div className="border-y border-black/10 py-12 md:py-16">
+        <div className="border-y border-white/10 py-12 md:py-16">
           <div className="grid gap-12 lg:grid-cols-[1fr_1.2fr]">
             {/* Brand Section */}
             <motion.div
@@ -53,13 +53,13 @@ export const Footer = () => {
               </p>
 
               {/* Social Links */}
-              <div className="mt-8 flex items-center gap-3">
+              <nav aria-label="Social Media Links" className="mt-8 flex items-center gap-3">
                 {socialLinks.map((social, index) => (
                   <motion.a
                     key={social.label}
                     href={social.href}
                     aria-label={social.label}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f0ede8] text-white/70 transition hover:bg-teal-500 hover:text-white"
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 ring-1 ring-white/10 text-white/70 transition hover:bg-[#e879f9] hover:text-black hover:ring-[#e879f9]"
                     initial={{ opacity: 0, scale: 0 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
@@ -70,11 +70,12 @@ export const Footer = () => {
                     <social.icon className="h-5 w-5" strokeWidth={2} />
                   </motion.a>
                 ))}
-              </div>
+              </nav>
             </motion.div>
 
             {/* Links Grid */}
-            <motion.div
+            <motion.nav
+              aria-label="Footer Navigation"
               className="grid gap-8 sm:grid-cols-3"
               initial={{ opacity: 0, x: 20 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -85,43 +86,44 @@ export const Footer = () => {
                 <div key={heading}>
                   <motion.p
                     className="text-[10px] font-bold uppercase tracking-[0.32em] text-white/60 mb-5"
-                    whileHover={{ x: 4, color: "#2FABB9" }}
+                    whileHover={{ x: 4, color: "#e879f9" }}
                   >
                     {heading}
                   </motion.p>
-                  <div className="space-y-3">
+                  <ul className="space-y-3">
                     {group.map((link) => (
-                      <motion.a
-                        key={link.label}
-                        href={link.href}
-                        className="block text-sm font-medium text-[#171411] transition hover:text-teal-600 relative group"
-                        whileHover={{ x: 4 }}
-                      >
-                        {link.label}
-                        <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-0 h-0.5 bg-teal-500 group-hover:w-2 transition-all duration-300" />
-                      </motion.a>
+                      <li key={link.label}>
+                        <motion.a
+                          href={link.href}
+                          className="block text-sm font-medium text-white/60 transition hover:text-white relative group"
+                          whileHover={{ x: 4 }}
+                        >
+                          {link.label}
+                          <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-0 h-0.5 bg-[#e879f9] group-hover:w-2 transition-all duration-300" />
+                        </motion.a>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </div>
               ))}
-            </motion.div>
+            </motion.nav>
           </div>
 
           {/* Bottom Bar */}
           <motion.div
-            className="mt-12 flex flex-col gap-3 border-t border-black/10 pt-6 text-[10px] font-bold uppercase tracking-[0.28em] text-white/60 md:flex-row md:items-center md:justify-between"
+            className="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-[10px] font-bold uppercase tracking-[0.28em] text-white/60 md:flex-row md:items-center md:justify-between"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.4 }}
           >
-            <span>Copyright 2026 BALANCE</span>
+            <span>Copyright 2026 Leaveflow Pro</span>
             <div className="flex items-center gap-4">
-              <a href="#" className="hover:text-teal-600 transition-colors">Privacy Policy</a>
+              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
               <span>•</span>
-              <a href="#" className="hover:text-teal-600 transition-colors">Terms of Service</a>
+              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
             </div>
-            <span className="hidden lg:inline">Designed to feel calm under operational pressure</span>
+            <span className="hidden lg:inline">Deterministic Global Operations</span>
           </motion.div>
         </div>
       </div>

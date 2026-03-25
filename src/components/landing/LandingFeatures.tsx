@@ -38,7 +38,8 @@ const FeatureCard = ({
   const rotateY = useTransform(mouseX, [0, 1], [-5, 5]);
 
   return (
-    <motion.div
+    <motion.article
+      aria-labelledby={`feature-${title.replace(/\s+/g, '-').toLowerCase()}`}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay }}
@@ -50,7 +51,7 @@ const FeatureCard = ({
         transformStyle: "preserve-3d",
       }}
       className={cn(
-        "group relative overflow-hidden rounded-[2.5rem] bg-white ring-1 ring-[#1A1815]/5 shadow-2xl transition-all duration-700 hover:shadow-[0_32px_64px_-16px_rgba(201,169,98,0.15)]",
+        "group relative overflow-hidden rounded-[2.5rem] bg-[#131316] ring-1 ring-white/5 shadow-2xl transition-all duration-700 hover:shadow-[0_32px_64px_-16px_rgba(232,121,249,0.15)]",
         className
       )}
     >
@@ -60,7 +61,7 @@ const FeatureCard = ({
         style={{
           background: useTransform(
             [mouseX, mouseY],
-            ([mx, my]) => `radial-gradient(600px circle at ${(mx as number) * 100}% ${(my as number) * 100}%, rgba(201,169,98,0.08), transparent 80%)`
+            ([mx, my]) => `radial-gradient(600px circle at ${(mx as number) * 100}% ${(my as number) * 100}%, rgba(232,121,249,0.06), transparent 80%)`
           ),
         }}
       />
@@ -73,25 +74,25 @@ const FeatureCard = ({
           loading="lazy"
           decoding="async"
           className="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-110 grayscale-[100%] group-hover:grayscale-0 opacity-20 group-hover:opacity-40" 
-          alt={title} 
+          alt={`Leaveflow Pro feature interface showing ${title}`} 
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#131316] via-[#131316]/60 to-transparent" />
       </div>
 
       <div 
         style={{ transform: "translateZ(50px)" }}
         className="relative z-10 flex h-full flex-col justify-end p-8 md:p-12"
       >
-        <div className="mb-6 inline-flex size-14 items-center justify-center rounded-2xl bg-[#1A1815] text-[#C9A962] shadow-2xl transition-all duration-500 group-hover:bg-[#C9A962] group-hover:text-[#1A1815] group-hover:rotate-6 group-hover:scale-110">
+        <div className="mb-6 inline-flex size-14 items-center justify-center rounded-2xl bg-white/10 text-[#e879f9] shadow-2xl transition-all duration-500 group-hover:bg-[#e879f9] group-hover:text-[#131316] group-hover:rotate-6 group-hover:scale-110">
           <IconPointerFilled className="size-6" />
         </div>
         
         <div className="space-y-4">
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#C9A962] block">Capability</span>
-            <h3 className="font-['Outfit'] text-3xl md:text-4xl font-black tracking-tight text-[#1A1815] leading-[1.1] group-hover:text-[#C9A962] transition-colors duration-500">
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#e879f9] block">Capability</span>
+            <h3 id={`feature-${title.replace(/\s+/g, '-').toLowerCase()}`} className="font-['Outfit'] text-3xl md:text-4xl font-black tracking-tight text-white leading-[1.1] group-hover:text-[#e879f9] transition-colors duration-500">
             {title}
             </h3>
-            <p className="font-['Outfit'] font-light text-base leading-relaxed text-[#1A1815]/60 block max-w-sm">
+            <p className="font-['Outfit'] font-light text-base leading-relaxed text-white/60 block max-w-sm">
             {description}
             </p>
         </div>
@@ -99,7 +100,7 @@ const FeatureCard = ({
 
       {/* Luxury Border Gradient */}
       <div className="absolute inset-0 rounded-[2.5rem] ring-1 ring-inset ring-white/20 pointer-events-none" />
-    </motion.div>
+    </motion.article>
   );
 };
 
@@ -108,48 +109,54 @@ export const LandingFeatures = () => {
     {
       title: "Global Resilience Infrastructure",
       description: "Scale your workforce orchestration with infinite resilience across every continent and jurisdiction.",
-      image: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=1200",
+      image: "/images/landing/feature_dashboard.png",
       className: "md:col-span-2 md:row-span-2 h-[600px]",
       delay: 0,
     },
     {
       title: "Intelligent Governance",
       description: "Automate compliance and regulatory sync with zero-latency precision.",
-      image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1200",
+      image: "/images/landing/feat_guardrails.png",
       className: "md:col-span-1 md:row-span-1 h-[280px]",
       delay: 0.2,
     },
     {
       title: "Strategic Insight",
       description: "Transform complex human resource data into pure aesthetic clarity.",
-      image: "https://images.unsplash.com/photo-1518186285589-2f7649de83e0?q=80&w=1200",
+      image: "/images/landing/feat_reporting.png",
       className: "md:col-span-1 md:row-span-1 h-[280px]",
       delay: 0.4,
     },
     {
       title: "Human Synergy",
       description: "Unite teams through fluid collaborative environments designed for global motion.",
-      image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1200",
+      image: "/images/landing/feat_surface.png",
       className: "md:col-span-3 md:row-span-1 h-[350px]",
       delay: 0.6,
     },
   ];
 
   return (
-    <section id="product" className="px-4 py-32 md:px-8 md:py-48 lg:px-16 bg-[#FDFBF7]">
+    <section id="product" aria-labelledby="features-heading" className="px-4 pb-32 pt-8 md:px-8 md:pb-48 lg:px-16">
       <div className="max-w-7xl mx-auto mb-32 text-center flex flex-col items-center">
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1 }}
-            className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-[#1A1815]/5 border border-[#1A1815]/10 mb-8"
+            className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8"
         >
-            <span className="w-2 h-2 rounded-full bg-[#C9A962] animate-pulse"></span>
-            <span className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#1A1815]/40 leading-none">The Capabilities</span>
+            <span className="w-2 h-2 rounded-full bg-[#e879f9] animate-pulse"></span>
+            <span className="text-[10px] uppercase tracking-[0.4em] font-bold text-white/40 leading-none">The Capabilities</span>
         </motion.div>
-        <h2 className="font-['Outfit'] text-4xl md:text-7xl lg:text-9xl font-black text-[#1A1815] tracking-tight leading-[0.85] max-w-5xl">
+        
+        {/* GEO/SEO Visually Hidden Summary for AI Crawlers */}
+        <div className="sr-only">
+          Leaveflow Pro's core features include Global Resilience Infrastructure, Intelligent Governance for compliance, Strategic Insight reporting, and Human Synergy collaboration environments.
+        </div>
+
+        <h2 id="features-heading" className="font-['Outfit'] text-4xl md:text-7xl lg:text-9xl font-black text-white tracking-tight leading-[0.85] max-w-5xl">
           Sovereign Control. <br/>
-          <span className="font-['Cormorant_Garamond'] font-light italic text-[#C9A962]">By Design.</span>
+          <span className="font-['Cormorant_Garamond'] font-light italic text-[#e879f9]">By Design.</span>
         </h2>
       </div>
 

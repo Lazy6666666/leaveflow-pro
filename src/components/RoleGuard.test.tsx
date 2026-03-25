@@ -6,6 +6,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import RoleGuard from "./RoleGuard";
 
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const;
+
 const mockUseAuth = vi.fn();
 
 vi.mock("@/contexts/AuthContext", () => ({
@@ -25,7 +30,10 @@ describe("RoleGuard", () => {
     });
 
     render(
-      <MemoryRouter initialEntries={["/admin/system"]}>
+      <MemoryRouter
+        initialEntries={["/admin/system"]}
+        future={routerFuture}
+      >
         <Routes>
           <Route path="/dashboard" element={<div>Dashboard</div>} />
           <Route
@@ -51,7 +59,10 @@ describe("RoleGuard", () => {
     });
 
     render(
-      <MemoryRouter initialEntries={["/manager/hub"]}>
+      <MemoryRouter
+        initialEntries={["/manager/hub"]}
+        future={routerFuture}
+      >
         <Routes>
           <Route
             path="/manager/hub"

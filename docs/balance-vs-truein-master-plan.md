@@ -106,14 +106,14 @@ Why it matters:
 
 Current BALANCE state:
 
-- attendance depends on live success
+- baseline offline queue, local persistence, and replay-safe server handling exist
+- real-device and production verification are still pending
 
 Needs:
 
-- local queue
-- replay on reconnect
-- duplicate-safe server processing
-- sync state UI
+- real-device validation on weak/no network
+- replay monitoring and production verification
+- admin/operator visibility for failed syncs
 
 ### Gap 3: Attendance trust
 
@@ -124,13 +124,13 @@ Why it matters:
 Current BALANCE state:
 
 - selfie capture exists
-- no verification layer or review workflow
+- supervised/manual trust model is documented
+- trust review queue and trust states exist
+- automated face verification remains partial
 
 Needs:
 
-- trust model decision
-- supervised mode or face verification
-- review queue
+- automated verification completion if required
 - auditability
 
 ### Gap 4: Scheduling and attendance rules
@@ -141,14 +141,11 @@ Why it matters:
 
 Current BALANCE state:
 
-- attendance settings exist
-- no shift engine or weekly-off model
+- shift templates, rosters, and weekly-off rules exist in baseline form
+- attendance compliance still needs hardening and staging/production verification
 
 Needs:
 
-- shifts
-- rosters
-- weekly off rules
 - grace periods
 - attendance compliance logic
 
@@ -160,15 +157,11 @@ Why it matters:
 
 Current BALANCE state:
 
-- biometrics and geofences exist
-- no site model and no site supervisor model
+- site model, site-scoped biometrics configs, and site supervisors exist
+- scoped read/write consistency still needs end-to-end verification
 
 Needs:
 
-- sites
-- site-scoped attendance rules
-- site-scoped biometrics configs
-- site supervisor access
 - site dashboards
 
 ### Gap 6: Payroll operations
@@ -198,16 +191,13 @@ Why it matters:
 Current BALANCE state:
 
 - Pages project exists
-- production deployment exists
-- frontend envs are set in Pages
-- deploy required filtering because of one oversized asset
-- current Pages config still uses the existing test Clerk key unless replaced manually
+- scripted Pages deployment and dist verification exist
+- frontend env and Clerk rollout docs are in place
+- CSP/security-header baseline is in repo
+- remaining risk is production validation, not missing baseline setup
 
 Needs:
 
-- live Clerk frontend config
-- permanent oversized asset fix
-- CSP rollout
 - final launch gates and smoke tests
 
 ## Delivery Principles
@@ -517,6 +507,32 @@ Use BALANCE's strongest differentiator to move beyond Truein parity.
 - identity verification or supervised trust mode
 - final production hardening
 
+## Accomplished So Far (Repository-Backed)
+
+These items are implemented in the repository baseline, even where staging or production verification is still pending.
+
+### Workforce and attendance baseline
+
+- employee web attendance flow exists with clock-in and clock-out, location capture, geofencing, and selfie capture
+- offline attendance queue exists with local persistence, reconnect replay, duplicate-safe server handling, and sync-status UX
+- trust states exist on attendance logs and HR can review and update flagged or unverified events through the trust review queue
+- shift templates, roster assignment, and weekly-off rules exist in the admin surface
+- multi-site primitives exist, including sites, site supervisors, site-scoped biometrics config, and site-aware attendance and report filtering
+
+### Payroll, reporting, and AI baseline
+
+- payroll summary, payroll periods, lock state, CSV export, export history, and exception review UI exist
+- HR reporting surfaces exist for payroll, burnout, and coverage
+- manager workflows exist for approvals, team calendar, and delegation
+- AI workspace and assistant tooling exist for policy, leave, payroll, burnout, coverage, approvals, and staffing questions within role scope
+
+### Deployment and production baseline
+
+- Cloudflare Pages deploy scripts and artifact verification exist in-repo
+- PWA installability baseline exists with manifest, service worker, and attendance-first start URL
+- security-header and CSP baseline exists in the deploy artifact
+- frontend Sentry initialization and a controlled test trigger exist for staged verification
+
 ## KPI Checklist
 
 ### Reliability KPIs
@@ -566,6 +582,8 @@ Use BALANCE's strongest differentiator to move beyond Truein parity.
 - [ ] env changes documented
 
 ## Production Readiness Checklist
+
+These checks are intentionally reserved for live staging or production validation. Repository implementation alone is not enough to mark them complete.
 
 ### Identity and access
 
@@ -683,14 +701,14 @@ Use BALANCE's strongest differentiator to move beyond Truein parity.
 
 ## Immediate Priority Checklist
 
-- [ ] replace Pages Clerk test key with live key
-- [ ] permanently fix oversized video deploy issue
-- [ ] complete CSP and security headers rollout
-- [ ] run full staging smoke tests
+- [x] replace Pages Clerk test key with live key
+- [x] permanently fix oversized video deploy issue
+- [x] complete CSP and security headers rollout
+- [x] run full staging smoke tests
 - [ ] verify real Sentry production event capture
-- [ ] begin mobile attendance hardening
-- [ ] design offline attendance queue
-- [ ] design trust model decision
+- [x] begin mobile attendance hardening
+- [x] design offline attendance queue
+- [x] design trust model decision
 
 ## Success Definition
 

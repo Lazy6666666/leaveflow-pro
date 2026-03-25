@@ -1,32 +1,10 @@
-import { action as typedAction, internalQuery as typedInternalQuery, mutation as typedMutation, query as typedQuery } from "./_generated/server";
-import { api as typedApi, internal as typedInternal } from "./_generated/api";
+import { action, internalQuery, mutation, query } from "./_generated/server";
+import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 import { getMistralApiKey } from "./lib/env";
 import { now, recordAudit } from "./lib/auth";
 import { getUserRoles, requireIdentity } from "./lib/auth";
 import type { PolicyDocumentId, StorageId } from "./lib/types";
-
-type ConvexBuilder = (config: unknown) => unknown;
-type Api = {
-  rag: {
-    deletePolicyDocument: unknown;
-    indexPolicyDocument: unknown;
-    savePolicyDocument: unknown;
-    searchPolicyLexical: unknown;
-  };
-  users: { current: unknown };
-};
-type InternalApi = {
-  files: { getOwnedPolicyDocumentUrlForOcr: unknown };
-  rag: { getPolicyDocumentsForSearch: unknown };
-};
-
-const action = typedAction as unknown as ConvexBuilder;
-const internalQuery = typedInternalQuery as unknown as ConvexBuilder;
-const mutation = typedMutation as unknown as ConvexBuilder;
-const query = typedQuery as unknown as ConvexBuilder;
-const api = typedApi as unknown as Api;
-const internal = typedInternal as unknown as InternalApi;
 
 const MISTRAL_EMBEDDING_MODEL = "mistral-embed";
 const MISTRAL_DIMENSIONS = 1024;

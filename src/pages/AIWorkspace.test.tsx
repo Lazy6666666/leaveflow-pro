@@ -6,6 +6,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import AIWorkspace from "./AIWorkspace";
 
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const;
+
 const mockUseAuth = vi.fn();
 const { mockToastSuccess, mockToastError, mockWriteText } = vi.hoisted(() => ({
   mockToastSuccess: vi.fn(),
@@ -37,7 +42,7 @@ vi.mock("@/components/AIChatPanel", () => ({
 
 const renderWorkspace = () =>
   render(
-    <MemoryRouter>
+    <MemoryRouter future={routerFuture}>
       <AIWorkspace />
     </MemoryRouter>,
   );

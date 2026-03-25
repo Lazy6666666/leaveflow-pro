@@ -37,9 +37,18 @@ export const getBalancesData = query({
     await requireAdmin(ctx);
     const profiles = await ctx.db.query("profiles").collect();
     const leaveTypes = await ctx.db.query("leaveTypes").withIndex("by_isActive", (q) => q.eq("isActive", true)).collect();
-    const balances = args.employeeId
-      ? await ctx.db.query("leaveBalances").withIndex("by_employeeId_year", (q) => q.eq("employeeId", args.employeeId).eq("year", args.year)).collect()
-      : [];
+    const balances = [];
+
+    if (args.employeeId) {
+      balances.push(
+        ...await ctx.db
+          .query("leaveBalances")
+          .withIndex("by_employeeId_year", (q) =>
+            q.eq("employeeId", args.employeeId).eq("year", args.year),
+          )
+          .collect(),
+      );
+    }
 
     return {
       employees: profiles

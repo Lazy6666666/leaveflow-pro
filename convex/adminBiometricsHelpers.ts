@@ -126,7 +126,7 @@ const zktecoAdapter: VendorAdapter = {
     if (!response.ok) throw new Error(`ZKTeco API error: ${response.status}`);
     const payload = await response.json();
     const records = (Array.isArray(payload.data) ? payload.data : undefined) ?? (Array.isArray(payload.results) ? payload.results : undefined) ?? [];
-    return records.flatMap((record) => {
+    return records.flatMap((record: unknown) => {
       if (!isRecord(record)) return [];
       const timestamp = record.punch_time ?? record.att_date;
       if (timestamp === undefined || timestamp === null) return [];
@@ -154,7 +154,7 @@ const biotimeAdapter: VendorAdapter = {
     if (!response.ok) throw new Error(`BioTime API error: ${response.status}`);
     const payload = await response.json();
     const records = Array.isArray(payload.data) ? payload.data : [];
-    return records.flatMap((record) => {
+    return records.flatMap((record: unknown) => {
       if (!isRecord(record) || typeof record.emp_code !== "string" || typeof record.punch_time !== "string") return [];
       return [{ employee_identifier: record.emp_code, timestamp: new Date(record.punch_time).toISOString(), type: inferPunchType(record.punch_state), device_serial: typeof record.terminal_sn === "string" ? record.terminal_sn : undefined }];
     });
@@ -164,16 +164,26 @@ const biotimeAdapter: VendorAdapter = {
 const supremaAdapter: VendorAdapter = {
   async testConnection(config) {
     try {
-      const response = await fetch(`${config.apiUrl}/api/v2/server/info`, { headers: { "bs-session-id": config.apiKey } });
+      const headers: Record<string, string> = {};
+      if (config.apiKey) {
+        headers["bs-session-id"] = config.apiKey;
+      }
+      const response = await fetch(`${config.apiUrl}/api/v2/server/info`, { headers });
       return response.ok ? { success: true, message: "Connected to Suprema BioStar 2" } : { success: false, message: `Suprema responded with status ${response.status}` };
     } catch (error: unknown) {
       return { success: false, message: `Cannot reach Suprema: ${getBiometricsErrorMessage(error)}` };
     }
   },
   async fetchLogs(config, date) {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (config.apiKey) {
+      headers["bs-session-id"] = config.apiKey;
+    }
     const response = await fetch(`${config.apiUrl}/api/v2/events/search`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "bs-session-id": config.apiKey },
+      headers,
       body: JSON.stringify({
         Query: {
           limit: 1000,
@@ -187,7 +197,7 @@ const supremaAdapter: VendorAdapter = {
     if (!response.ok) throw new Error(`Suprema API error: ${response.status}`);
     const payload = await response.json();
     const rows = isRecord(payload.EventCollection) && Array.isArray(payload.EventCollection.rows) ? payload.EventCollection.rows : [];
-    return rows.flatMap((record) => {
+    return rows.flatMap((record: unknown) => {
       if (!isRecord(record)) return [];
       const userValue = isRecord(record.user_id) ? record.user_id.user_id : record.user_id;
       if ((typeof userValue !== "string" && typeof userValue !== "number") || typeof record.datetime !== "string") return [];
@@ -224,7 +234,7 @@ const hikvisionAdapter: VendorAdapter = {
     if (!response.ok) throw new Error(`HikVision API error: ${response.status}`);
     const payload = await response.json();
     const records = isRecord(payload.AcsEvent) && Array.isArray(payload.AcsEvent.InfoList) ? payload.AcsEvent.InfoList : [];
-    return records.flatMap((record) => {
+    return records.flatMap((record: unknown) => {
       if (!isRecord(record)) return [];
       const identifier = record.employeeNoString ?? record.cardNo;
       if ((typeof identifier !== "string" && typeof identifier !== "number") || typeof record.time !== "string") return [];
@@ -254,7 +264,12 @@ export function isBiometricsSyncDue(config: BiometricsConfigDoc, currentTimestam
   return currentTimestamp - config.lastSyncAt >= Math.max(1, Math.floor(config.syncFrequencyMinutes)) * 60_000;
 }
 
-export async function syncBiometricsConfig(ctx: ActionCtx, config: BiometricsConfigDoc) {
+export async function syncBiometricsConfig(ctx: ActionCtx, config: BiometricsConfigDoc): Promise<{
+  success: boolean;
+  total_synced: number;
+  unmatched?: number;
+  message: string;
+}> {
   if (config.vendor === "generic_webhook") {
     await ctx.runMutation(internal.admin.setBiometricsSyncStatusInternal, { configId: config._id, status: "awaiting_webhook", records: config.lastSyncRecords ?? 0 });
     return { success: true, total_synced: 0, message: "Generic webhook devices push attendance events to /biometrics/webhook; manual pull sync is not available." };

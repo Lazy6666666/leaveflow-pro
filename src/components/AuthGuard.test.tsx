@@ -6,6 +6,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import AuthGuard from "./AuthGuard";
 
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const;
+
 const mockUseAuth = vi.fn();
 
 vi.mock("@/contexts/AuthContext", () => ({
@@ -24,7 +29,10 @@ describe("AuthGuard", () => {
     });
 
     render(
-      <MemoryRouter initialEntries={["/dashboard"]}>
+      <MemoryRouter
+        initialEntries={["/dashboard"]}
+        future={routerFuture}
+      >
         <Routes>
           <Route path="/auth" element={<div>Auth screen</div>} />
           <Route
@@ -49,7 +57,10 @@ describe("AuthGuard", () => {
     });
 
     render(
-      <MemoryRouter initialEntries={["/dashboard"]}>
+      <MemoryRouter
+        initialEntries={["/dashboard"]}
+        future={routerFuture}
+      >
         <Routes>
           <Route
             path="/dashboard"

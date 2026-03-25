@@ -1,0 +1,9 @@
+{
+  "notes": [
+    {
+      "category": "env",
+      "content": "Saved Clerk local test account for auth QA: test.employee.20260320073022+clerk_test@example.com / BalanceTest!2026 / verification code 424242. Verified on 2026-03-20 against local /auth -> /dashboard flow.",
+      "timestamp": "2026-03-20T03:34:03.153Z"
+    }
+  ]
+}

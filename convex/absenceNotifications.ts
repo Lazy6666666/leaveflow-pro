@@ -109,11 +109,18 @@ export const notifyManagersOfAbsences = internalAction({
     date: v.string(),
     dryRun: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
-    const payload = await ctx.runQuery(internal.absenceNotifications.getAbsenceNotificationPayload, {
+  handler: async (ctx, args): Promise<{
+    dryRun: boolean;
+    date: string;
+    managersNotified: number;
+    notificationsCreated: number;
+    emailsSent: number;
+    emailEnabled: boolean;
+  }> => {
+    const payload = (await ctx.runQuery(internal.absenceNotifications.getAbsenceNotificationPayload, {
       employeeIds: args.employeeIds,
       date: args.date,
-    });
+    })) as AbsenceNotificationPayload;
     const resendApiKey = getResendApiKey();
     const resendFromEmail = getResendFromEmail();
     let emailsSent = 0;
@@ -308,11 +315,23 @@ export const runDailyAttendanceAutomation = internalAction({
     date: v.optional(v.string()),
     dryRun: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
-    const autoMarkResult = await ctx.runMutation(internal.absenceNotifications.autoMarkAbsencesForDate, {
+  handler: async (ctx, args): Promise<{
+    autoMarkResult: AutoMarkAbsencesResult;
+    notificationResult:
+      | {
+          dryRun: boolean;
+          date: string;
+          managersNotified: number;
+          notificationsCreated: number;
+          emailsSent: number;
+          emailEnabled: boolean;
+        }
+      | null;
+  }> => {
+    const autoMarkResult = (await ctx.runMutation(internal.absenceNotifications.autoMarkAbsencesForDate, {
       date: args.date,
       dryRun: args.dryRun,
-    });
+    })) as AutoMarkAbsencesResult;
 
     if (autoMarkResult.skipped || autoMarkResult.absentEmployeeIds.length === 0) {
       return {

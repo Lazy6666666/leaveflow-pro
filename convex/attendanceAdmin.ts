@@ -1,21 +1,11 @@
-import { internalAction as typedInternalAction, mutation as typedMutation, query as typedQuery } from "./_generated/server";
-import { internal as typedInternal } from "./_generated/api";
+import { internalAction, mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import { v } from "convex/values";
 
 import { attendanceStatusValidator, locationValidator } from "./constants";
 import { applySiteScope, assertRequestedSiteInScope, canManageEmployee, getAccessibleSiteIds, now, recordAudit, requireAnyRole, requireDirectAnyRole, requireIdentity, toIso } from "./lib/auth";
 import { assertAttendanceSelfieOwnership, getSettingsDoc, linkAttendanceSelfie, parseOptionalTimestamp, serializeSettings, validateManagedAttendanceValues } from "./attendanceHelpers";
 import type { AttendanceLogDoc, ProfileDoc } from "./lib/types";
-
-type ConvexBuilder = (config: unknown) => unknown;
-type InternalApi = {
-  absenceNotifications: { runDailyAttendanceAutomation: unknown };
-};
-
-const internalAction = typedInternalAction as unknown as ConvexBuilder;
-const mutation = typedMutation as unknown as ConvexBuilder;
-const query = typedQuery as unknown as ConvexBuilder;
-const internal = typedInternal as unknown as InternalApi;
 
 export const getAdminAttendanceDashboard = query({
   args: {

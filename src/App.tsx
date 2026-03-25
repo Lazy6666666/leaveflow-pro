@@ -32,11 +32,14 @@ const AdminSetup = lazyWithRetry(() => import("./pages/AdminSetup"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
 
 // Hub pages
-const LeaveHub = lazyWithRetry(() => import("./pages/LeaveHub"));
 const IdentityHub = lazyWithRetry(() => import("./pages/IdentityHub"));
 const ManagerHub = lazyWithRetry(() => import("./pages/manager/ManagerHub"));
 const SystemHub = lazyWithRetry(() => import("./pages/admin/SystemHub"));
 const HROperationsHub = lazyWithRetry(() => import("./pages/admin/HROperationsHub"));
+
+// Extracted pages
+const MyLeave = lazyWithRetry(() => import("./pages/MyLeave"));
+const Holidays = lazyWithRetry(() => import("./pages/Holidays"));
 
 const queryClient = new QueryClient();
 
@@ -66,18 +69,20 @@ const App = () => {
                       <Route path="/attendance" element={lazyRoute(<AttendanceHistory />)} />
                       <Route path="/admin-setup" element={lazyRoute(<AdminSetup />)} />
 
+                      {/* Direct pages previously hidden in Hubs */}
+                      <Route path="/my-leave" element={lazyRoute(<MyLeave />)} />
+                      <Route path="/holidays" element={lazyRoute(<Holidays />)} />
+                      
                       {/* Hub routes */}
-                      <Route path="/leave-hub" element={lazyRoute(<LeaveHub />)} />
                       <Route path="/identity-hub" element={lazyRoute(<IdentityHub />)} />
                       <Route path="/manager/hub" element={<RoleGuard allowedRoles={["manager", "hr_admin"]} allowDelegatedManagerAccess>{lazyRoute(<ManagerHub />)}</RoleGuard>} />
                       <Route path="/admin/system" element={<RoleGuard allowedRoles={["hr_admin"]}>{lazyRoute(<SystemHub />)}</RoleGuard>} />
                       <Route path="/admin/hr-operations" element={<RoleGuard allowedRoles={["hr_admin"]}>{lazyRoute(<HROperationsHub />)}</RoleGuard>} />
 
                       {/* Legacy redirects */}
-                      <Route path="/my-leave" element={<Navigate to="/leave-hub?tab=summary" replace />} />
-                      <Route path="/request-leave" element={<Navigate to="/leave-hub?tab=request" replace />} />
-                      <Route path="/leave-history" element={<Navigate to="/leave-hub?tab=history" replace />} />
-                      <Route path="/holidays" element={<Navigate to="/leave-hub?tab=calendar" replace />} />
+                      <Route path="/leave-hub" element={<Navigate to="/my-leave" replace />} />
+                      <Route path="/request-leave" element={<Navigate to="/my-leave" replace />} />
+                      <Route path="/leave-history" element={<Navigate to="/my-leave" replace />} />
                       <Route path="/profile" element={<Navigate to="/identity-hub?tab=profile" replace />} />
                       <Route path="/face-enrollment" element={<Navigate to="/identity-hub?tab=biometrics" replace />} />
                       <Route path="/manager/approvals" element={<Navigate to="/manager/hub?tab=approvals" replace />} />

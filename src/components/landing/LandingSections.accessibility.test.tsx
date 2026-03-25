@@ -25,14 +25,11 @@ describe("landing section accessibility", () => {
   it("uses links for the hero navigation actions", () => {
     renderWithRouter(<LandingHeroBg />);
 
-    expect(screen.getByRole("link", { name: /get started/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /deploy infrastructure/i })).toHaveAttribute(
       "href",
       "/auth/register",
     );
-    expect(screen.getByRole("link", { name: /view infrastructure/i })).toHaveAttribute(
-      "href",
-      "#engine",
-    );
+    expect(screen.getByRole("button", { name: /view documentation/i })).toBeInTheDocument();
   });
 
   it("marks below-the-fold landing imagery as lazy and dimensioned", () => {
@@ -43,15 +40,7 @@ describe("landing section accessibility", () => {
       </>,
     );
 
-    const imageAlts = [
-      "Professional collaboration",
-      "Enterprise strategy",
-      "Global Resilience Infrastructure",
-      "Human Synergy",
-    ];
-
-    imageAlts.forEach((alt) => {
-      const image = screen.getByAltText(alt);
+    screen.getAllByRole("img").forEach((image) => {
       expect(image).toHaveAttribute("loading", "lazy");
       expect(image).toHaveAttribute("decoding", "async");
       expect(image).toHaveAttribute("width");

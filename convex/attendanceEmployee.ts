@@ -348,6 +348,7 @@ export const replayOfflineLog = mutation({
           offlineSyncId: args.offlineSyncId,
           offlineTimestamp: args.timestamp,
         });
+      } else {
         if (!args.logId) {
           const today = new Date(args.timestamp).toISOString().slice(0, 10);
           const existing = await ctx.db

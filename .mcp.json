@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "android": {
+      "command": "node",
+      "args": [
+        "C:\\Users\\NeilEdwardBaja\\Desktop\\New folder\\android-mcp-server\\dist\\index.js"
+      ],
+      "env": {
+        "ANDROID_HOME": "C:\\Users\\NeilEdwardBaja\\AppData\\Local\\Android\\Sdk"
+      }
+    }
+  }
+}

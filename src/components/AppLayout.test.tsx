@@ -7,6 +7,11 @@ import { describe, expect, it, vi } from "vitest";
 
 import AppLayout from "./AppLayout";
 
+const routerFuture = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const;
+
 vi.mock("@/components/AppSidebar", () => ({
   AppSidebar: () => <div data-testid="app-sidebar">sidebar</div>,
 }));
@@ -44,7 +49,10 @@ vi.mock("@/components/ui/sidebar", () => ({
 
 const renderLayoutAt = (pathname: string) =>
   render(
-    <MemoryRouter initialEntries={[pathname]}>
+    <MemoryRouter
+      initialEntries={[pathname]}
+      future={routerFuture}
+    >
       <Routes>
         <Route element={<AppLayout />}>
           <Route path="*" element={<div>Outlet content</div>} />

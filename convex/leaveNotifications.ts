@@ -24,13 +24,14 @@ export const getLeaveNotificationEmailPayload = internalQuery({
     }
 
     if (args.type === "submitted") {
-      if (!employee.managerUserId) {
+      const managerUserId = employee.managerUserId;
+      if (!managerUserId) {
         return null;
       }
 
       const manager = await ctx.db
         .query("profiles")
-        .withIndex("by_userId", (q) => q.eq("userId", employee.managerUserId))
+        .withIndex("by_userId", (q) => q.eq("userId", managerUserId))
         .unique();
 
       if (!manager?.email) {

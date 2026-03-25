@@ -66,11 +66,11 @@ function SlideToAction({
     <div className="space-y-2">
       <div
         ref={trackRef}
-        className="glass glass-panel relative flex h-14 items-center overflow-hidden rounded-full border border-white/12 bg-white/10 px-2 dark:bg-white/5"
+        className="relative flex h-14 items-center overflow-hidden rounded-full border bg-card px-2 shadow-sm"
       >
         <div
           aria-hidden="true"
-          className="absolute inset-y-2 left-2 rounded-full bg-[hsl(var(--glass-accent)/0.2)] transition-[width] duration-300 ease-apple-ease"
+          className="absolute inset-y-2 left-2 rounded-full bg-primary/20 transition-[width] duration-300 ease-apple-ease"
           style={{ width: `calc(${progress * 100}% + 2.5rem)` }}
         />
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -114,7 +114,7 @@ function SlideToAction({
           }}
           disabled={disabled}
           aria-label={currentLabel}
-          className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-white text-foreground shadow-lg disabled:cursor-not-allowed dark:bg-white/90"
+          className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border bg-background text-foreground shadow-sm disabled:cursor-not-allowed"
         >
           <ArrowRight className="h-4 w-4" />
         </motion.button>
@@ -159,8 +159,8 @@ export function ClockInOutWidget() {
   if (loading) return null;
 
   return (
-    <Card className="glass glass-panel rounded-[1.75rem] border border-white/10 bg-white/10 shadow-xl dark:bg-white/5">
-      <CardContent className="space-y-4 p-5">
+    <Card className="rounded-xl border bg-card text-card-foreground shadow-sm">
+      <CardContent className="space-y-4 p-6">
         <div className="mb-1 flex items-center justify-between">
           <div>
             <p className="text-xs uppercase tracking-widest text-muted-foreground">Attendance</p>
@@ -197,7 +197,7 @@ export function ClockInOutWidget() {
             </div>
             <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
               <SlideToAction label="Slide to Clock Out" busyLabel="Clocking Out" onComplete={handleClockOut} disabled={acting} />
-              <Button variant="ios-glass" size="icon" className="hidden h-14 w-14 rounded-full sm:flex" onClick={handleClockOut} disabled={acting}>
+              <Button variant="outline" size="icon" className="hidden h-14 w-14 rounded-full sm:flex shadow-sm" onClick={handleClockOut} disabled={acting}>
                 <LogOut className="h-4 w-4" />
               </Button>
             </div>

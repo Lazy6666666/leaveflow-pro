@@ -34,19 +34,13 @@ describe("landing analytics", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("link", { name: /get started/i }));
-    fireEvent.click(screen.getByRole("link", { name: /view infrastructure/i }));
+    fireEvent.click(screen.getByRole("link", { name: /deploy infrastructure/i }));
     fireEvent.click(screen.getByRole("link", { name: /start trial/i }));
     fireEvent.click(screen.getByRole("link", { name: /explore engine/i }));
 
     expect(mockTrack).toHaveBeenCalledWith(
       "landing_cta_clicked",
       expect.objectContaining({ cta_location: "hero_primary", target_path: "/auth/register" }),
-      expect.objectContaining({ surface: "landing", path: "/" }),
-    );
-    expect(mockTrack).toHaveBeenCalledWith(
-      "landing_cta_clicked",
-      expect.objectContaining({ cta_location: "hero_secondary", target_path: "#engine" }),
       expect.objectContaining({ surface: "landing", path: "/" }),
     );
     expect(mockTrack).toHaveBeenCalledWith(
