@@ -5,13 +5,15 @@ import { ChatHeader } from "@/components/ai-chat/components/ChatHeader";
 import { FloatingChatButton } from "@/components/ai-chat/components/FloatingChatButton";
 import { MessageList } from "@/components/ai-chat/components/MessageList";
 import { useAIChatController } from "@/components/ai-chat/useAIChatController";
+import type { PromptRequest } from "@/components/ai-chat/types";
 
 type AIChatPanelProps = {
   initialPrompt?: string | null;
+  initialPromptRequest?: PromptRequest | null;
   mode?: "floating" | "embedded";
 };
 
-const AIChatPanel = ({ initialPrompt, mode = "floating" }: AIChatPanelProps) => {
+const AIChatPanel = ({ initialPrompt, initialPromptRequest, mode = "floating" }: AIChatPanelProps) => {
   const {
     isEmbedded,
     open,
@@ -31,7 +33,7 @@ const AIChatPanel = ({ initialPrompt, mode = "floating" }: AIChatPanelProps) => 
     closePanel,
     openFromFloatingButton,
     onQuickActionClick,
-  } = useAIChatController({ initialPrompt, mode });
+  } = useAIChatController({ initialPrompt, initialPromptRequest, mode });
 
   const panel = (
     <div

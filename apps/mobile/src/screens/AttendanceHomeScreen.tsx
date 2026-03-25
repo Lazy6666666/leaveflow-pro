@@ -13,6 +13,7 @@ import {
   formatWorkWindow,
   getRequirementSummary,
 } from "../lib/formatters";
+import { getAttendanceFallbackSummary } from "../lib/attendanceFlow";
 import { colors, radius, spacing } from "../theme/tokens";
 
 export function AttendanceHomeScreen() {
@@ -26,22 +27,16 @@ export function AttendanceHomeScreen() {
       : formatWorkWindow(dashboard.settings);
   const needsEvidence = dashboard.requiresSelfie || dashboard.requiresLocation;
 
-  async function handlePrimaryActionPress() {
+  async function handleCaptureAwareAction(
+    mode: "live" | "queue",
+    action: () => Promise<unknown>,
+  ) {
     if (needsEvidence) {
-      setCaptureMode("live");
+      setCaptureMode(mode);
       return;
     }
 
-    await dashboard.triggerPrimaryAction();
-  }
-
-  async function handleQueueActionPress() {
-    if (needsEvidence) {
-      setCaptureMode("queue");
-      return;
-    }
-
-    await dashboard.queuePrimaryAction();
+    await action();
   }
 
   return (
@@ -103,7 +98,7 @@ export function AttendanceHomeScreen() {
 
             <Pressable
               onPress={() => {
-                void handlePrimaryActionPress();
+                void handleCaptureAwareAction("live", dashboard.triggerPrimaryAction);
               }}
               style={({ pressed }) => [
                 styles.primaryActionShell,
@@ -126,7 +121,7 @@ export function AttendanceHomeScreen() {
             <View style={styles.actionRow}>
               <Pressable
                 onPress={() => {
-                  void handleQueueActionPress();
+                  void handleCaptureAwareAction("queue", dashboard.queuePrimaryAction);
                 }}
                 style={({ pressed }) => [
                   styles.secondaryAction,
@@ -187,6 +182,16 @@ export function AttendanceHomeScreen() {
                   : "The queue holds evidence locally while offline and replays it once connectivity returns."}
               </Text>
             </DoublePanel>
+
+            {needsEvidence ? (
+              <DoublePanel shellStyle={styles.cardShell} coreStyle={styles.cardCore}>
+                <Text style={styles.cardKicker}>Fallback plan</Text>
+                <Text style={styles.cardTitle}>Unsupported-device guidance</Text>
+                <Text style={styles.cardBody}>
+                  {getAttendanceFallbackSummary(dashboard.settings)}
+                </Text>
+              </DoublePanel>
+            ) : null}
           </View>
         </View>
       </ScrollView>

@@ -1,9 +1,13 @@
 import { useSearchParams } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import ProfileSettings from "./ProfileSettings";
-import FaceEnrollment from "./employee/FaceEnrollment";
 
-const TABS = ["profile", "biometrics"] as const;
+import { ExpenseEmployeePanel } from "@/components/expenses/ExpenseEmployeePanel";
+import { PolicyAcknowledgementsEmployeePanel } from "@/components/policies/PolicyAcknowledgementsEmployeePanel";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
+import FaceEnrollment from "./employee/FaceEnrollment";
+import ProfileSettings from "./ProfileSettings";
+
+const TABS = ["profile", "biometrics", "expenses", "policies"] as const;
 type Tab = (typeof TABS)[number];
 
 const IdentityHub = () => {
@@ -25,10 +29,14 @@ const IdentityHub = () => {
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
           <TabsTrigger value="biometrics">Biometrics</TabsTrigger>
+          <TabsTrigger value="expenses">Expenses</TabsTrigger>
+          <TabsTrigger value="policies">Policies</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="mt-6"><ProfileSettings /></TabsContent>
         <TabsContent value="biometrics" className="mt-6"><FaceEnrollment /></TabsContent>
+        <TabsContent value="expenses" className="mt-6"><ExpenseEmployeePanel /></TabsContent>
+        <TabsContent value="policies" className="mt-6"><PolicyAcknowledgementsEmployeePanel /></TabsContent>
       </Tabs>
     </div>
   );

@@ -16,6 +16,194 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_name", ["name"]),
 
+  recruitmentJobs: defineTable({
+    title: v.string(),
+    departmentId: v.optional(v.id("departments")),
+    location: v.optional(v.string()),
+    status: v.union(v.literal("draft"), v.literal("open"), v.literal("closed")),
+    description: v.optional(v.string()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_departmentId", ["departmentId"]),
+
+  recruitmentCandidates: defineTable({
+    fullName: v.string(),
+    email: v.string(),
+    jobId: v.id("recruitmentJobs"),
+    stage: v.union(
+      v.literal("applied"),
+      v.literal("screening"),
+      v.literal("interview"),
+      v.literal("offer"),
+      v.literal("hired"),
+      v.literal("rejected"),
+    ),
+    notes: v.optional(v.string()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_jobId", ["jobId"])
+    .index("by_stage", ["stage"])
+    .index("by_jobId_stage", ["jobId", "stage"]),
+
+  onboardingTemplates: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    tasks: v.array(v.object({ id: v.string(), title: v.string() })),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_name", ["name"]),
+
+  onboardingAssignments: defineTable({
+    templateId: v.id("onboardingTemplates"),
+    assigneeUserId: v.string(),
+    managerUserId: v.optional(v.string()),
+    status: v.union(v.literal("not_started"), v.literal("in_progress"), v.literal("completed")),
+    tasks: v.array(
+      v.object({
+        id: v.string(),
+        title: v.string(),
+        completedAt: v.optional(v.number()),
+      }),
+    ),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_assigneeUserId", ["assigneeUserId"])
+    .index("by_templateId", ["templateId"])
+    .index("by_status", ["status"]),
+
+  performanceReviewCycles: defineTable({
+    name: v.string(),
+    status: v.union(v.literal("draft"), v.literal("active"), v.literal("closed")),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_status", ["status"]),
+
+  performanceReviewAssignments: defineTable({
+    cycleId: v.id("performanceReviewCycles"),
+    employeeUserId: v.string(),
+    managerUserId: v.optional(v.string()),
+    status: v.string(),
+    rating: v.optional(v.number()),
+    notes: v.optional(v.string()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_cycleId", ["cycleId"])
+    .index("by_employeeUserId", ["employeeUserId"])
+    .index("by_status", ["status"]),
+
+  trainingCourses: defineTable({
+    name: v.string(),
+    description: v.optional(v.string()),
+    required: v.boolean(),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_name", ["name"]),
+
+  trainingAssignments: defineTable({
+    courseId: v.id("trainingCourses"),
+    employeeUserId: v.string(),
+    status: v.string(),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_courseId", ["courseId"])
+    .index("by_employeeUserId", ["employeeUserId"])
+    .index("by_status", ["status"]),
+
+  certificationRecords: defineTable({
+    employeeUserId: v.string(),
+    name: v.string(),
+    issuedOn: v.string(),
+    expiresOn: v.string(),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_employeeUserId", ["employeeUserId"])
+    .index("by_expiresOn", ["expiresOn"]),
+
+  expenses: defineTable({
+    employeeUserId: v.string(),
+    category: v.union(
+      v.literal("travel"),
+      v.literal("meals"),
+      v.literal("lodging"),
+      v.literal("supplies"),
+      v.literal("client"),
+      v.literal("mileage"),
+      v.literal("other"),
+    ),
+    title: v.string(),
+    amount: v.number(),
+    currency: v.string(),
+    expenseDate: v.string(),
+    description: v.optional(v.string()),
+    status: v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected")),
+    reviewerUserId: v.optional(v.string()),
+    reviewerComment: v.optional(v.string()),
+    reviewedAt: v.optional(v.number()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_employeeUserId", ["employeeUserId"])
+    .index("by_status", ["status"])
+    .index("by_employeeUserId_status", ["employeeUserId", "status"])
+    .index("by_expenseDate", ["expenseDate"]),
+
+  expenseApprovalRecords: defineTable({
+    expenseId: v.id("expenses"),
+    action: v.union(v.literal("approved"), v.literal("rejected")),
+    actedByUserId: v.string(),
+    comment: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_expenseId", ["expenseId"])
+    .index("by_actedByUserId", ["actedByUserId"]),
+
+  policyAcknowledgements: defineTable({
+    policyDocumentId: v.id("policyDocuments"),
+    policyTitle: v.string(),
+    assigneeUserId: v.string(),
+    assignedByUserId: v.string(),
+    status: v.union(v.literal("pending"), v.literal("acknowledged")),
+    note: v.optional(v.string()),
+    dueDate: v.optional(v.string()),
+    assignedAt: v.number(),
+    acknowledgedAt: v.optional(v.number()),
+    updatedAt: v.number(),
+  })
+    .index("by_assigneeUserId", ["assigneeUserId"])
+    .index("by_status", ["status"])
+    .index("by_policyDocumentId", ["policyDocumentId"])
+    .index("by_assigneeUserId_policyDocumentId", ["assigneeUserId", "policyDocumentId"]),
+
+  integrationSettings: defineTable({
+    providerKey: v.string(),
+    enabled: v.boolean(),
+    status: v.union(v.literal("not_configured"), v.literal("attention"), v.literal("connected")),
+    configSummary: v.optional(v.string()),
+    lastCheckedAt: v.optional(v.number()),
+    updatedByUserId: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_providerKey", ["providerKey"])
+    .index("by_status", ["status"]),
+
   profiles: defineTable({
     userId: v.string(),
     fullName: v.optional(v.string()),

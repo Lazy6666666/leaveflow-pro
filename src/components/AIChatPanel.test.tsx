@@ -46,6 +46,29 @@ vi.mock("@/components/ui/badge", () => ({
   Badge: ({ children, ...props }: ComponentPropsWithoutRef<"span">) => <span {...props}>{children}</span>,
 }));
 
+function configureProviders({
+  chatAction,
+  runToolAction,
+  puterResponse,
+}: {
+  chatAction?: ReturnType<typeof vi.fn>;
+  runToolAction?: ReturnType<typeof vi.fn>;
+  puterResponse: Awaited<ReturnType<typeof mockChatWithPuter>>;
+}) {
+  const resolvedChatAction = chatAction ?? vi.fn();
+  const resolvedRunToolAction = runToolAction ?? vi.fn();
+
+  mockUseAction.mockImplementation((reference) => (
+    reference === api.assistant.runTool ? resolvedRunToolAction : resolvedChatAction
+  ));
+  mockChatWithPuter.mockResolvedValue(puterResponse);
+
+  return {
+    chatAction: resolvedChatAction,
+    runToolAction: resolvedRunToolAction,
+  };
+}
+
 describe("AIChatPanel", () => {
   beforeEach(() => {
     mockUseAuth.mockReset();
@@ -59,17 +82,13 @@ describe("AIChatPanel", () => {
   });
 
   it("uses Puter as the primary provider when available", async () => {
-    const chatAction = vi.fn();
-    const runToolAction = vi.fn();
-
-    mockUseAction.mockImplementation((reference) => (
-      reference === api.assistant.runTool ? runToolAction : chatAction
-    ));
-    mockChatWithPuter.mockResolvedValue({
-      ok: true,
-      message: "Puter handled this.",
-      source: "puter",
-      sourceReason: "puter",
+    const { chatAction, runToolAction } = configureProviders({
+      puterResponse: {
+        ok: true,
+        message: "Puter handled this.",
+        source: "puter",
+        sourceReason: "puter",
+      },
     });
 
     render(<AIChatPanel mode="embedded" />);
@@ -95,14 +114,12 @@ describe("AIChatPanel", () => {
       source: "mistral",
       sourceReason: "mistral",
     });
-    const runToolAction = vi.fn();
-
-    mockUseAction.mockImplementation((reference) => (
-      reference === api.assistant.runTool ? runToolAction : chatAction
-    ));
-    mockChatWithPuter.mockResolvedValue({
-      ok: false,
-      reason: "auth_failed",
+    configureProviders({
+      chatAction,
+      puterResponse: {
+        ok: false,
+        reason: "auth_failed",
+      },
     });
 
     render(<AIChatPanel mode="embedded" />);
@@ -122,16 +139,12 @@ describe("AIChatPanel", () => {
   });
 
   it("shows a system rate-limit message without falling back when Puter tool execution is limited", async () => {
-    const chatAction = vi.fn();
-    const runToolAction = vi.fn();
-
-    mockUseAction.mockImplementation((reference) => (
-      reference === api.assistant.runTool ? runToolAction : chatAction
-    ));
-    mockChatWithPuter.mockResolvedValue({
-      ok: false,
-      reason: "rate_limited",
-      message: "Too many assistant tools in a short period. Please wait about 30 seconds and try again.",
+    const { chatAction } = configureProviders({
+      puterResponse: {
+        ok: false,
+        reason: "rate_limited",
+        message: "Too many assistant tools in a short period. Please wait about 30 seconds and try again.",
+      },
     });
 
     render(<AIChatPanel mode="embedded" />);
@@ -147,5 +160,35 @@ describe("AIChatPanel", () => {
 
     expect(chatAction).not.toHaveBeenCalled();
     expect(screen.getByText("System")).toBeInTheDocument();
+  });
+
+  it("auto-submits a workspace prompt request when provided", async () => {
+    configureProviders({
+      puterResponse: {
+        ok: true,
+        message: "Prompt request handled.",
+        source: "puter",
+        sourceReason: "puter",
+      },
+    });
+
+    render(
+      <AIChatPanel
+        mode="embedded"
+        initialPromptRequest={{
+          id: "feed-1",
+          prompt: "Check my team coverage for next week.",
+        }}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(mockChatWithPuter).toHaveBeenCalledWith(
+        expect.objectContaining({
+          messages: [{ role: "user", content: "Check my team coverage for next week." }],
+        }),
+      );
+      expect(screen.getByText("Prompt request handled.")).toBeInTheDocument();
+    });
   });
 });

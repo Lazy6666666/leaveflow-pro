@@ -20,6 +20,8 @@ export type ManagerDelegationDoc = Doc<"managerDelegations">;
 export type AuditLogDoc = Doc<"auditLogs">;
 export type StorageFileDoc = Doc<"storageFiles">;
 export type PolicyDocumentDoc = Doc<"policyDocuments">;
+export type PolicyAcknowledgementDoc = Doc<"policyAcknowledgements">;
+export type IntegrationSettingDoc = Doc<"integrationSettings">;
 
 export type DepartmentId = Id<"departments">;
 export type LeaveTypeId = Id<"leaveTypes">;
@@ -32,3 +34,5 @@ export type BadgeMappingId = Id<"badgeMappings">;
 export type ManagerDelegationId = Id<"managerDelegations">;
 export type StorageId = Id<"_storage">;
 export type PolicyDocumentId = Id<"policyDocuments">;
+export type PolicyAcknowledgementId = Id<"policyAcknowledgements">;
+export type IntegrationSettingId = Id<"integrationSettings">;

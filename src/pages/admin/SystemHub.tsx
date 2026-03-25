@@ -1,13 +1,16 @@
 import { useSearchParams } from "react-router-dom";
+
+import { IntegrationsStatusPanel } from "@/components/integrations/IntegrationsStatusPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Policies from "./Policies";
-import SitesManagement from "./SitesManagement";
+
 import AttendanceSettings from "./AttendanceSettings";
 import BiometricsSettings from "./BiometricsSettings";
-import ShiftManagement from "./ShiftManagement";
+import Policies from "./Policies";
 import RosterAssignment from "./RosterAssignment";
+import ShiftManagement from "./ShiftManagement";
+import SitesManagement from "./SitesManagement";
 
-const TABS = ["policies", "sites", "attendance-config", "biometrics", "shifts", "rosters"] as const;
+const TABS = ["policies", "integrations", "sites", "attendance-config", "biometrics", "shifts", "rosters"] as const;
 type Tab = (typeof TABS)[number];
 
 const SystemHub = () => {
@@ -28,6 +31,7 @@ const SystemHub = () => {
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="flex-wrap">
           <TabsTrigger value="policies">Policies</TabsTrigger>
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
           <TabsTrigger value="sites">Sites</TabsTrigger>
           <TabsTrigger value="attendance-config">Attendance Config</TabsTrigger>
           <TabsTrigger value="biometrics">Biometrics</TabsTrigger>
@@ -36,6 +40,7 @@ const SystemHub = () => {
         </TabsList>
 
         <TabsContent value="policies" className="mt-6"><Policies /></TabsContent>
+        <TabsContent value="integrations" className="mt-6"><IntegrationsStatusPanel /></TabsContent>
         <TabsContent value="sites" className="mt-6"><SitesManagement /></TabsContent>
         <TabsContent value="attendance-config" className="mt-6"><AttendanceSettings /></TabsContent>
         <TabsContent value="biometrics" className="mt-6"><BiometricsSettings /></TabsContent>

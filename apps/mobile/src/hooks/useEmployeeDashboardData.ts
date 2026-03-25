@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 
 import { api } from "../../../../convex/_generated/api";
+import { getAttendanceActionBlocker } from "../lib/attendanceFlow";
 import { uploadFileToConvex } from "../lib/mobileConvexUpload";
-import { deletePersistedSelfie, persistCapturedSelfie } from "../lib/mobileSelfieStorage";
 import type { MobileOfflineLocationData } from "../lib/mobileOfflineQueue";
 import { useMobileOfflineQueue } from "./useMobileOfflineQueue";
 import { useMobileRuntime } from "../providers/useMobileRuntime";
@@ -65,8 +65,6 @@ export function useEmployeeDashboardData() {
   const requiresSelfie = Boolean(settings?.require_selfie);
   const requiresLocation = Boolean(settings?.require_location || settings?.geofence_enabled);
 
-  const blockers: string[] = [];
-
   const primaryActionLabel = !runtime.isSignedIn
     ? "Sign in to continue"
     : currentShiftOpen
@@ -86,30 +84,19 @@ export function useEmployeeDashboardData() {
   const queueActionLabel = currentShiftOpen ? "Queue clock out" : "Queue clock in";
 
   function validateActionRequest(evidence?: AttendanceCapturePayload) {
-    if (!runtime.isSignedIn) {
-      return "Sign in with your employee account to load live attendance.";
-    }
+    const validationError = getAttendanceActionBlocker({
+      isSignedIn: runtime.isSignedIn,
+      hasAttendanceContext: Boolean(todayLog || settings),
+      attendanceComplete,
+      settings,
+      evidence,
+    });
 
-    if (!todayLog && !settings) {
-      return "Attendance settings are still loading.";
-    }
-
-    if (attendanceComplete) {
+    if (validationError === "Attendance complete") {
       setActionMessage("Today's attendance is already complete.");
-      return "Attendance complete";
     }
 
-    if (requiresSelfie && !evidence?.selfieUri) {
-      return "Selfie capture is required before attendance can be submitted.";
-    }
-
-    if (requiresLocation && !evidence?.locationData) {
-      return settings?.geofence_enabled
-        ? "Location capture is required so geofence checks can run before attendance is submitted."
-        : "Location capture is required before attendance can be submitted.";
-    }
-
-    return null;
+    return validationError;
   }
 
   async function triggerPrimaryAction(evidence?: AttendanceCapturePayload) {
@@ -170,18 +157,19 @@ export function useEmployeeDashboardData() {
       return false;
     }
 
-    let persistedSelfieUri: string | undefined;
+    if (requiresSelfie && evidence?.selfieUri) {
+      setActionError(
+        "Offline queueing is unavailable when selfie verification is required. Reconnect or use a supported device.",
+      );
+      return false;
+    }
 
     try {
-      if (evidence?.selfieUri) {
-        persistedSelfieUri = await persistCapturedSelfie(evidence.selfieUri);
-      }
-
       await offlineQueue.queueAttendanceAction({
         eventType: currentShiftOpen ? "clock_out" : "clock_in",
         logId: currentShiftOpen ? todayLog?.id : undefined,
         locationData: evidence?.locationData,
-        selfieUri: persistedSelfieUri,
+        selfieUri: undefined,
       });
       setActionMessage(
         currentShiftOpen
@@ -190,7 +178,6 @@ export function useEmployeeDashboardData() {
       );
       return true;
     } catch (error) {
-      await deletePersistedSelfie(persistedSelfieUri);
       const message =
         error instanceof Error
           ? error.message
@@ -228,7 +215,6 @@ export function useEmployeeDashboardData() {
     isSubmitting,
     actionMessage,
     actionError,
-    blockers,
     requiresSelfie,
     requiresLocation,
     primaryActionLabel,

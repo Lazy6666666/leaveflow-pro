@@ -4,8 +4,9 @@ import Approvals from "./Approvals";
 import TeamCalendar from "./TeamCalendar";
 import TeamAttendance from "./TeamAttendance";
 import ManagerDelegation from "./ManagerDelegation";
+import { ExpenseApprovalPanel } from "@/components/expenses/ExpenseApprovalPanel";
 
-const TABS = ["approvals", "team-calendar", "team-attendance", "delegation"] as const;
+const TABS = ["approvals", "expenses", "team-calendar", "team-attendance", "delegation"] as const;
 type Tab = (typeof TABS)[number];
 
 const ManagerHub = () => {
@@ -26,12 +27,14 @@ const ManagerHub = () => {
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="approvals">Approvals</TabsTrigger>
+          <TabsTrigger value="expenses">Expenses</TabsTrigger>
           <TabsTrigger value="team-calendar">Team Calendar</TabsTrigger>
           <TabsTrigger value="team-attendance">Team Attendance</TabsTrigger>
           <TabsTrigger value="delegation">Delegation</TabsTrigger>
         </TabsList>
 
         <TabsContent value="approvals" className="mt-6"><Approvals /></TabsContent>
+        <TabsContent value="expenses" className="mt-6"><ExpenseApprovalPanel /></TabsContent>
         <TabsContent value="team-calendar" className="mt-6"><TeamCalendar /></TabsContent>
         <TabsContent value="team-attendance" className="mt-6"><TeamAttendance /></TabsContent>
         <TabsContent value="delegation" className="mt-6"><ManagerDelegation /></TabsContent>

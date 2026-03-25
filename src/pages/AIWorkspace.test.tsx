@@ -37,7 +37,13 @@ vi.mock("sonner", () => ({
 }));
 
 vi.mock("@/components/AIChatPanel", () => ({
-  default: ({ mode }: { mode?: string }) => <div data-testid="ai-chat-panel">chat:{mode ?? "floating"}</div>,
+  default: ({
+    mode,
+    initialPromptRequest,
+  }: {
+    mode?: string;
+    initialPromptRequest?: { prompt: string } | null;
+  }) => <div data-testid="ai-chat-panel">chat:{mode ?? "floating"}:{initialPromptRequest?.prompt ?? "idle"}</div>,
 }));
 
 const renderWorkspace = () =>
@@ -46,6 +52,13 @@ const renderWorkspace = () =>
       <AIWorkspace />
     </MemoryRouter>,
   );
+
+function setAuthState(hasRole: (role: string) => boolean, hasManagerAccess: boolean) {
+  mockUseAuth.mockReturnValue({
+    hasRole,
+    hasManagerAccess,
+  });
+}
 
 const getStatusCard = (label: string) => {
   const cardLabel = screen.getByText(label);
@@ -81,28 +94,23 @@ describe("AIWorkspace", () => {
   });
 
   it("shows only the employee section for a standard user", () => {
-    mockUseAuth.mockReturnValue({
-      hasRole: () => false,
-      hasManagerAccess: false,
-    });
+    setAuthState(() => false, false);
 
     renderWorkspace();
 
     expect(screen.getByText("Employee workflows")).toBeInTheDocument();
     expect(screen.queryByText("HR admin workflows")).not.toBeInTheDocument();
     expect(screen.getByText("Plan time off")).toBeInTheDocument();
+    expect(screen.getByText("Bridge-day suggestion ready")).toBeInTheDocument();
     expect(screen.queryByText("Open policies")).not.toBeInTheDocument();
     expect(screen.getByText("Curated prompts visible from your current role scope.")).toBeInTheDocument();
     expect(within(getStatusCard("Prompt starters")).getByText("3")).toBeInTheDocument();
     expect(within(getStatusCard("Current role access")).getByText("Employee")).toBeInTheDocument();
-    expect(screen.getByTestId("ai-chat-panel")).toHaveTextContent("chat:embedded");
+    expect(screen.getByTestId("ai-chat-panel")).toHaveTextContent("chat:embedded:idle");
   });
 
   it("adds the HR admin section and keeps quick links unique when the role is present", () => {
-    mockUseAuth.mockReturnValue({
-      hasRole: (role: string) => role === "hr_admin",
-      hasManagerAccess: true,
-    });
+    setAuthState((role: string) => role === "hr_admin", true);
 
     renderWorkspace();
 
@@ -118,10 +126,7 @@ describe("AIWorkspace", () => {
   });
 
   it("shows manager workflows without exposing HR admin workflows to managers", () => {
-    mockUseAuth.mockReturnValue({
-      hasRole: () => false,
-      hasManagerAccess: true,
-    });
+    setAuthState(() => false, true);
 
     renderWorkspace();
 
@@ -133,10 +138,7 @@ describe("AIWorkspace", () => {
   });
 
   it("copies a starter prompt and surfaces the last copied prompt", async () => {
-    mockUseAuth.mockReturnValue({
-      hasRole: () => false,
-      hasManagerAccess: false,
-    });
+    setAuthState(() => false, false);
     mockWriteText.mockResolvedValue(undefined);
 
     renderWorkspace();
@@ -153,11 +155,23 @@ describe("AIWorkspace", () => {
     expect(screen.getByText("Last copied prompt")).toBeInTheDocument();
   });
 
+  it("sends an action-feed prompt into the embedded copilot", () => {
+    setAuthState(() => false, false);
+
+    renderWorkspace();
+
+    const feedCard = screen.getByText("Bridge-day suggestion ready").closest("article");
+    expect(feedCard).not.toBeNull();
+
+    fireEvent.click(within(feedCard as HTMLElement).getByRole("button", { name: "Ask BALANCE AI" }));
+
+    expect(screen.getByTestId("ai-chat-panel")).toHaveTextContent(
+      "Suggest the smartest leave dates around upcoming holidays and explain the best bridge-day option for me.",
+    );
+  });
+
   it("shows an error toast when clipboard access is unavailable", () => {
-    mockUseAuth.mockReturnValue({
-      hasRole: () => false,
-      hasManagerAccess: false,
-    });
+    setAuthState(() => false, false);
 
     Object.defineProperty(window.navigator, "clipboard", {
       configurable: true,

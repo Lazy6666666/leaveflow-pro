@@ -5,16 +5,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Modal,
-  Platform,
   Pressable,
-  StyleSheet,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { buildAttendanceCapabilityFallbacks } from "../../lib/attendanceFlow";
 import type { MobileOfflineLocationData } from "../../lib/mobileOfflineQueue";
-import { colors, radius, spacing } from "../../theme/tokens";
+import { colors } from "../../theme/tokens";
+import { styles } from "./AttendanceCaptureModal.styles";
 
 export type AttendanceCaptureSubmission = {
   selfieUri?: string;
@@ -48,11 +48,33 @@ export function AttendanceCaptureModal({
   const [selfieUri, setSelfieUri] = useState<string | null>(null);
   const [locationData, setLocationData] = useState<MobileOfflineLocationData | null>(null);
   const [locationLabel, setLocationLabel] = useState<string | null>(null);
+  const [cameraAvailable, setCameraAvailable] = useState<boolean | null>(null);
+  const [locationServicesEnabled, setLocationServicesEnabled] = useState<boolean | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
   const [isCapturingSelfie, setIsCapturingSelfie] = useState(false);
   const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
+  const capabilityFallbacks = buildAttendanceCapabilityFallbacks({
+    settings: {
+      require_selfie: requiresSelfie,
+      require_location: requiresLocation,
+      geofence_enabled: Boolean(geofenceLabel),
+      geofence_label: geofenceLabel ?? null,
+    },
+    cameraAvailable,
+    cameraPermission,
+    locationPermission,
+    locationServicesEnabled,
+  });
+  const liveCaptureBlocked = capabilityFallbacks.some((item) => item.blocking);
+  const unsupportedCameraMessage =
+    "This device cannot provide a live camera feed for selfie verification.";
+
   async function ensureCameraPermission() {
+    if (cameraAvailable === false) {
+      return false;
+    }
+
     if (cameraPermission?.granted) {
       return true;
     }
@@ -114,6 +136,7 @@ export function AttendanceCaptureModal({
       }
 
       const servicesEnabled = await Location.hasServicesEnabledAsync();
+      setLocationServicesEnabled(servicesEnabled);
       if (!servicesEnabled) {
         setLocalError("Turn on location services to continue.");
         return;
@@ -151,16 +174,32 @@ export function AttendanceCaptureModal({
       setSelfieUri(null);
       setLocationData(null);
       setLocationLabel(null);
+      setCameraAvailable(null);
+      setLocationServicesEnabled(null);
       setLocalError(null);
       setIsCapturingSelfie(false);
       setIsLoadingLocation(false);
       return;
     }
 
+    if (requiresSelfie) {
+      void CameraView.isAvailableAsync()
+        .then((available) => {
+          setCameraAvailable(available);
+          if (!available) {
+            setLocalError(unsupportedCameraMessage);
+          }
+        })
+        .catch(() => {
+          setCameraAvailable(false);
+          setLocalError(unsupportedCameraMessage);
+        });
+    }
+
     if (requiresLocation) {
       void acquireLocation();
     }
-  }, [acquireLocation, requiresLocation, visible]);
+  }, [acquireLocation, requiresLocation, requiresSelfie, visible]);
 
   async function handleSubmit() {
     if (isBusy) {
@@ -168,6 +207,11 @@ export function AttendanceCaptureModal({
     }
 
     setLocalError(null);
+
+    if (liveCaptureBlocked) {
+      setLocalError("Resolve the device fallback guidance before continuing.");
+      return;
+    }
 
     if (requiresSelfie && !selfieUri) {
       setLocalError("Capture a selfie before continuing.");
@@ -217,6 +261,17 @@ export function AttendanceCaptureModal({
               </Pressable>
             </View>
 
+            {capabilityFallbacks.length > 0 ? (
+              <View style={styles.fallbackStack}>
+                {capabilityFallbacks.map((item) => (
+                  <View key={item.key} style={styles.fallbackCard}>
+                    <Text style={styles.fallbackTitle}>{item.title}</Text>
+                    <Text style={styles.fallbackBody}>{item.body}</Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
             {requiresSelfie ? (
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>Selfie evidence</Text>
@@ -227,6 +282,13 @@ export function AttendanceCaptureModal({
                       source={{ uri: selfieUri }}
                       style={styles.cameraFrame}
                     />
+                  ) : cameraAvailable === false ? (
+                    <View style={styles.cameraFallback}>
+                      <Text style={styles.cameraFallbackTitle}>Camera capture unavailable</Text>
+                      <Text style={styles.cameraFallbackBody}>
+                        Use the fallback guidance above, then continue attendance on a supported device.
+                      </Text>
+                    </View>
                   ) : (
                     <CameraView
                       facing="front"
@@ -310,11 +372,13 @@ export function AttendanceCaptureModal({
               style={({ pressed }) => [
                 styles.primaryActionShell,
                 pressed && styles.primaryActionPressed,
-                isBusy && styles.primaryActionDisabled,
+                (isBusy || liveCaptureBlocked) && styles.primaryActionDisabled,
               ]}
             >
               <View style={styles.primaryActionCore}>
-                <Text style={styles.primaryActionText}>Submit evidence</Text>
+                <Text style={styles.primaryActionText}>
+                  {liveCaptureBlocked ? "Use supported device" : "Submit evidence"}
+                </Text>
                 <View style={styles.actionIsland}>
                   {isBusy ? (
                     <ActivityIndicator color={colors.ink} />
@@ -330,177 +394,3 @@ export function AttendanceCaptureModal({
     </Modal>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: "rgba(6, 5, 4, 0.8)",
-  },
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(6, 5, 4, 0.8)",
-    padding: spacing.md,
-  },
-  panel: {
-    flex: 1,
-    backgroundColor: colors.panel,
-    borderColor: colors.borderStrong,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    gap: spacing.md,
-    padding: spacing.lg,
-  },
-  header: {
-    alignItems: "flex-start",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: spacing.md,
-  },
-  headerCopy: {
-    flex: 1,
-    gap: spacing.xs,
-  },
-  eyebrow: {
-    color: colors.goldSoft,
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 1.6,
-    textTransform: "uppercase",
-  },
-  title: {
-    color: colors.text,
-    fontSize: 24,
-    fontWeight: "800",
-    lineHeight: 28,
-  },
-  body: {
-    color: colors.textMuted,
-    fontSize: 14,
-    lineHeight: 22,
-  },
-  closeButton: {
-    alignItems: "center",
-    borderColor: colors.borderStrong,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    justifyContent: "center",
-    minHeight: 38,
-    paddingHorizontal: spacing.md,
-  },
-  closeButtonText: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 0.6,
-    textTransform: "uppercase",
-  },
-  section: {
-    gap: spacing.sm,
-  },
-  sectionLabel: {
-    color: colors.text,
-    fontSize: 13,
-    fontWeight: "800",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
-  cameraFrame: {
-    backgroundColor: colors.canvas,
-    borderRadius: radius.lg,
-    flex: 1,
-    minHeight: Platform.select({ ios: 320, default: 280 }),
-    overflow: "hidden",
-  },
-  locationCard: {
-    backgroundColor: colors.canvas,
-    borderColor: colors.borderStrong,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    gap: spacing.xs,
-    padding: spacing.md,
-  },
-  locationValue: {
-    color: colors.text,
-    fontSize: 15,
-    fontWeight: "700",
-    lineHeight: 22,
-  },
-  locationMeta: {
-    color: colors.textSoft,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  sectionActions: {
-    flexDirection: "row",
-    gap: spacing.sm,
-  },
-  secondaryAction: {
-    alignItems: "center",
-    borderColor: colors.borderStrong,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    flex: 1,
-    justifyContent: "center",
-    minHeight: 48,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-  },
-  secondaryActionPressed: {
-    transform: [{ scale: 0.985 }],
-  },
-  secondaryActionDisabled: {
-    opacity: 0.45,
-  },
-  secondaryActionText: {
-    color: colors.text,
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
-  primaryActionShell: {
-    backgroundColor: colors.gold,
-    borderRadius: radius.pill,
-    marginTop: "auto",
-    padding: 4,
-  },
-  primaryActionPressed: {
-    transform: [{ scale: 0.985 }],
-  },
-  primaryActionDisabled: {
-    opacity: 0.65,
-  },
-  primaryActionCore: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-  },
-  primaryActionText: {
-    color: colors.ink,
-    fontSize: 14,
-    fontWeight: "800",
-    letterSpacing: 0.8,
-    textTransform: "uppercase",
-  },
-  actionIsland: {
-    alignItems: "center",
-    backgroundColor: "rgba(15, 13, 11, 0.10)",
-    borderRadius: radius.pill,
-    height: 34,
-    justifyContent: "center",
-    width: 34,
-  },
-  actionIslandText: {
-    color: colors.ink,
-    fontSize: 16,
-    fontWeight: "800",
-    marginTop: -1,
-  },
-  errorText: {
-    color: colors.danger,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-});

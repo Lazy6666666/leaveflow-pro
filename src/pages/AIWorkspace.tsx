@@ -18,6 +18,9 @@ import { Link } from "react-router-dom";
 import { toast } from "sonner";
 
 import AIChatPanel from "@/components/AIChatPanel";
+import { AIActionFeed } from "@/components/ai-feed/AIActionFeed";
+import { getVisibleAiFeedItems } from "@/components/ai-feed/feedItems";
+import type { PromptRequest } from "@/components/ai-chat/types";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -175,42 +178,50 @@ const workspaceHighlights = [
   },
 ] as const;
 
+function getActiveRoleLenses(isManager: boolean, isHrAdmin: boolean) {
+  return ["Employee", ...(isManager ? ["Manager"] : []), ...(isHrAdmin ? ["HR admin"] : [])];
+}
+
+function buildVisibleLinks(sections: WorkflowSection[]) {
+  const links = [
+    { label: "Dashboard", href: "/dashboard" },
+    ...sections.flatMap((section) =>
+      section.cards.map((card) => ({
+        label: card.hrefLabel,
+        href: card.href,
+      })),
+    ),
+  ];
+  const seen = new Set<string>();
+
+  return links.filter((link) => {
+    if (seen.has(link.href)) {
+      return false;
+    }
+
+    seen.add(link.href);
+    return true;
+  });
+}
+
 const AIWorkspace = () => {
   const { hasRole, hasManagerAccess } = useAuth();
   const { trackOnce, track } = useAnalytics();
   const [copiedPrompt, setCopiedPrompt] = useState<string | null>(null);
+  const [promptRequest, setPromptRequest] = useState<PromptRequest | null>(null);
   const isHrAdmin = hasRole("hr_admin");
   const isManager = hasManagerAccess && !isHrAdmin;
-  const activeRoleLenses = useMemo(
-    () => ["Employee", ...(isManager ? ["Manager"] : []), ...(isHrAdmin ? ["HR admin"] : [])],
-    [isManager, isHrAdmin],
-  );
+  const activeRoleLenses = useMemo(() => getActiveRoleLenses(isManager, isHrAdmin), [isManager, isHrAdmin]);
 
   const visibleSections = useMemo(
     () => [employeeSection, ...(isManager ? [managerSection] : []), ...(isHrAdmin ? [hrAdminSection] : [])],
     [isManager, isHrAdmin],
   );
-  const visibleLinks = useMemo(() => {
-    const links = [
-      { label: "Dashboard", href: "/dashboard" },
-      ...visibleSections.flatMap((section) =>
-        section.cards.map((card) => ({
-          label: card.hrefLabel,
-          href: card.href,
-        })),
-      ),
-    ];
-    const seen = new Set<string>();
-
-    return links.filter((link) => {
-      if (seen.has(link.href)) {
-        return false;
-      }
-
-      seen.add(link.href);
-      return true;
-    });
-  }, [visibleSections]);
+  const visibleLinks = useMemo(() => buildVisibleLinks(visibleSections), [visibleSections]);
+  const visibleFeedItems = useMemo(
+    () => getVisibleAiFeedItems({ isManager, isHrAdmin }),
+    [isHrAdmin, isManager],
+  );
   const totalPromptCount = visibleSections.reduce((sum, section) => sum + section.cards.length, 0);
 
   useEffect(() => {
@@ -232,6 +243,28 @@ const AIWorkspace = () => {
       toast.success("Prompt copied. Continue in the BALANCE AI copilot.");
     } catch {
       toast.error("Could not copy the prompt. Please try again.");
+    }
+  };
+
+  const handleAskAi = (prompt: string) => {
+    setPromptRequest({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      prompt,
+    });
+    void track(
+      "ai_action_feed_prompt_selected",
+      {
+        mode: "embedded",
+        prompt_length: prompt.length,
+      },
+      { surface: "ai_workspace", path: "/ai-workspace" },
+    );
+
+    if (typeof document !== "undefined") {
+      const copilot = document.getElementById("workspace-copilot");
+      if (typeof copilot?.scrollIntoView === "function") {
+        copilot.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     }
   };
 
@@ -334,8 +367,8 @@ const AIWorkspace = () => {
         </Card>
       </section>
 
-      <section className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
-        <AIChatPanel mode="embedded" />
+      <section id="workspace-copilot" className="grid gap-8 lg:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
+        <AIChatPanel mode="embedded" initialPromptRequest={promptRequest} />
 
         <Card className="border-border/70">
           <CardHeader>
@@ -360,6 +393,8 @@ const AIWorkspace = () => {
           </CardContent>
         </Card>
       </section>
+
+      <AIActionFeed items={visibleFeedItems} onAskAi={handleAskAi} />
 
       <section id="role-workflows" className="scroll-mt-24 space-y-6">
         {visibleSections.map((section) => (

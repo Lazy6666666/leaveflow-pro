@@ -19,6 +19,11 @@ export type Msg = {
 
 export type QuickAction = { label: string; message: string };
 
+export type PromptRequest = {
+  id: string;
+  prompt: string;
+};
+
 export type AssistantBlock =
   | { type: "markdown"; content: string }
   | { type: "table"; headers: string[]; rows: string[][] }
