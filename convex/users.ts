@@ -2,6 +2,7 @@ import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getProfileByUserId, getUserRoles, now, requireIdentity } from "./lib/auth";
 import type { MutationCtx } from "./_generated/server";
+import { insertAnalyticsEvent } from "./lib/analytics";
 import { assertStorageFileOwnership, linkStorageFile } from "./lib/storage";
 
 async function provisionLeaveBalances(ctx: MutationCtx, userId: string) {
@@ -78,6 +79,20 @@ async function upsertProvisionedUser(
   }
 
   await provisionLeaveBalances(ctx, input.userId);
+
+  if (!existingProfile || !employeeRole) {
+    await insertAnalyticsEvent(ctx, {
+      eventName: "user_provisioned",
+      sessionId: `system:${input.userId}`,
+      userId: input.userId,
+      roleScope: "employee",
+      surface: "auth",
+      properties: {
+        created_profile: !existingProfile,
+        created_employee_role: !employeeRole,
+      },
+    });
+  }
 
   return {
     ok: true,

@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { internalQuery, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getManagedEmployeeIds, getProfileByUserId, hasRole, requireIdentity } from "./lib/auth";
 import { storageFileClassValidator } from "./constants";
@@ -96,6 +96,10 @@ export const getFileUrl = query({
       }
     }
 
+    if (storageFile?.fileClass === "policy_document") {
+      throw new Error("Forbidden");
+    }
+
     const ownProfile = await getProfileByUserId(ctx, viewerId);
     if (ownProfile?.avatarStorageId === args.storageId) {
       return await ctx.storage.getUrl(args.storageId);
@@ -132,5 +136,24 @@ export const getFileUrl = query({
     }
 
     throw new Error("Forbidden");
+  },
+});
+
+export const getOwnedPolicyDocumentUrlForOcr = internalQuery({
+  args: {
+    storageId: v.id("_storage"),
+    ownerUserId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const storageFile = await getStorageFileRecord(ctx, args.storageId);
+    if (!storageFile) {
+      throw new Error("Uploaded file metadata was not found");
+    }
+
+    if (storageFile.fileClass !== "policy_document" || storageFile.ownerUserId !== args.ownerUserId) {
+      throw new Error("Forbidden");
+    }
+
+    return await ctx.storage.getUrl(args.storageId);
   },
 });

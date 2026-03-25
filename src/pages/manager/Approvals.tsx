@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -14,6 +14,7 @@ import { format, parseISO } from "date-fns";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { getErrorMessage } from "@/lib/errors";
 import type { LeaveRequestId } from "@/lib/convexTypes";
 
@@ -30,6 +31,7 @@ interface PendingRequest {
 
 const Approvals = () => {
   const queryClient = useQueryClient();
+  const { sessionId, roleScope, surface, trackOnce } = useAnalytics();
   const [selectedRequest, setSelectedRequest] = useState<PendingRequest | null>(null);
   const [comment, setComment] = useState("");
   const [action, setAction] = useState<"approved" | "rejected" | null>(null);
@@ -42,12 +44,30 @@ const Approvals = () => {
 
   const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(requests, 10);
 
+  useEffect(() => {
+    if (!isLoading) {
+      void trackOnce("approvals_page_viewed", "approvals_page_viewed", {
+        pending_count: requests.length,
+      }, { surface: "manager", path: "/manager/approvals" });
+    }
+  }, [isLoading, requests.length, trackOnce]);
+
   const actionMutation = useMutation({
     mutationFn: async ({ id, status, comment }: { id: LeaveRequestId; status: "approved" | "rejected"; comment: string | null }) => {
+      const target = requests.find((request) => request.id === id);
+      const createdAt = target ? parseISO(target.created_at).getTime() : NaN;
+      const decisionLatencyHours = Number.isNaN(createdAt) ? undefined : Math.max(0, Math.round(((Date.now() - createdAt) / 36e5) * 10) / 10);
       await convex.mutation(api.leave.updateRequestStatus, {
         requestId: id,
         status,
         managerComment: comment || undefined,
+        analytics: {
+          sessionId,
+          roleScope,
+          surface,
+          path: "/manager/approvals",
+          decisionLatencyHours,
+        },
       });
       return { id, status };
     },
@@ -122,9 +142,11 @@ const Approvals = () => {
                       </TableCell>
                       <TableCell className="max-w-[200px] truncate text-muted-foreground hidden md:table-cell">{req.reason || "—"}</TableCell>
                       <TableCell className="text-muted-foreground hidden lg:table-cell">{format(parseISO(req.created_at), "MMM d, yyyy")}</TableCell>
-                      <TableCell className="space-x-2">
-                        <Button size="sm" className="h-8" onClick={() => { setSelectedRequest(req); setAction("approved"); }}>Approve</Button>
-                        <Button size="sm" variant="destructive" className="h-8" onClick={() => { setSelectedRequest(req); setAction("rejected"); }}>Reject</Button>
+                      <TableCell>
+                        <div className="flex min-w-[140px] flex-col gap-2 sm:min-w-0 sm:flex-row">
+                          <Button size="sm" className="h-8" onClick={() => { setSelectedRequest(req); setAction("approved"); }}>Approve</Button>
+                          <Button size="sm" variant="destructive" className="h-8" onClick={() => { setSelectedRequest(req); setAction("rejected"); }}>Reject</Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
@@ -15,6 +15,7 @@ import { UserCheck, Plus, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { getErrorMessage } from "@/lib/errors";
 import type { ManagerDelegationId } from "@/lib/convexTypes";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 interface Delegation {
   id: ManagerDelegationId;
@@ -30,6 +31,7 @@ interface ProfileMin { id: string; full_name: string | null; email: string | nul
 
 const ManagerDelegation = () => {
   const { user, hasExplicitRole } = useAuth();
+  const { sessionId, roleScope, surface } = useAnalytics();
   const [delegations, setDelegations] = useState<Delegation[]>([]);
   const [profiles, setProfiles] = useState<ProfileMin[]>([]);
   const [managerCandidates, setManagerCandidates] = useState<ProfileMin[]>([]);
@@ -41,7 +43,7 @@ const ManagerDelegation = () => {
   const [submitting, setSubmitting] = useState(false);
   const isHrAdmin = hasExplicitRole("hr_admin");
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     if (!user) return;
     const [data, employeesData] = await Promise.all([
       convex.query(api.manager.getDelegationsPageData, {}),
@@ -62,9 +64,12 @@ const ManagerDelegation = () => {
       setManagerCandidates([]);
       setManagerId("");
     }
-  };
+  }, [isHrAdmin, user]);
 
-  useEffect(() => { fetchData().finally(() => setLoading(false)); }, [user]);
+  useEffect(() => {
+    setLoading(true);
+    fetchData().finally(() => setLoading(false));
+  }, [fetchData]);
 
   const profileName = (id: string) => {
     const p = profiles.find((p) => p.id === id);
@@ -83,6 +88,12 @@ const ManagerDelegation = () => {
         delegateId,
         startDate,
         endDate,
+        analytics: {
+          sessionId,
+          roleScope,
+          surface,
+          path: "/manager/delegation",
+        },
       });
       toast.success("Delegation created");
       setDelegateId(""); setStartDate(""); setEndDate("");
@@ -95,7 +106,15 @@ const ManagerDelegation = () => {
 
   const handleDeactivate = async (id: ManagerDelegationId) => {
     try {
-      await convex.mutation(api.manager.deactivateDelegation, { delegationId: id });
+      await convex.mutation(api.manager.deactivateDelegation, {
+        delegationId: id,
+        analytics: {
+          sessionId,
+          roleScope,
+          surface,
+          path: "/manager/delegation",
+        },
+      });
       toast.success("Delegation deactivated");
       fetchData();
     } catch (error) {
@@ -160,7 +179,7 @@ const ManagerDelegation = () => {
               <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="h-11" />
               {dateError && <p className="text-xs text-destructive">{dateError}</p>}
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end lg:col-span-4">
               <Button onClick={handleCreate} disabled={submitting || !delegateId || !startDate || !endDate || !!dateError || (isHrAdmin && !managerId)} className="h-11 w-full">
                 {submitting ? "Creating..." : "Create"}
               </Button>

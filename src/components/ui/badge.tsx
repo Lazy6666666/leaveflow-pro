@@ -12,6 +12,15 @@ const badgeVariants = cva(
         secondary: "border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80",
         destructive: "border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80",
         outline: "text-foreground",
+        // Semantic status variants — Vercel guidelines compliant
+        approved:
+          "border-emerald-500/20 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 dark:bg-emerald-500/15 dark:border-emerald-500/25",
+        pending:
+          "border-amber-500/20 bg-amber-500/10 text-amber-700 dark:text-amber-400 dark:bg-amber-500/15 dark:border-amber-500/25",
+        rejected:
+          "border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-400 dark:bg-rose-500/15 dark:border-rose-500/25",
+        cancelled:
+          "border-zinc-400/20 bg-zinc-500/8 text-zinc-600 dark:text-zinc-400 dark:bg-zinc-500/12 dark:border-zinc-400/20",
       },
     },
     defaultVariants: {

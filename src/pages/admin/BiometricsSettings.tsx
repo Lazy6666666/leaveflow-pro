@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
 import type { FunctionReturnType } from "convex/server";
@@ -20,6 +20,7 @@ import { getErrorMessage } from "@/lib/errors";
 
 type BiometricsConfig = NonNullable<FunctionReturnType<typeof api.admin.getBiometricsConfigs>>[number];
 type BiometricsConfigId = BiometricsConfig["id"];
+type Site = FunctionReturnType<typeof api.sites.listSites>[number];
 type Vendor = BiometricsConfig["vendor"];
 type VendorField = "api_url" | "api_key" | "api_secret" | "webhook_secret";
 type VendorInfo = {
@@ -66,14 +67,17 @@ const isVendor = (value: string): value is Vendor => value in vendorInfo;
 
 const BiometricsSettings = () => {
   const [configs, setConfigs] = useState<BiometricsConfig[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [testingId, setTestingId] = useState<BiometricsConfigId | null>(null);
   const [syncingId, setSyncingId] = useState<BiometricsConfigId | null>(null);
+  const [siteFilter, setSiteFilter] = useState("all");
   const { toast } = useToast();
 
   // Form state
   const [formVendor, setFormVendor] = useState<Vendor>("zkteco");
+  const [formSiteId, setFormSiteId] = useState("");
   const [formName, setFormName] = useState("");
   const [formApiUrl, setFormApiUrl] = useState("");
   const [formApiKey, setFormApiKey] = useState("");
@@ -84,17 +88,22 @@ const BiometricsSettings = () => {
   const [formSyncFreq, setFormSyncFreq] = useState(30);
   const [saving, setSaving] = useState(false);
 
-  const fetchConfigs = async () => {
+  const fetchConfigs = useCallback(async () => {
     setLoading(true);
-    const data = await convex.query(api.admin.getBiometricsConfigs, {});
+    const [data, sitesData] = await Promise.all([
+      convex.query(api.admin.getBiometricsConfigs, { siteId: siteFilter === "all" ? undefined : siteFilter }),
+      convex.query(api.sites.listSites, {}),
+    ]);
     setConfigs(data ?? []);
+    setSites(sitesData ?? []);
     setLoading(false);
-  };
+  }, [siteFilter]);
 
-  useEffect(() => { fetchConfigs(); }, []);
+  useEffect(() => { void fetchConfigs(); }, [fetchConfigs]);
 
   const resetForm = () => {
     setFormVendor("zkteco");
+    setFormSiteId(siteFilter === "all" ? "" : siteFilter);
     setFormName("");
     setFormApiUrl("");
     setFormApiKey("");
@@ -115,6 +124,7 @@ const BiometricsSettings = () => {
       await convex.mutation(api.admin.saveBiometricsConfig, {
         vendor: formVendor,
         name: formName.trim(),
+        siteId: formSiteId || undefined,
         apiUrl: formApiUrl.trim() || undefined,
         apiKey: formApiKey.trim() || undefined,
         apiSecret: formApiSecret.trim() || undefined,
@@ -200,7 +210,21 @@ const BiometricsSettings = () => {
             Connect biometrics devices for automatic attendance sync
           </p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <div className="flex flex-wrap items-center gap-3">
+          <Select value={siteFilter} onValueChange={setSiteFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by site" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Sites</SelectItem>
+              {sites.map((site) => (
+                <SelectItem key={String(site._id)} value={String(site._id)}>
+                  {site.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={resetForm}>
               <Plus className="h-4 w-4 mr-2" />
@@ -233,10 +257,27 @@ const BiometricsSettings = () => {
                 <p className="text-xs text-muted-foreground">{vendorInfo[formVendor].description}</p>
               </div>
 
-              <div className="space-y-2">
-                <Label>Device Name</Label>
-                <Input name="deviceName" autoComplete="off" placeholder="e.g. Main Entrance, Floor 2" value={formName} onChange={(e) => setFormName(e.target.value)} />
-              </div>
+	              <div className="space-y-2">
+	                <Label>Device Name</Label>
+	                <Input name="deviceName" autoComplete="off" placeholder="e.g. Main Entrance, Floor 2" value={formName} onChange={(e) => setFormName(e.target.value)} />
+	              </div>
+
+	              <div className="space-y-2">
+	                <Label>Site</Label>
+	                <Select value={formSiteId || "none"} onValueChange={(value) => setFormSiteId(value === "none" ? "" : value)}>
+	                  <SelectTrigger>
+	                    <SelectValue placeholder="No site" />
+	                  </SelectTrigger>
+	                  <SelectContent>
+	                    <SelectItem value="none">No site</SelectItem>
+	                    {sites.map((site) => (
+	                      <SelectItem key={String(site._id)} value={String(site._id)}>
+	                        {site.name}
+	                      </SelectItem>
+	                    ))}
+	                  </SelectContent>
+	                </Select>
+	              </div>
 
               {vendorInfo[formVendor].fields.includes("api_url") && (
                 <div className="space-y-2">
@@ -270,7 +311,7 @@ const BiometricsSettings = () => {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Device Serial (optional)</Label>
                   <Input name="deviceSerial" autoComplete="off" placeholder="Serial number" value={formDeviceSerial} onChange={(e) => setFormDeviceSerial(e.target.value)} />
@@ -291,7 +332,8 @@ const BiometricsSettings = () => {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
+	        </Dialog>
+        </div>
       </div>
 
       {/* Supported Vendors Overview */}
@@ -335,20 +377,21 @@ const BiometricsSettings = () => {
             return (
               <Card key={config.id}>
                 <CardContent className="p-5">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-center gap-3">
+                  <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                    <div className="flex min-w-0 items-start gap-3">
                       <div className="h-10 w-10 rounded-lg bg-muted/60 flex items-center justify-center shrink-0">
                         <info.icon className="h-5 w-5 text-muted-foreground" />
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-sm font-medium text-foreground">{config.name}</p>
-                          <Badge variant="outline" className="text-[10px]">{info.label}</Badge>
-                          {getStatusBadge(config)}
-                        </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                      <div className="min-w-0">
+	                        <div className="flex flex-wrap items-center gap-2">
+	                          <p className="text-sm font-medium text-foreground">{config.name}</p>
+	                          <Badge variant="outline" className="text-[10px]">{info.label}</Badge>
+	                          {config.site_name ? <Badge variant="secondary" className="text-[10px]">{config.site_name}</Badge> : null}
+	                          {getStatusBadge(config)}
+	                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                           {config.location_name && <span>{config.location_name}</span>}
-                          {config.api_url && <span className="truncate max-w-[200px]">{config.api_url}</span>}
+                          {config.api_url && <span className="max-w-full break-all xl:max-w-[200px]">{config.api_url}</span>}
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
                             Every {config.sync_frequency_minutes}m
@@ -363,7 +406,7 @@ const BiometricsSettings = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex flex-wrap items-center gap-2 xl:shrink-0 xl:justify-end">
                       <Switch
                         checked={config.is_active}
                         onCheckedChange={() => handleToggleActive(config)}
@@ -371,6 +414,7 @@ const BiometricsSettings = () => {
                       <Button
                         variant="outline"
                         size="sm"
+                        className="min-w-[88px]"
                         onClick={() => handleTestConnection(config.id)}
                         disabled={testingId === config.id}
                       >
@@ -380,6 +424,7 @@ const BiometricsSettings = () => {
                       <Button
                         variant="outline"
                         size="sm"
+                        className="min-w-[76px]"
                         onClick={() => handleSync(config.id)}
                         disabled={syncingId === config.id || !config.is_active}
                       >

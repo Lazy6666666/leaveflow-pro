@@ -25,7 +25,11 @@ export default defineConfig(({ mode }) => {
       environment: "node",
       globals: true,
       setupFiles: ["./src/test/setup.ts"],
-      include: ["src/**/*.{test,spec}.{ts,tsx}", "convex/**/*.{test,spec}.{ts,tsx}"],
+      include: [
+        "src/**/*.{test,spec}.{ts,tsx}",
+        "convex/**/*.{test,spec}.{ts,tsx}",
+        "apps/mobile/**/*.{test,spec}.{ts,tsx}",
+      ],
       pool: "forks",
       maxWorkers: 1,
       minWorkers: 1,

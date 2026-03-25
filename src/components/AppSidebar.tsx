@@ -1,180 +1,200 @@
+import { ReactNode } from "react";
 import {
-  LayoutDashboard, CalendarDays, PlusCircle, History, CalendarHeart,
-  UserCog, CheckSquare, CalendarRange, Users, Settings,
-  BarChart3, Building2, Wallet, LogOut, ShieldCheck, Fingerprint, CreditCard, ClipboardList, UserCheck,
+  LayoutDashboard,
+  CalendarDays,
+  UserCog,
+  CheckSquare,
+  Users,
+  Settings,
+  LogOut,
+  Fingerprint,
+  Bot,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PlusCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent,
-  SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem,
-  SidebarFooter, useSidebar,
-} from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { SidebarBody, SidebarLink, useSidebar } from "@/components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
+import { Logo } from "@/components/ui/Logo";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const employeeItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "My Leave", url: "/my-leave", icon: CalendarDays },
-  { title: "Request Leave", url: "/request-leave", icon: PlusCircle },
-  { title: "Leave History", url: "/leave-history", icon: History },
-  { title: "Attendance", url: "/attendance", icon: Fingerprint },
-  { title: "Holidays", url: "/holidays", icon: CalendarHeart },
-  { title: "Profile", url: "/profile", icon: UserCog },
+  { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
+  { label: "AI Workspace", href: "/ai-workspace", icon: <Bot className="h-5 w-5" /> },
+  { label: "Leave & Time Off", href: "/my-leave", icon: <CalendarDays className="h-5 w-5" /> },
+  { label: "Attendance", href: "/attendance", icon: <Fingerprint className="h-5 w-5" /> },
+  { label: "Identity & Security", href: "/profile", icon: <UserCog className="h-5 w-5" /> },
 ];
 
-const delegateManagerItems = [
-  { title: "Approvals", url: "/manager/approvals", icon: CheckSquare },
-  { title: "Team Calendar", url: "/manager/team-calendar", icon: CalendarRange },
-];
-
-const managerOnlyItems = [
-  { title: "Team Attendance", url: "/manager/team-attendance", icon: Fingerprint },
-  { title: "Delegation", url: "/manager/delegation", icon: UserCheck },
+const managerItems = [
+  { label: "Manager Hub", href: "/manager/hub", icon: <CheckSquare className="h-5 w-5" /> },
 ];
 
 const adminItems = [
-  { title: "Employees", url: "/admin/employees", icon: Users },
-  { title: "Departments", url: "/admin/departments", icon: Building2 },
-  { title: "Policies", url: "/admin/policies", icon: Settings },
-  { title: "Balances", url: "/admin/balances", icon: Wallet },
-  { title: "Attendance", url: "/admin/attendance", icon: Fingerprint },
-  { title: "Att. Settings", url: "/admin/attendance-settings", icon: Settings },
-  { title: "Biometrics", url: "/admin/biometrics", icon: Fingerprint },
-  { title: "Badge Maps", url: "/admin/badge-mappings", icon: CreditCard },
-  { title: "Reports", url: "/admin/reports", icon: BarChart3 },
-  { title: "Audit Log", url: "/admin/audit-log", icon: ClipboardList },
+  { label: "HR Operations", href: "/admin/hr-operations", icon: <Users className="h-5 w-5" /> },
+  { label: "System Admin", href: "/admin/system", icon: <Settings className="h-5 w-5" /> },
 ];
 
-export function AppSidebar() {
-  const { state } = useSidebar();
-  const collapsed = state === "collapsed";
+interface AppSidebarProps {
+  onRequestLeave?: () => void;
+}
+
+export function AppSidebar({ onRequestLeave }: AppSidebarProps) {
+  const { open, setOpen } = useSidebar();
   const location = useLocation();
-  const { hasExplicitRole, hasManagerAccess, hasRole, signOut, user, needsAdminSetup } = useAuth();
-  const canAccessManagerOnlyTools = hasExplicitRole("manager") || hasExplicitRole("hr_admin");
-  const managerItems = canAccessManagerOnlyTools
-    ? [...delegateManagerItems, ...managerOnlyItems]
-    : delegateManagerItems;
+  const { hasManagerAccess, hasRole, signOut, needsAdminSetup } = useAuth();
+  const { track } = useAnalytics();
 
   const isActive = (path: string) => location.pathname === path;
-
-  const renderNavItems = (items: typeof employeeItems) =>
-    items.map((item) => (
-      <SidebarMenuItem key={item.title}>
-        <SidebarMenuButton asChild isActive={isActive(item.url)}>
-          <NavLink
-            to={item.url}
-            end
-            className="relative overflow-hidden rounded-2xl px-3.5 py-3 text-sidebar-foreground/72 transition-colors duration-300 ease-apple-ease hover:bg-black/[0.035] hover:text-sidebar-foreground"
-            activeClassName="text-sidebar-foreground font-medium"
-          >
-            {isActive(item.url) ? (
-              <motion.span
-                layoutId="sidebar-active-pill"
-                className="absolute inset-0 rounded-2xl border border-border bg-foreground/[0.045]"
-                transition={{ type: "spring", stiffness: 420, damping: 30 }}
-              />
-            ) : null}
-            <item.icon className="relative z-10 mr-3 h-4 w-4 shrink-0" />
-            {!collapsed && <span className="relative z-10 text-[13.5px] leading-none">{item.title}</span>}
-          </NavLink>
-        </SidebarMenuButton>
-      </SidebarMenuItem>
-    ));
+  const trackSidebarClick = (item: string, toPath: string) => {
+    void track(
+      "sidebar_nav_clicked",
+      { item, from_path: location.pathname, to_path: toPath },
+      { path: location.pathname },
+    );
+  };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border bg-background">
-      <SidebarContent className="gap-1 pt-1">
-        {!collapsed && (
-          <div className="mx-5 mt-4 flex items-center gap-3.5 border-b border-border pb-5">
-            <div className="flex h-[5.25rem] w-[5.25rem] shrink-0 items-center justify-center rounded-[1.5rem] border border-stone-300 bg-stone-100 p-2.5 shadow-[0_12px_28px_hsl(0_0%_0%/0.08)]">
-              <img src="/favicon.ico" alt="BALANCE" className="h-full w-full object-contain" />
-            </div>
-            <div className="min-w-0 space-y-1.5">
-              <p className="text-[10px] uppercase tracking-[0.28em] text-sidebar-foreground/42">Workspace</p>
-              <h2 className="text-base font-semibold tracking-[0.18em] text-sidebar-foreground leading-none">BALANCE</h2>
-              <p className="text-[11px] leading-5 text-sidebar-foreground/55 truncate">{user?.email}</p>
-            </div>
-          </div>
-        )}
+    <SidebarBody className="bg-[#171411] border-r border-white/5 text-white">
+      <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide py-3">
+        {/* Workspace Header */}
+        <div className="mb-4 px-3 flex items-center justify-between">
+          <Logo size="sm" showText={open} variant="white" />
+          <button
+            type="button"
+            onClick={() => setOpen(!open)}
+            aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
+            className="ml-auto p-1.5 rounded-lg text-white hover:bg-white/10 transition-colors shrink-0 hidden md:block"
+          >
+            {open ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
+          </button>
+        </div>
 
-        <SidebarGroup className="pt-3">
-          <SidebarGroupLabel className="px-5 pb-2 text-sidebar-foreground/38 text-[10px] uppercase tracking-[0.28em]">Employee</SidebarGroupLabel>
-          <SidebarGroupContent>
-            <SidebarMenu className="space-y-1.5 px-3.5">{renderNavItems(employeeItems)}</SidebarMenu>
-          </SidebarGroupContent>
+        {/* Action Button - Mobile gets priority if they click menu */}
+        <div className="px-2 mb-6">
+           <Button 
+            onClick={() => {
+              onRequestLeave?.();
+              if (window.innerWidth < 768) setOpen(false);
+            }} 
+            className={cn("w-full transition-all duration-200 bg-primary/20 text-primary hover:bg-primary/30 flex justify-start pl-3", open ? "" : "px-0 justify-center group relative")} 
+            variant="ghost"
+           >
+            <PlusCircle className={cn("h-5 w-5 shrink-0", open ? "mr-2.5" : "")} />
+            <motion.span
+              animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }}
+              className="overflow-hidden whitespace-nowrap font-medium"
+            >
+              New Request
+            </motion.span>
+           </Button>
+        </div>
+
+        {/* Employee */}
+        <SidebarGroup label="Employee" open={open}>
+          {employeeItems.map((link, idx) => (
+            <SidebarLink
+              key={idx}
+              link={link}
+              onClick={() => trackSidebarClick(link.label, link.href)}
+              className={cn(
+                "hover:bg-white/5 rounded-xl px-2 py-2.5 transition-[background-color,border-color] duration-200",
+                isActive(link.href) && "border-l-2 border-emerald-500/60 bg-white/10 text-white font-semibold pl-2"
+              )}
+            />
+          ))}
         </SidebarGroup>
 
         {hasManagerAccess && (
           <>
-            <Separator className="mx-5 my-3 w-auto bg-border" />
-            <SidebarGroup>
-              <SidebarGroupLabel className="px-5 pb-2 text-sidebar-foreground/38 text-[10px] uppercase tracking-[0.28em]">Manager</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="space-y-1.5 px-3.5">{renderNavItems(managerItems)}</SidebarMenu>
-              </SidebarGroupContent>
+            <Separator className="my-4 bg-white/5" />
+            <SidebarGroup label="Manager" open={open}>
+              {managerItems.map((link, idx) => (
+                <SidebarLink
+                  key={idx}
+                  link={link}
+                  onClick={() => trackSidebarClick(link.label, link.href)}
+                  className={cn(
+                    "hover:bg-white/5 rounded-xl px-2 py-2.5 transition-all duration-200",
+                    isActive(link.href) && "bg-white/10 text-white font-bold"
+                  )}
+                />
+              ))}
             </SidebarGroup>
           </>
         )}
 
         {hasRole("hr_admin") && (
           <>
-            <Separator className="mx-5 my-3 w-auto bg-border" />
-            <SidebarGroup>
-              <SidebarGroupLabel className="px-5 pb-2 text-sidebar-foreground/38 text-[10px] uppercase tracking-[0.28em]">HR Admin</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="space-y-1.5 px-3.5">{renderNavItems(adminItems)}</SidebarMenu>
-              </SidebarGroupContent>
+            <Separator className="my-4 bg-white/5" />
+            <SidebarGroup label="HR Admin" open={open}>
+              {adminItems.map((link, idx) => (
+                <SidebarLink
+                  key={idx}
+                  link={link}
+                  onClick={() => trackSidebarClick(link.label, link.href)}
+                  className={cn(
+                    "hover:bg-white/5 rounded-xl px-2 py-2.5 transition-all duration-200",
+                    isActive(link.href) && "bg-white/10 text-white font-bold"
+                  )}
+                />
+              ))}
             </SidebarGroup>
           </>
         )}
 
         {needsAdminSetup && !hasRole("hr_admin") && (
           <>
-            <Separator className="mx-5 my-3 w-auto bg-border" />
-            <SidebarGroup>
-              <SidebarGroupLabel className="px-5 pb-2 text-sidebar-foreground/38 text-[10px] uppercase tracking-[0.28em]">Setup</SidebarGroupLabel>
-              <SidebarGroupContent>
-                <SidebarMenu className="space-y-1.5 px-3.5">
-                  <SidebarMenuItem>
-                    <SidebarMenuButton asChild isActive={isActive("/admin-setup")}>
-                      <NavLink
-                        to="/admin-setup"
-                        end
-                        className="relative overflow-hidden rounded-2xl px-3.5 py-3 text-sidebar-foreground/72 transition-colors duration-300 ease-apple-ease hover:bg-black/[0.035] hover:text-sidebar-foreground"
-                        activeClassName="text-sidebar-foreground font-medium"
-                      >
-                        {isActive("/admin-setup") ? (
-                          <motion.span
-                            layoutId="sidebar-active-pill"
-                            className="absolute inset-0 rounded-2xl border border-border bg-foreground/[0.045]"
-                            transition={{ type: "spring", stiffness: 420, damping: 30 }}
-                          />
-                        ) : null}
-                        <ShieldCheck className="relative z-10 mr-3 h-4 w-4 shrink-0" />
-                        {!collapsed && <span className="relative z-10 text-[13.5px] leading-none">Admin Setup</span>}
-                      </NavLink>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                </SidebarMenu>
-              </SidebarGroupContent>
+            <Separator className="my-4 bg-white/5" />
+            <SidebarGroup label="Setup" open={open}>
+              <SidebarLink
+                link={{ label: "Admin Setup", href: "/admin-setup", icon: <Settings className="h-5 w-5" /> }}
+                onClick={() => trackSidebarClick("Admin Setup", "/admin-setup")}
+                className={cn(
+                  "hover:bg-white/5 rounded-xl px-2 py-2.5 transition-all duration-200",
+                  isActive("/admin-setup") && "bg-white/10 text-white font-bold"
+                )}
+              />
             </SidebarGroup>
           </>
         )}
-      </SidebarContent>
+      </div>
 
-      <SidebarFooter className="mx-3.5 mb-3.5 mt-auto rounded-[1.4rem] border border-border bg-card">
-        <Button
-          variant="ghost"
-          className="w-full justify-start rounded-[1.2rem] px-3.5 py-6 text-black dark:text-white hover:bg-black/[0.035] hover:text-destructive dark:hover:bg-white/[0.06]"
+      {/* User Footer */}
+      <div className="mt-auto pt-6 px-2 pb-3">
+        <button
+          type="button"
           onClick={signOut}
+          aria-label="Sign Out"
+          title="Sign Out"
+          className="flex items-center gap-3 w-full p-2.5 rounded-xl border border-transparent hover:bg-white/5 transition-[background-color,border-color] duration-200 group"
         >
-          <LogOut className="mr-3 h-4 w-4 shrink-0" />
-          {!collapsed && <span className="text-[13.5px] leading-none">Sign Out</span>}
-        </Button>
-      </SidebarFooter>
-    </Sidebar>
+          <LogOut className="h-5 w-5 text-white/70 group-hover:text-red-400 shrink-0" />
+          <motion.span
+            animate={{ opacity: open ? 1 : 0, display: open ? "block" : "none" }}
+            className="text-sm font-medium text-white/70 group-hover:text-red-400"
+          >
+            Sign Out
+          </motion.span>
+        </button>
+      </div>
+    </SidebarBody>
   );
 }
+
+const SidebarGroup = ({ label, children, open }: { label: string; children: ReactNode; open: boolean }) => (
+  <div className="space-y-1 mb-6">
+    <motion.p
+      animate={{ opacity: open ? 1 : 0, display: open ? "block" : "none" }}
+      className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/40"
+    >
+      {label}
+    </motion.p>
+    <div className="space-y-0.5">{children}</div>
+  </div>
+);

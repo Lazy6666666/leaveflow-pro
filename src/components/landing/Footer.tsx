@@ -1,76 +1,132 @@
-import React from 'react';
+import { motion } from "framer-motion";
+import { Instagram, Facebook, Twitter, Linkedin, Github } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
 
-export const Footer = () => {
-    return (
-        <footer className="w-full bg-[#050505] pt-[120px] pb-[60px] px-6 md:px-[72px] lg:px-[120px] flex flex-col gap-[100px] border-t border-white/5">
-            <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-20 lg:gap-32">
-                {/* Brand */}
-                <div className="lg:col-span-5 flex flex-col gap-[24px]">
-                    <div className="flex items-center gap-[12px]">
-                        <img src="/BALNOBG.png" alt="BALANCE Logo" className="h-[24px] w-auto brightness-0 invert opacity-40 group-hover:opacity-100 transition-opacity" />
-                        <span className="text-[#FFFFFF] font-['Cormorant_Garamond'] text-[24px] font-medium tracking-tighter uppercase opacity-80">
-                            Balance
-                        </span>
-                    </div>
-                    <p className="text-white font-['Manrope'] text-sm leading-relaxed max-w-sm font-normal opacity-60">
-                        {"Engineered for architectural clarity in HR logistics. The new standard for enterprise attendance and leave management."}
-                    </p>
-                    <div className="flex gap-10 pt-8 border-t border-white/[0.03] mt-8 w-fit">
-                        <SocialLink name="INSTAGRAM" label="Instagram Profile" />
-                        <SocialLink name="LINKEDIN" label="LinkedIn Profile" />
-                        <SocialLink name="REPOSITORY" label="GitHub Repository" />
-                    </div>
-                </div>
-
-                {/* Content columns */}
-                <div className="lg:col-span-7 grid grid-cols-2 md:grid-cols-3 gap-12 lg:gap-24">
-                    {/* Column 1 */}
-                    <nav className="flex flex-col gap-[20px]" aria-label="System Links">
-                        <span className="text-white/40 font-['Manrope'] text-[10px] font-bold tracking-[0.3em] uppercase">SYSTEM</span>
-                        <FooterLink name="Infrastructure" />
-                        <FooterLink name="Attendance" />
-                        <FooterLink name="Verification" />
-                        <FooterLink name="Reporting" />
-                    </nav>
-
-                    {/* Column 2 */}
-                    <nav className="flex flex-col gap-[20px]" aria-label="Organization Links">
-                        <span className="text-white/40 font-['Manrope'] text-[10px] font-bold tracking-[0.3em] uppercase">ORGANIZATION</span>
-                        <FooterLink name="About Balance" />
-                        <FooterLink name="Documentation" />
-                        <FooterLink name="Careers" />
-                    </nav>
-
-                    {/* Column 3 */}
-                    <nav className="flex flex-col gap-[20px]" aria-label="Legal Protocols">
-                        <span className="text-white/40 font-['Manrope'] text-[10px] font-bold tracking-[0.3em] uppercase">PROTOCOLS</span>
-                        <FooterLink name="Security" />
-                        <FooterLink name="Privacy" />
-                        <FooterLink name="Terms" />
-                    </nav>
-                </div>
-            </div>
-
-            <div className="w-full flex flex-col md:flex-row items-center justify-between gap-[24px] pt-12 border-t border-white/5">
-                <span className="text-white font-['Manrope'] text-[10px] font-medium tracking-widest uppercase opacity-20">
-                    © 2026 BALANCE ARCHITECTURES. ALL RIGHTS RESERVED.
-                </span>
-                <span className="text-white font-['Manrope'] text-[10px] font-medium tracking-[0.3em] uppercase opacity-40">
-                    Designed for high performance teams.
-                </span>
-            </div>
-        </footer>
-    );
+const links = {
+  Product: [
+    { href: "#platform", label: "Platform" },
+    { href: "#capabilities", label: "Capability tour" },
+    { href: "#pricing", label: "Pricing" },
+  ],
+  Company: [
+    { href: "#hero", label: "About BALANCE" },
+    { href: "#final-cta", label: "Contact" },
+    { href: "/auth", label: "Sign in" },
+  ],
+  Resources: [
+    { href: "#", label: "Documentation" },
+    { href: "#", label: "API Reference" },
+    { href: "#", label: "Help Center" },
+  ],
 };
 
-const FooterLink = ({ name }) => (
-    <a href="#" className="text-white/60 hover:text-white transition-colors font-['Manrope'] text-[13px] font-medium">
-        {name}
-    </a>
-);
+const socialLinks = [
+  { icon: Instagram, href: "#", label: "Instagram" },
+  { icon: Facebook, href: "#", label: "Facebook" },
+  { icon: Twitter, href: "#", label: "Twitter" },
+  { icon: Linkedin, href: "#", label: "LinkedIn" },
+  { icon: Github, href: "#", label: "GitHub" },
+];
 
-const SocialLink = ({ name, label }) => (
-    <a href="#" className="text-white/40 hover:text-white transition-colors font-['Manrope'] text-[11px] font-bold tracking-widest" aria-label={label}>
-        {name}
-    </a>
-);
+export const Footer = () => {
+  return (
+    <footer className="px-6 border-t border-white/5 lg:px-10 pb-12 pt-16 bg-[#09090b]">
+      <div className="mx-auto max-w-[1440px]">
+        <div className="border-y border-white/10 py-12 md:py-16">
+          <div className="grid gap-12 lg:grid-cols-[1fr_1.2fr]">
+            {/* Brand Section */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+            >
+              <motion.div
+                className="flex flex-col gap-4 group cursor-pointer"
+                whileHover={{ scale: 1.02 }}
+              >
+                <Logo size="md" showText={true} />
+                <p className="text-[10px] uppercase tracking-[0.32em] text-white/60">leave and attendance infrastructure</p>
+              </motion.div>
+              <p className="mt-6 max-w-md text-sm font-medium text-white/70 leading-relaxed">
+                A more elegant landing surface for a product that needs to communicate trust, operational clarity, and calm control from the first scroll.
+              </p>
+
+              {/* Social Links */}
+              <nav aria-label="Social Media Links" className="mt-8 flex items-center gap-3">
+                {socialLinks.map((social, index) => (
+                  <motion.a
+                    key={social.label}
+                    href={social.href}
+                    aria-label={social.label}
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 ring-1 ring-white/10 text-white/70 transition hover:bg-[#e879f9] hover:text-black hover:ring-[#e879f9]"
+                    initial={{ opacity: 0, scale: 0 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{ scale: 1.15, y: -2 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <social.icon className="h-5 w-5" strokeWidth={2} />
+                  </motion.a>
+                ))}
+              </nav>
+            </motion.div>
+
+            {/* Links Grid */}
+            <motion.nav
+              aria-label="Footer Navigation"
+              className="grid gap-8 sm:grid-cols-3"
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              {Object.entries(links).map(([heading, group]) => (
+                <div key={heading}>
+                  <motion.p
+                    className="text-[10px] font-bold uppercase tracking-[0.32em] text-white/60 mb-5"
+                    whileHover={{ x: 4, color: "#e879f9" }}
+                  >
+                    {heading}
+                  </motion.p>
+                  <ul className="space-y-3">
+                    {group.map((link) => (
+                      <li key={link.label}>
+                        <motion.a
+                          href={link.href}
+                          className="block text-sm font-medium text-white/60 transition hover:text-white relative group"
+                          whileHover={{ x: 4 }}
+                        >
+                          {link.label}
+                          <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-0 h-0.5 bg-[#e879f9] group-hover:w-2 transition-all duration-300" />
+                        </motion.a>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </motion.nav>
+          </div>
+
+          {/* Bottom Bar */}
+          <motion.div
+            className="mt-12 flex flex-col gap-3 border-t border-white/10 pt-6 text-[10px] font-bold uppercase tracking-[0.28em] text-white/60 md:flex-row md:items-center md:justify-between"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4 }}
+          >
+            <span>Copyright 2026 Leaveflow Pro</span>
+            <div className="flex items-center gap-4">
+              <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
+              <span>•</span>
+              <a href="#" className="hover:text-white transition-colors">Terms of Service</a>
+            </div>
+            <span className="hidden lg:inline">Deterministic Global Operations</span>
+          </motion.div>
+        </div>
+      </div>
+    </footer>
+  );
+};

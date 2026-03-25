@@ -2,7 +2,8 @@ import { v } from "convex/values";
 import { internalAction, internalMutation, internalQuery } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { createNotification, now, recordAudit } from "./lib/auth";
-import { getEnv } from "./lib/env";
+import { getResendApiKey, getResendFromEmail } from "./lib/env";
+import { escapeBalanceEmailHtml, renderBalanceEmail } from "./lib/emailTemplates";
 import type {
   AttendanceLogDoc,
   AttendanceSettingsDoc,
@@ -31,16 +32,7 @@ type AutoMarkAbsencesResult = {
   reason?: "auto_mark_absent_disabled";
 };
 
-type PendingAttendanceLog = Pick<AttendanceLogDoc, "employeeId" | "date" | "status" | "source">;
-
-function escapeHtml(value: string) {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
+type PendingAttendanceLog = Pick<AttendanceLogDoc, "employeeId" | "date" | "status" | "source" | "siteId">;
 
 function summarizeNames(names: string[]) {
   if (names.length <= 3) {
@@ -117,12 +109,20 @@ export const notifyManagersOfAbsences = internalAction({
     date: v.string(),
     dryRun: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
-    const payload = await ctx.runQuery(internal.absenceNotifications.getAbsenceNotificationPayload, {
+  handler: async (ctx, args): Promise<{
+    dryRun: boolean;
+    date: string;
+    managersNotified: number;
+    notificationsCreated: number;
+    emailsSent: number;
+    emailEnabled: boolean;
+  }> => {
+    const payload = (await ctx.runQuery(internal.absenceNotifications.getAbsenceNotificationPayload, {
       employeeIds: args.employeeIds,
       date: args.date,
-    });
-    const resendApiKey = getEnv("RESEND_API_KEY");
+    })) as AbsenceNotificationPayload;
+    const resendApiKey = getResendApiKey();
+    const resendFromEmail = getResendFromEmail();
     let emailsSent = 0;
     let notificationsCreated = 0;
 
@@ -144,13 +144,32 @@ export const notifyManagersOfAbsences = internalAction({
         continue;
       }
 
-      const absentList = group.absentees.map((name) => `<li>${escapeHtml(name)}</li>`).join("");
-      const subject = `Attendance Alert: ${count} team member(s) marked absent — ${args.date}`;
-      const html = `<p>Hi ${escapeHtml(group.managerName)},</p>
-<p>The following team member(s) were auto-marked as <strong>absent</strong> on <strong>${escapeHtml(args.date)}</strong> because they did not clock in:</p>
-<ul>${absentList}</ul>
-<p>Please follow up if needed.</p>
-<p style="color:#888;font-size:12px;">This is an automated notification from Leave Manager.</p>`;
+      if (!resendFromEmail) {
+        await ctx.runMutation(internal.backendIncidents.recordIssue, {
+          source: "email.absence_notification",
+          message: "RESEND_FROM_EMAIL is required before sending manager absence notifications.",
+          severity: "error",
+          details: {
+            managerId: group.managerId,
+            date: args.date,
+          },
+          fingerprint: ["email", "absence_notification", "missing_from_email"],
+        });
+        continue;
+      }
+
+      const absentList = group.absentees.map((name) => `<li>${escapeBalanceEmailHtml(name)}</li>`).join("");
+      const subject = `Attendance Alert: ${count} team member(s) marked absent - ${args.date}`;
+      const html = renderBalanceEmail({
+        title: "Attendance alert: auto-marked absent",
+        preheader: `${summarizeNames(group.absentees)} marked absent on ${args.date}.`,
+        greetingName: group.managerName,
+        bodyHtml: [
+          `<p style="margin:0 0 12px;">The following team member(s) were auto-marked as <strong>absent</strong> on <strong>${escapeBalanceEmailHtml(args.date)}</strong> because they did not clock in:</p>`,
+          `<ul style="margin:0 0 12px;padding-left:18px;">${absentList}</ul>`,
+          `<p style="margin:0;">Please follow up if needed.</p>`,
+        ].join(""),
+      });
 
       if (!args.dryRun) {
         const emailResponse = await fetch("https://api.resend.com/emails", {
@@ -160,7 +179,7 @@ export const notifyManagersOfAbsences = internalAction({
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: "Leave Manager <onboarding@resend.dev>",
+            from: resendFromEmail,
             to: [group.managerEmail],
             subject,
             html,
@@ -168,7 +187,20 @@ export const notifyManagersOfAbsences = internalAction({
         });
 
         if (!emailResponse.ok) {
-          console.error("Failed to send absence notification", await emailResponse.text());
+          const responseText = await emailResponse.text();
+          console.error("Failed to send absence notification", responseText);
+          await ctx.runMutation(internal.backendIncidents.recordIssue, {
+            source: "email.absence_notification",
+            message: "Failed to send manager absence notification.",
+            severity: "error",
+            details: {
+              status: emailResponse.status,
+              managerId: group.managerId,
+              date: args.date,
+              responseText,
+            },
+            fingerprint: ["email", "absence_notification"],
+          });
           continue;
         }
       }
@@ -234,6 +266,7 @@ export const autoMarkAbsencesForDate = internalMutation({
         date: targetDate,
         status: leaveEmployeeIds.has(employee.userId) ? ("on_leave" as const) : ("absent" as const),
         source: "system",
+        siteId: employee.siteId,
       }));
 
     const absentEmployeeIds = toInsert
@@ -251,6 +284,7 @@ export const autoMarkAbsencesForDate = internalMutation({
           date: entry.date,
           status: entry.status,
           source: entry.source,
+          siteId: entry.siteId,
           createdAt: timestamp,
           updatedAt: timestamp,
         });
@@ -281,11 +315,23 @@ export const runDailyAttendanceAutomation = internalAction({
     date: v.optional(v.string()),
     dryRun: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) => {
-    const autoMarkResult = await ctx.runMutation(internal.absenceNotifications.autoMarkAbsencesForDate, {
+  handler: async (ctx, args): Promise<{
+    autoMarkResult: AutoMarkAbsencesResult;
+    notificationResult:
+      | {
+          dryRun: boolean;
+          date: string;
+          managersNotified: number;
+          notificationsCreated: number;
+          emailsSent: number;
+          emailEnabled: boolean;
+        }
+      | null;
+  }> => {
+    const autoMarkResult = (await ctx.runMutation(internal.absenceNotifications.autoMarkAbsencesForDate, {
       date: args.date,
       dryRun: args.dryRun,
-    });
+    })) as AutoMarkAbsencesResult;
 
     if (autoMarkResult.skipped || autoMarkResult.absentEmployeeIds.length === 0) {
       return {

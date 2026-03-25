@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { getUserRoles, now, recordAudit, requireDirectAnyRole, requireIdentity } from "./lib/auth";
+import { insertAnalyticsEvent } from "./lib/analytics";
 
 export const getDelegationsPageData = query({
   args: {},
@@ -44,6 +45,12 @@ export const createDelegation = mutation({
     delegateId: v.string(),
     startDate: v.string(),
     endDate: v.string(),
+    analytics: v.optional(v.object({
+      sessionId: v.string(),
+      path: v.optional(v.string()),
+      roleScope: v.optional(v.string()),
+      surface: v.string(),
+    })),
   },
   handler: async (ctx, args) => {
     const { identity, roles } = await requireDirectAnyRole(ctx, ["manager", "hr_admin"]);
@@ -73,6 +80,27 @@ export const createDelegation = mutation({
       newData: await ctx.db.get(delegationId),
     });
 
+    if (args.analytics) {
+      const start = new Date(`${args.startDate}T00:00:00Z`).getTime();
+      const end = new Date(`${args.endDate}T00:00:00Z`).getTime();
+      const durationDays = Number.isNaN(start) || Number.isNaN(end) || end < start
+        ? undefined
+        : Math.floor((end - start) / 86_400_000) + 1;
+
+      await insertAnalyticsEvent(ctx, {
+        eventName: "delegation_created",
+        sessionId: args.analytics.sessionId,
+        userId: identity.subject,
+        roleScope: args.analytics.roleScope,
+        path: args.analytics.path,
+        surface: args.analytics.surface,
+        properties: {
+          duration_days: durationDays,
+          created_by_role: roles.includes("hr_admin") ? "hr_admin" : "manager",
+        },
+      });
+    }
+
     return { id: delegationId };
   },
 });
@@ -80,6 +108,12 @@ export const createDelegation = mutation({
 export const deactivateDelegation = mutation({
   args: {
     delegationId: v.id("managerDelegations"),
+    analytics: v.optional(v.object({
+      sessionId: v.string(),
+      path: v.optional(v.string()),
+      roleScope: v.optional(v.string()),
+      surface: v.string(),
+    })),
   },
   handler: async (ctx, args) => {
     const { identity, roles } = await requireDirectAnyRole(ctx, ["manager", "hr_admin"]);
@@ -104,6 +138,23 @@ export const deactivateDelegation = mutation({
       oldData: delegation,
       newData: { ...delegation, isActive: false },
     });
+
+    if (args.analytics) {
+      const createdAt = delegation.createdAt;
+      const delegationAgeDays = createdAt ? Math.max(0, Math.floor((Date.now() - createdAt) / 86_400_000)) : undefined;
+
+      await insertAnalyticsEvent(ctx, {
+        eventName: "delegation_deactivated",
+        sessionId: args.analytics.sessionId,
+        userId: identity.subject,
+        roleScope: args.analytics.roleScope,
+        path: args.analytics.path,
+        surface: args.analytics.surface,
+        properties: {
+          delegation_age_days: delegationAgeDays,
+        },
+      });
+    }
 
     return { ok: true };
   },

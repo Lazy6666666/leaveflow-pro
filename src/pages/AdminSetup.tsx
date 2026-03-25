@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,27 +9,48 @@ import { ShieldCheck, Loader2, CheckCircle2, AlertTriangle } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { normalizeAnalyticsError } from "@/lib/analytics";
 import { getErrorMessage } from "@/lib/errors";
 
 const AdminSetup = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { sessionId, roleScope, surface, trackOnce, track } = useAnalytics();
   const [token, setToken] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [result, setResult] = useState<{ type: "success" | "error"; message: string } | null>(null);
+
+  useEffect(() => {
+    void trackOnce("admin_setup_viewed", "admin_setup_viewed", {
+      needs_admin_setup: true,
+    }, { surface: "admin_setup", path: "/admin-setup" });
+  }, [trackOnce]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!token.trim() || !user) return;
     setIsSubmitting(true);
     setResult(null);
+    void track("admin_setup_submitted", {
+      has_token: Boolean(token.trim()),
+    }, { surface: "admin_setup", path: "/admin-setup" });
 
     try {
       const data = await convex.mutation(api.admin.bootstrapAdmin, {
         setupToken: token.trim(),
+        analytics: {
+          sessionId,
+          roleScope,
+          surface,
+          path: "/admin-setup",
+        },
       });
       setResult({ type: "success", message: data?.message || "Successfully promoted to HR Admin!" });
     } catch (error) {
+      void track("admin_setup_failed", {
+        error_type: normalizeAnalyticsError(getErrorMessage(error, "An unexpected error occurred.")),
+      }, { surface: "admin_setup", path: "/admin-setup" });
       setResult({ type: "error", message: getErrorMessage(error, "An unexpected error occurred.") });
     }
 

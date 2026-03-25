@@ -7,30 +7,35 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, subDays } from "date-fns";
 import { Users, Clock } from "lucide-react";
+import type { FunctionReturnType } from "convex/server";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
-interface TeamLog {
-  id: string;
-  date: string;
-  clock_in: string | null;
-  clock_out: string | null;
-  status: string;
-  profiles: { full_name: string | null; email: string | null } | null;
-}
+type TeamLog = FunctionReturnType<typeof api.attendance.getTeamAttendance>[number];
 
 const TeamAttendance = () => {
   const [logs, setLogs] = useState<TeamLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState("0");
+  const { trackOnce } = useAnalytics();
 
   useEffect(() => {
     const fetchTeam = async () => {
       setLoading(true);
       const data = await convex.query(api.attendance.getTeamAttendance, { dayOffset: parseInt(selectedDate) });
-      setLogs((data as unknown as TeamLog[]) || []);
+      setLogs(data ?? []);
       setLoading(false);
     };
     fetchTeam();
   }, [selectedDate]);
+
+  useEffect(() => {
+    if (!loading) {
+      void trackOnce(`team_attendance_viewed:${selectedDate}`, "team_attendance_viewed", {
+        day_offset: Number.parseInt(selectedDate, 10),
+        visible_employee_count: logs.length,
+      }, { surface: "manager", path: "/manager/team-attendance" });
+    }
+  }, [loading, logs.length, selectedDate, trackOnce]);
 
   const getInitials = (name: string | null | undefined) => {
     if (!name) return "?";
@@ -55,7 +60,7 @@ const TeamAttendance = () => {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">Manager</p>
           <h1 className="text-2xl font-serif font-semibold tracking-tight text-foreground">
@@ -66,7 +71,7 @@ const TeamAttendance = () => {
           </p>
         </div>
         <Select value={selectedDate} onValueChange={setSelectedDate}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="h-11 w-full sm:w-[160px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -80,7 +85,7 @@ const TeamAttendance = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid gap-4 grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-semibold tabular-nums text-foreground">{stats.present}</p>
@@ -117,7 +122,7 @@ const TeamAttendance = () => {
           ) : (
             <div className="space-y-1">
               {logs.map((log) => (
-                <div key={log.id} className="flex items-center gap-3 py-3 border-b border-border/40 last:border-0">
+                <div key={log.id} className="flex flex-col gap-3 border-b border-border/40 py-3 last:border-0 sm:flex-row sm:items-center">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-muted text-muted-foreground text-xs">
                       {getInitials(log.profiles?.full_name)}
@@ -138,7 +143,7 @@ const TeamAttendance = () => {
                       )}
                     </div>
                   </div>
-                  <Badge variant={statusColor(log.status)} className="capitalize text-xs">
+                  <Badge variant={statusColor(log.status)} className="w-fit capitalize text-xs sm:ml-auto">
                     {log.status.replace("_", " ")}
                   </Badge>
                 </div>

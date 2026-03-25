@@ -12,9 +12,9 @@ const PaginationControls = ({ page, totalPages, onPageChange, totalItems }: Prop
   if (totalPages <= 1) return null;
 
   return (
-    <nav className="flex items-center justify-between pt-4" aria-label="Pagination">
+    <nav className="flex flex-col gap-3 pt-4 sm:flex-row sm:items-center sm:justify-between" aria-label="Pagination">
       <p className="text-xs text-muted-foreground">{totalItems} total items</p>
-      <div className="flex items-center gap-1">
+      <div className="flex items-center gap-1 self-start sm:self-auto">
         <Button
           variant="outline"
           size="icon"

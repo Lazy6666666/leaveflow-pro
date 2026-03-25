@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import { verifyWebhook } from "@clerk/backend/webhooks";
+import { buildReplayKey, getClientIp, hashString } from "./httpSecurity";
 
 const http = httpRouter();
 
@@ -17,6 +18,26 @@ function getOptionalString(value: unknown) {
 
 function getBearerSecret(authorization: string | null) {
   return authorization?.startsWith("Bearer ") ? authorization.slice("Bearer ".length).trim() : undefined;
+}
+
+function getOptionalHeader(headers: Headers, ...names: string[]) {
+  for (const name of names) {
+    const value = headers.get(name);
+    if (value?.trim()) {
+      return value.trim();
+    }
+  }
+
+  return undefined;
+}
+
+async function consumeHttpRateLimit(
+  ctx: Parameters<Parameters<typeof httpAction>[0]>[0],
+  bucketKey: string,
+  scope: "biometrics_webhook_ip" | "biometrics_webhook_replay" | "clerk_onboarding_ip" | "clerk_onboarding_replay",
+) {
+  const result = await ctx.runMutation(internal.httpRateLimits.consume, { bucketKey, scope });
+  return result.ok ? null : result;
 }
 
 function extractEmailAddress(payload: HttpPayload) {
@@ -101,6 +122,19 @@ http.route({
   path: "/biometrics/webhook",
   method: "POST",
   handler: httpAction(async (ctx, request) => {
+    const clientIp = getClientIp(request.headers);
+    const ipRateLimit = await consumeHttpRateLimit(ctx, clientIp, "biometrics_webhook_ip");
+    if (ipRateLimit) {
+      return jsonResponse(
+        {
+          success: false,
+          message: "Too many biometrics webhook requests from this source. Try again shortly.",
+          retryAfterMs: ipRateLimit.retryAfterMs,
+        },
+        429,
+      );
+    }
+
     const rawBody = await request.text();
     let payload: unknown = null;
 
@@ -115,15 +149,40 @@ http.route({
     const bearerSecret = getBearerSecret(authorization);
     const secret = request.headers.get("x-webhook-secret") ??
       request.headers.get("x-biometrics-secret") ??
-      bearerSecret ??
-      (typeof payload === "object" && payload && "webhook_secret" in payload && typeof payload.webhook_secret === "string"
-        ? payload.webhook_secret
-        : undefined);
+      bearerSecret;
     const vendor = url.searchParams.get("vendor") ??
       (typeof payload === "object" && payload && "vendor" in payload && typeof payload.vendor === "string"
         ? payload.vendor
         : undefined) ??
       "generic_webhook";
+    if (!secret) {
+      return jsonResponse(
+        {
+          success: false,
+          message: "Biometrics webhooks must send the configured secret in x-webhook-secret, x-biometrics-secret, or Authorization: Bearer.",
+        },
+        401,
+      );
+    }
+
+    const deliveryId = getOptionalHeader(request.headers, "x-webhook-id", "x-delivery-id", "x-event-id");
+    const replayKey = buildReplayKey([
+      "biometrics",
+      vendor,
+      hashString(secret),
+      deliveryId ?? hashString(rawBody),
+    ]);
+    const replayDecision = await consumeHttpRateLimit(ctx, replayKey, "biometrics_webhook_replay");
+    if (replayDecision) {
+      return jsonResponse(
+        {
+          success: true,
+          duplicate: true,
+          message: "Duplicate biometrics webhook ignored.",
+        },
+        202,
+      );
+    }
 
     const result = await ctx.runAction(internal.admin.ingestBiometricsWebhook, {
       payload,
@@ -140,7 +199,33 @@ http.route({
   method: "POST",
   handler: httpAction(async (ctx, request) => {
     try {
+      const clientIp = getClientIp(request.headers);
+      const ipRateLimit = await consumeHttpRateLimit(ctx, clientIp, "clerk_onboarding_ip");
+      if (ipRateLimit) {
+        return jsonResponse(
+          {
+            success: false,
+            message: "Too many onboarding webhook requests from this source. Try again shortly.",
+            retryAfterMs: ipRateLimit.retryAfterMs,
+          },
+          429,
+        );
+      }
+
       const event = await verifyWebhook(request);
+      const deliveryId = getOptionalHeader(request.headers, "svix-id", "webhook-id") ?? `${event.type}:${String(event.data.id ?? "unknown")}`;
+      const replayDecision = await consumeHttpRateLimit(ctx, deliveryId, "clerk_onboarding_replay");
+      if (replayDecision) {
+        return jsonResponse(
+          {
+            success: true,
+            duplicate: true,
+            message: "Duplicate Clerk onboarding webhook ignored.",
+          },
+          202,
+        );
+      }
+
       const normalized = normalizeClerkProvisioningPayload({
         type: event.type,
         data: event.data,
@@ -175,6 +260,18 @@ http.route({
         result.createdProfile ? 201 : 200,
       );
     } catch (error) {
+      await ctx.runMutation(internal.backendIncidents.recordIssue, {
+        source: "http.clerk_onboarding",
+        message: "Clerk onboarding webhook failed.",
+        severity: "error",
+        details: {
+          route: "/clerk/onboarding",
+          method: request.method,
+          error: error instanceof Error ? error.message : "Unable to verify Clerk webhook.",
+        },
+        fingerprint: ["http", "clerk_onboarding"],
+      });
+
       return jsonResponse(
         {
           success: false,

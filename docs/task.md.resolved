@@ -1,0 +1,189 @@
+# BALANCE Master Plan — Full Task Checklist
+
+> **Navigation Architecture Note (2026-03-18):** The app now uses a Hub-and-Tab architecture.
+> All individual admin/manager/employee pages are accessed via Hub pages with `?tab=` deep-linking.
+> Legacy routes redirect automatically. Hub routes:
+> - `/leave-hub` — Leave & Holidays (summary, request, history, calendar)
+> - `/identity-hub` — Identity & Security (profile, biometrics)
+> - `/manager/hub` — Manager Hub (approvals, team-calendar, team-attendance, delegation)
+> - `/admin/system` — System Administration (policies, sites, attendance-config, biometrics, shifts, rosters)
+> - `/admin/hr-operations` — HR Operations (directory, departments, balances, attendance, analytics, audits, trust-review)
+
+---
+
+## Phase 0: Design System Foundation
+- [x] Run full design workflow
+- [x] Document BALANCE design tokens in `src/design-system.md`
+- [x] Confirm/extend Tailwind tokens in [tailwind.config.ts](file:///C:/Users/NeilEdwardBaja/Desktop/New%20folder/leaveflow-pro/tailwind.config.ts)
+
+---
+
+## Sprint 1 — Work Package A: Production Baseline
+
+- [x] A1: Swap Clerk test key → live publishable key
+- [x] A2: Remove oversized video asset from `public/`
+- [x] A3: Verify deploy path end-to-end
+- [x] A4: Apply Cloudflare security headers
+- [x] A5: Audit `wrangler.toml` / `_headers`
+- [x] Refine Hero to 1:1 React Bits Pro "Hero-7" (Image Carousel) <!-- id: 16 -->
+- [x] Refine Features to Pro Bento Grid with Luxury States <!-- id: 17 -->
+- [x] Integrate Shadcn Badge Component into Hero <!-- id: 19 -->
+- [x] Replace all featured images with curated "B&W vs Color" assets <!-- id: 18 -->
+- [x] Verify animations and layout across devices <!-- id: 15 -->
+- [x] A6: Run staging smoke tests per [docs/staging-smoke-tests.md](file:///C:/Users/NeilEdwardBaja/Desktop/New%20folder/leaveflow-pro/docs/staging-smoke-tests.md)
+- [ ] A7: Confirm Sentry receiving real production events
+
+---
+
+## Sprint 2 — Work Package B: Mobile Attendance Hardening
+
+- [x] B1: Add `offlineSyncId` deduplication to `attendanceLogs` schema
+- [x] B2: Design mobile attendance surface
+- [x] B3: Update `public/manifest.json` — PWA manifest
+- [x] B4: Update `vite.config.ts` — vite-plugin-pwa
+- [x] B5: ClockInOutWidget — camera permission denied recovery UI
+- [x] B6: ClockInOutWidget — location permission denied recovery UI
+- [x] B7: SelfieCaptureDialog — upload failure retry with exponential backoff
+- [x] B8: Add NetworkStatusBanner.tsx
+- [x] B9: Add OfflineSyncStatusBadge.tsx
+
+---
+
+## Sprint 3 — Work Package C: Offline Attendance Queue
+
+- [x] C1: Add `offlineAttendanceLogs` table to schema
+- [x] C2: Add `replayOfflineLogs` mutation — idempotent by `offlineSyncId`
+- [x] C3: Harden `clockIn`/`clockOut` to reject duplicate `offlineSyncId`s
+- [x] C4: Create `src/lib/offlineQueue.ts` — IndexedDB-backed queue
+- [x] C5: Create `src/hooks/useOfflineQueue.ts` — queue manager
+- [x] C6: ClockInOutWidget — write to offline queue when offline
+- [x] C7: NetworkStatusBanner — trigger queue drain on reconnect
+- [x] C8: Sync state display in employee dashboard
+
+---
+
+## Sprint 4 — Work Package D: Attendance Trust Model
+
+- [x] D1: Write trust model decision doc
+- [x] D2: Add `trustState` field to `attendanceLogs` schema
+- [x] D3: Add `reviewNotes` field to `attendanceLogs` schema
+- [x] D4: Update `attendanceAdmin.ts` — query flagged/unverified, HR review mutation
+- [x] D5: Design HR Trust Review Queue screen
+- [x] D6: Create [TrustReviewQueue.tsx](file:///C:/Users/NeilEdwardBaja/Desktop/New%20folder/leaveflow-pro/src/pages/admin/TrustReviewQueue.tsx) — now at `/admin/hr-operations?tab=trust-review`
+
+---
+
+## Sprint 5 — Work Package F: Shift and Roster Engine (Backend)
+
+- [x] F1: Add `shifts` table to schema
+- [x] F2: Add `shiftRosters` table to schema
+- [x] F3: Add `weeklyOffRules` table to schema
+- [x] F4: Add `attendanceExceptions` table to schema
+- [x] F5: Create `convex/shifts.ts` — shift templates CRUD
+- [x] F6: Create `convex/rosters.ts` — roster assignments CRUD
+- [x] F7: Update `attendanceHelpers.ts` — schedule-aware status logic
+
+---
+
+## Sprint 6 — Work Package F: Shift and Roster Engine (Admin UI)
+
+- [x] F8: Design Shift Management screen
+- [x] F9: [ShiftManagement.tsx](file:///C:/Users/NeilEdwardBaja/Desktop/New%20folder/leaveflow-pro/src/pages/admin/ShiftManagement.tsx) — now at `/admin/system?tab=shifts`
+- [x] F10: [RosterAssignment.tsx](file:///C:/Users/NeilEdwardBaja/Desktop/New%20folder/leaveflow-pro/src/pages/admin/RosterAssignment.tsx) — now at `/admin/system?tab=rosters`
+- [x] F11: [AttendanceSettings.tsx](file:///C:/Users/NeilEdwardBaja/Desktop/New%20folder/leaveflow-pro/src/pages/admin/AttendanceSettings.tsx) — now at `/admin/system?tab=attendance-config`
+- [x] F12: [AttendanceDashboard.tsx](file:///C:/Users/NeilEdwardBaja/Desktop/New%20folder/leaveflow-pro/src/pages/admin/AttendanceDashboard.tsx) — now at `/admin/hr-operations?tab=attendance`
+
+---
+
+## Sprint 7 — Work Package H: Payroll Exports and Review
+
+- [x] H1: Add `payrollPeriods` table to schema
+- [x] H2: Add `payrollExceptions` table to schema
+- [x] H3: `payroll.ts` — `lockPayrollPeriod` mutation, `getPayrollPeriods` query
+- [x] H4: `exportPayrollCsv` action in `payroll.ts`
+- [x] H5: Add payroll mapping config to `attendanceSettings` or new `payrollMappingConfig` table
+- [x] H6: Design Payroll Export & Review screen
+- [x] H7: [Reports.tsx](file:///C:/Users/NeilEdwardBaja/Desktop/New%20folder/leaveflow-pro/src/pages/admin/Reports.tsx) — Payroll Period tabs — now at `/admin/hr-operations?tab=analytics`
+- [x] H8: [PayrollExceptionPanel.tsx](file:///C:/Users/NeilEdwardBaja/Desktop/New%20folder/leaveflow-pro/src/components/payroll/PayrollExceptionPanel.tsx)
+- [x] H9: [PayrollExportButton.tsx](file:///C:/Users/NeilEdwardBaja/Desktop/New%20folder/leaveflow-pro/src/components/payroll/PayrollExportButton.tsx)
+
+---
+
+## Sprint 8 — Work Package G: Multi-Site Operations
+
+- [x] G1: Add `sites` table to schema
+- [x] G2: Add `siteSupervisors` table to schema
+- [x] G3: Add `siteId` FK to `attendanceLogs`, `biometricsConfigs`, `attendanceSettings`
+- [x] G4: Create `convex/sites.ts` — sites CRUD
+- [x] G5: Update `adminBiometrics.ts` — scope biometrics to siteId
+- [x] G6: Update `attendanceAdmin.ts` — filter attendance by siteId
+- [x] G7: Design Sites Dashboard screen
+- [x] G8: [SitesManagement.tsx](file:///C:/Users/NeilEdwardBaja/Desktop/New%20folder/leaveflow-pro/src/pages/admin/SitesManagement.tsx) — now at `/admin/system?tab=sites`
+- [x] G9: [SiteDashboard.tsx](file:///C:/Users/NeilEdwardBaja/Desktop/New%20folder/leaveflow-pro/src/pages/admin/SiteDashboard.tsx) — accessible from Sites tab in SystemHub
+- [x] G10: Nav sidebar Sites section — done via Hub refactor (`/admin/system?tab=sites`)
+
+---
+
+## Sprint 9 — Work Package I: AI Attendance Copilot
+
+- [x] I1: `assistant.ts` — attendance anomaly tool
+- [x] I2: `assistant.ts` — biometrics sync explanation tool
+- [x] I3: `assistant.ts` — payroll delta tool
+- [x] I4: `assistant.ts` — staffing recommendation tool
+- [x] I5: Update `assistantConfig.ts` — route attendance/payroll/biometrics questions
+- [x] I6: Connect policy RAG answers to attendance context
+- [x] I7: AIChatPanel — surface structured attendance anomaly cards
+- [x] I8: AttendanceDashboard — "Ask AI" contextual button per flagged row (at `/admin/hr-operations?tab=attendance`)
+
+---
+
+## Sprint 10 — Work Package E: Identity Verification + Final Hardening
+
+- [x] E1: Add `faceEnrollments` table to schema
+- [x] E2: Add `verificationResults` table to schema
+- [x] E3: Create `convex/faceVerification.ts` — enrollment mutation, verification webhook
+- [x] E4: Add `trustState` update logic triggered by verification result
+- [x] E5: Design Face Enrollment flow
+- [x] E6: [FaceEnrollment.tsx](file:///C:/Users/NeilEdwardBaja/Desktop/New%20folder/leaveflow-pro/src/pages/employee/FaceEnrollment.tsx) — now at `/identity-hub?tab=biometrics`
+- [x] E7: TrustReviewQueue — show verification confidence + enrollment link (at `/admin/hr-operations?tab=trust-review`)
+
+### Final Hardening
+- [ ] P1: Run full Production Readiness Checklist
+- [ ] P2: Run KPI instrumentation audit
+- [ ] P3: End-to-end staging test on real mobile devices
+- [ ] P4: Confirm rollback path documented and tested
+- [ ] P5: Final go/no-go sign-off
+
+---
+
+## Untracked Work Completed (2026-03-18)
+
+- [x] **Hub-and-Tab Navigation Refactor** — Consolidated 22 sidebar items into 5 Hub pages with `?tab=` deep-linking. All legacy routes redirect automatically. Files: `LeaveHub.tsx`, `IdentityHub.tsx`, `ManagerHub.tsx`, `SystemHub.tsx`, `HROperationsHub.tsx`, updated `AppSidebar.tsx`, updated `App.tsx`
+- [x] **Dark Mode Gray Fix** — Fixed all gray text/icons in dark mode. `--muted-foreground`, `--primary`, `--foreground`, `--card-foreground` and related variables bumped to white/near-white in `.dark`. Added `.dark body` override. Fixed hardcoded `border-stone-200` in `AppLayout.tsx`.
+
+---
+
+## Remaining Open Items Summary
+
+| ID | Sprint | Description |
+|----|--------|-------------|
+| A6 | 1 | Run staging smoke tests |
+| A7 | 1 | Confirm Sentry production events |
+| H5 | 7 | Payroll mapping config table |
+| E1–E5, E7 | 10 | Face verification backend + TrustReview update |
+| P1–P5 | 10 | Final production hardening |
+
+---
+
+## Landing Page Component Re-engineering (Completed 2026-03-18)
+
+- [x] Analyze existing landing components and the desired Aceternity/Skiper UI targets
+- [x] Extract authentic source code for all components (Navbar, Testimonials, Logos, Skipper 39, CTA, Features, Skipper 8, Hero Parallax)
+- [x] Re-engineer `LandingPreloader.tsx` (Skiper 8 Words logic)
+- [x] Re-engineer `LandingNavBar.tsx` (Aceternity Underline logic)
+- [x] Re-engineer `LandingHeroBg.tsx` (Aceternity Hero Parallax)
+- [x] Re-engineer `LandingFeatures.tsx` (Aceternity Horizontal Skeletons)
+- [x] Re-engineer `LandingTestimonials.tsx` (Aceternity Animated Testimonials)
+- [x] Re-engineer `LandingClients.tsx` (Aceternity Blur Flip)
+- [x] Re-engineer `LandingCTA.tsx` (Aceternity Masonry Images)
+- [x] Assemble and refine `PremiumLanding.tsx` with all components applied

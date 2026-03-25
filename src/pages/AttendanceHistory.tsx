@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
+import { useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
-import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +10,11 @@ import { Clock, CalendarDays, Camera, MapPin } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { SelfieLightbox } from "@/components/attendance/SelfieLightbox";
+import { useConvexQuery } from "@/hooks/useConvexQuery";
 import type { LatLng, StorageId } from "@/lib/convexTypes";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
-interface AttendanceLog {
+type AttendanceLog = {
   id: string;
   date: string;
   clock_in: string | null;
@@ -24,45 +26,31 @@ interface AttendanceLog {
   status: string;
   source: string;
   notes: string | null;
-}
+};
 
 const AttendanceHistory = () => {
   const { user } = useAuth();
-  const [logs, setLogs] = useState<AttendanceLog[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { trackOnce } = useAnalytics();
   const [monthOffset, setMonthOffset] = useState("0");
   const [lightboxPath, setLightboxPath] = useState<StorageId | null>(null);
+  const monthOffsetNumber = useMemo(() => Number.parseInt(monthOffset, 10), [monthOffset]);
+  const { data: logsData, loading } = useConvexQuery(
+    api.attendance.getAttendanceHistory,
+    { monthOffset: monthOffsetNumber },
+    [monthOffsetNumber],
+    { enabled: !!user },
+  );
+  const logs = (logsData as AttendanceLog[] | null) ?? [];
   const { page, totalPages, paginatedItems, setPage, totalItems } = usePagination(logs, 20);
 
   useEffect(() => {
-    if (!user) {
-      setLogs([]);
-      setLoading(false);
-      return;
+    if (!loading) {
+      void trackOnce(`attendance_history_viewed:${monthOffsetNumber}`, "attendance_history_viewed", {
+        month_offset: monthOffsetNumber,
+        log_count: logs.length,
+      }, { surface: "attendance", path: "/attendance-history" });
     }
-
-    let cancelled = false;
-
-    const fetchLogs = async () => {
-      setLoading(true);
-      try {
-        const data = await convex.query(api.attendance.getAttendanceHistory, { monthOffset: parseInt(monthOffset) });
-        if (!cancelled) {
-          setLogs((data as AttendanceLog[]) || []);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchLogs();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [user, monthOffset]);
+  }, [loading, logs.length, monthOffsetNumber, trackOnce]);
 
   const statusColor = (s: string) => {
     switch (s) {
@@ -94,7 +82,7 @@ const AttendanceHistory = () => {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">Attendance</p>
           <h1 className="text-2xl font-serif font-semibold tracking-tight text-foreground">
@@ -105,7 +93,7 @@ const AttendanceHistory = () => {
           </p>
         </div>
         <Select value={monthOffset} onValueChange={setMonthOffset}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="h-11 w-full sm:w-[180px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -163,8 +151,8 @@ const AttendanceHistory = () => {
             <>
               <div className="space-y-1">
                 {paginatedItems.map((log) => (
-                  <div key={log.id} className="flex items-center justify-between py-3 border-b border-border/40 last:border-0">
-                    <div className="flex items-center gap-4">
+                  <div key={log.id} className="flex flex-col gap-3 border-b border-border/40 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex min-w-0 items-start gap-4">
                       <div className="w-16 text-center">
                         <p className="text-sm font-medium text-foreground">
                           {format(parseISO(log.date), "EEE")}
@@ -173,8 +161,8 @@ const AttendanceHistory = () => {
                           {format(parseISO(log.date), "MMM d")}
                         </p>
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2 text-sm text-foreground">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 text-sm text-foreground">
                           <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                           <div className="flex items-center gap-1">
                             {log.clock_in ? format(new Date(log.clock_in), "h:mm a") : "—"}
@@ -227,7 +215,7 @@ const AttendanceHistory = () => {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex flex-wrap items-center gap-3 sm:justify-end">
                       <span className="text-xs text-muted-foreground tabular-nums">
                         {formatDuration(log.clock_in, log.clock_out)}
                       </span>

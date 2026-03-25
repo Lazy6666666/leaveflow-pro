@@ -3,6 +3,7 @@ import { useAuth as useClerkAuth, useClerk, useUser } from "@clerk/react";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { AppRole } from "../../convex/constants";
+import { syncSentryViewer } from "@/lib/sentry";
 
 type AppUser = {
   id: string;
@@ -43,7 +44,6 @@ const AuthContext = createContext<AuthContextType>({
   needsAdminSetup: false,
 });
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = (): AuthContextType => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -91,6 +91,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       cancelled = true;
     };
   }, [authLoaded, clerkUser, ensureCurrentUser, isConvexAuthenticated, isSignedIn, userLoaded]);
+
+  useEffect(() => {
+    if (!isSignedIn || !clerkUser) {
+      syncSentryViewer(null);
+      return;
+    }
+
+    syncSentryViewer({
+      id: clerkUser.id,
+      roles: currentUser?.roles,
+    });
+  }, [clerkUser, currentUser?.roles, isSignedIn]);
 
   const signOut = useCallback(async (): Promise<void> => {
     await clerk.signOut({ redirectUrl: "/auth" });

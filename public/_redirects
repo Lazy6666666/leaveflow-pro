@@ -1,0 +1,14 @@
+# Cloudflare Pages SPA fallback with explicit exceptions for PWA/static assets.
+#
+# Without these exceptions, "SPA fallback" style rewrites can accidentally
+# serve the HTML shell for PWA endpoints (manifest/service worker), breaking
+# offline + installability checks.
+
+/manifest.webmanifest  /manifest.webmanifest  200
+/registerSW.js         /registerSW.js         200
+/sw.js                 /sw.js                 200
+/workbox-*             /workbox-:splat        200
+/assets/*              /assets/:splat         200
+
+/*                     /index.html            200
+

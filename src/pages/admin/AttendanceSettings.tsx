@@ -1,35 +1,31 @@
 import { useCallback, useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
-import { Clock, MapPin, RotateCcw, Save } from "lucide-react";
+import { Clock, MapPin, RotateCcw, Save, Calendar } from "lucide-react";
 import { getErrorMessage } from "@/lib/errors";
 import type { LatLng } from "@/lib/convexTypes";
+import type { FunctionReturnType } from "convex/server";
 
-interface AttendanceSettings {
-  id: string;
-  work_start_time: string;
-  work_end_time: string;
-  late_threshold_minutes: number;
-  half_day_hours: number;
-  auto_mark_absent: boolean;
-  require_selfie: boolean;
-  require_location: boolean;
-  geofence_enabled: boolean;
+type AttendanceSettings = FunctionReturnType<typeof api.attendance.getAttendanceSettings> & {
   geofence_center: LatLng | null;
-  geofence_radius_meters: number;
-  geofence_label: string | null;
-}
+};
+
+type PayrollMappingConfig = FunctionReturnType<typeof api.payroll.getPayrollMappingConfig>;
 
 const AttendanceSettingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [payrollSaving, setPayrollSaving] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Form state
   const [workStart, setWorkStart] = useState("09:00");
@@ -37,13 +33,18 @@ const AttendanceSettingsPage = () => {
   const [lateThreshold, setLateThreshold] = useState(15);
   const [halfDayHours, setHalfDayHours] = useState(4);
   const [autoMarkAbsent, setAutoMarkAbsent] = useState(true);
-  const [requireSelfie, setRequireSelfie] = useState(false);
+  const [requireSelfie, setRequireSelfie] = useState(true);
   const [requireLocation, setRequireLocation] = useState(false);
   const [geofenceEnabled, setGeofenceEnabled] = useState(false);
   const [geofenceLat, setGeofenceLat] = useState("");
   const [geofenceLng, setGeofenceLng] = useState("");
   const [geofenceRadiusMeters, setGeofenceRadiusMeters] = useState("150");
   const [geofenceLabel, setGeofenceLabel] = useState("");
+  const [overtimeThresholdHours, setOvertimeThresholdHours] = useState("8");
+  const [overtimeMultiplier, setOvertimeMultiplier] = useState("1.5");
+  const [defaultCurrency, setDefaultCurrency] = useState("USD");
+  const [payPeriod, setPayPeriod] = useState<PayrollMappingConfig["payPeriod"]>("monthly");
+  const [deductUnpaidLeaveFromGross, setDeductUnpaidLeaveFromGross] = useState(true);
 
   const applySettings = useCallback((s: AttendanceSettings) => {
     setWorkStart(s.work_start_time?.slice(0, 5) || "09:00");
@@ -60,18 +61,41 @@ const AttendanceSettingsPage = () => {
     setGeofenceLabel(s.geofence_label || "");
   }, []);
 
+  const applyPayrollConfig = useCallback((config: PayrollMappingConfig) => {
+    setOvertimeThresholdHours(String(config.overtimeThresholdHours));
+    setOvertimeMultiplier(String(config.overtimeMultiplier));
+    setDefaultCurrency(config.defaultCurrency);
+    setPayPeriod(config.payPeriod);
+    setDeductUnpaidLeaveFromGross(config.deductUnpaidLeaveFromGross);
+  }, []);
+
   useEffect(() => {
     const fetch = async () => {
       setLoading(true);
-      const data = await convex.query(api.attendance.getAttendanceSettings, {});
+      try {
+        const [attendanceResult, payrollResult] = await Promise.all([
+          convex.query(api.attendance.getAttendanceSettings, {}),
+          convex.query(api.payroll.getPayrollMappingConfig, {}),
+        ]);
 
-      if (data) {
-        applySettings(data as unknown as AttendanceSettings);
+        if (attendanceResult) {
+          applySettings(attendanceResult);
+        }
+        if (payrollResult) {
+          applyPayrollConfig(payrollResult);
+        }
+      } catch (error) {
+        toast({
+          title: "Failed to load settings",
+          description: getErrorMessage(error, "Failed to load admin settings"),
+          variant: "destructive",
+        });
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
-    fetch();
-  }, [applySettings]);
+    void fetch();
+  }, [applyPayrollConfig, applySettings, toast]);
 
   const handleSave = async () => {
     const parsedGeofenceLat = geofenceEnabled ? Number(geofenceLat) : undefined;
@@ -115,7 +139,7 @@ const AttendanceSettingsPage = () => {
       await convex.mutation(api.attendance.saveAttendanceSettings, payload);
       toast({ title: "Settings saved" });
       const data = await convex.query(api.attendance.getAttendanceSettings, {});
-      if (data) applySettings(data as unknown as AttendanceSettings);
+      if (data) applySettings(data);
     } catch (error) {
       toast({ title: "Failed to save", description: getErrorMessage(error, "Failed to save settings"), variant: "destructive" });
     } finally {
@@ -129,13 +153,62 @@ const AttendanceSettingsPage = () => {
     setLateThreshold(15);
     setHalfDayHours(4);
     setAutoMarkAbsent(true);
-    setRequireSelfie(false);
+    setRequireSelfie(true);
     setRequireLocation(false);
     setGeofenceEnabled(false);
     setGeofenceLat("");
     setGeofenceLng("");
     setGeofenceRadiusMeters("150");
     setGeofenceLabel("");
+  };
+
+  const handleSavePayrollMapping = async () => {
+    const parsedOvertimeThresholdHours = Number(overtimeThresholdHours);
+    const parsedOvertimeMultiplier = Number(overtimeMultiplier);
+    const normalizedCurrency = defaultCurrency.trim().toUpperCase();
+
+    if (
+      !Number.isFinite(parsedOvertimeThresholdHours) ||
+      parsedOvertimeThresholdHours <= 0 ||
+      !Number.isFinite(parsedOvertimeMultiplier) ||
+      parsedOvertimeMultiplier < 1 ||
+      normalizedCurrency.length < 3
+    ) {
+      toast({
+        title: "Invalid payroll mapping",
+        description: "Enter a positive overtime threshold, a multiplier of at least 1, and a 3-letter currency code.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setPayrollSaving(true);
+    try {
+      await convex.mutation(api.payroll.upsertPayrollMappingConfig, {
+        overtimeThresholdHours: parsedOvertimeThresholdHours,
+        overtimeMultiplier: parsedOvertimeMultiplier,
+        defaultCurrency: normalizedCurrency,
+        payPeriod,
+        deductUnpaidLeaveFromGross,
+      });
+      toast({ title: "Payroll mapping saved" });
+    } catch (error) {
+      toast({
+        title: "Failed to save payroll mapping",
+        description: getErrorMessage(error, "Failed to save payroll mapping"),
+        variant: "destructive",
+      });
+    } finally {
+      setPayrollSaving(false);
+    }
+  };
+
+  const handleResetPayrollMapping = () => {
+    setOvertimeThresholdHours("8");
+    setOvertimeMultiplier("1.5");
+    setDefaultCurrency("USD");
+    setPayPeriod("monthly");
+    setDeductUnpaidLeaveFromGross(true);
   };
 
   if (loading) return <p className="text-sm text-muted-foreground p-8">Loading settings...</p>;
@@ -328,6 +401,88 @@ const AttendanceSettingsPage = () => {
                 Optional label used in validation messages when someone is outside the fence.
               </p>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-medium text-foreground flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Payroll Mapping
+          </CardTitle>
+          <CardDescription>Configure the default payroll interpretation used for summary calculations and export reviews.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Overtime Threshold (hours)</Label>
+              <Input
+                type="number"
+                min={1}
+                step={0.5}
+                value={overtimeThresholdHours}
+                onChange={(e) => setOvertimeThresholdHours(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Worked hours above this number are treated as overtime.</p>
+            </div>
+            <div className="space-y-2">
+              <Label>Overtime Multiplier</Label>
+              <Input
+                type="number"
+                min={1}
+                step={0.1}
+                value={overtimeMultiplier}
+                onChange={(e) => setOvertimeMultiplier(e.target.value)}
+              />
+              <p className="text-xs text-muted-foreground">Applied to overtime pay calculations.</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Default Currency</Label>
+              <Input
+                value={defaultCurrency}
+                maxLength={3}
+                onChange={(e) => setDefaultCurrency(e.target.value.toUpperCase())}
+                placeholder="USD"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Pay Period</Label>
+              <Select value={payPeriod} onValueChange={(value) => setPayPeriod(value as PayrollMappingConfig["payPeriod"])}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select pay period" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="monthly">Monthly</SelectItem>
+                  <SelectItem value="biweekly">Biweekly</SelectItem>
+                  <SelectItem value="weekly">Weekly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between rounded-lg border border-border/60 p-4">
+            <div>
+              <p className="text-sm font-medium text-foreground">Deduct unpaid leave from gross pay</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Keeps the payroll summary aligned with unpaid leave adjustments before export review.
+              </p>
+            </div>
+            <Switch checked={deductUnpaidLeaveFromGross} onCheckedChange={setDeductUnpaidLeaveFromGross} />
+          </div>
+
+          <div className="flex gap-3">
+            <Button onClick={handleSavePayrollMapping} disabled={payrollSaving}>
+              <Save className="h-4 w-4 mr-2" />
+              {payrollSaving ? "Saving..." : "Save Payroll Mapping"}
+            </Button>
+            <Button variant="outline" onClick={handleResetPayrollMapping}>
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Reset Payroll Defaults
+            </Button>
           </div>
         </CardContent>
       </Card>

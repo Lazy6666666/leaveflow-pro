@@ -1,0 +1,15 @@
+[
+  {
+    "singleton": "default",
+    "workStartTime": "09:00:00",
+    "workEndTime": "17:00:00",
+    "lateThresholdMinutes": 15,
+    "halfDayHours": 4,
+    "autoMarkAbsent": true,
+    "requireSelfie": true,
+    "requireLocation": false,
+    "geofenceEnabled": false,
+    "createdAt": 1773330078268,
+    "updatedAt": 1773330078268
+  }
+]

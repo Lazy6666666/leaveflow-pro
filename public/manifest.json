@@ -1,0 +1,40 @@
+{
+  "name": "BALANCE",
+  "short_name": "BALANCE",
+  "description": "HR Attendance & Leave Management",
+  "start_url": "/attendance",
+  "display": "standalone",
+  "background_color": "#111111",
+  "theme_color": "#2FABB9",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/balance-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/balance-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "shortcuts": [
+    {
+      "name": "Clock In",
+      "short_name": "Clock In",
+      "description": "Open the attendance clock-in screen",
+      "url": "/attendance",
+      "icons": [{ "src": "/favicon.ico", "sizes": "64x64" }]
+    }
+  ]
+}

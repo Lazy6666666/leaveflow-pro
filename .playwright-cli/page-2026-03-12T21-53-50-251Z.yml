@@ -1,0 +1,272 @@
+- generic [ref=e2]:
+  - region "Notifications (F8)":
+    - list
+  - region "Notifications alt+T"
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - navigation "Main navigation" [ref=e5]:
+        - link "BALANCE BALANCE leave and attendance" [ref=e6] [cursor=pointer]:
+          - /url: /
+          - img "BALANCE" [ref=e7]
+          - generic [ref=e8]:
+            - generic [ref=e9]: BALANCE
+            - generic [ref=e10]: leave and attendance
+        - generic [ref=e11]:
+          - link "Platform" [ref=e12] [cursor=pointer]:
+            - /url: "#platform"
+          - link "Capabilities" [ref=e13] [cursor=pointer]:
+            - /url: "#capabilities"
+          - link "Pricing" [ref=e14] [cursor=pointer]:
+            - /url: "#pricing"
+          - link "Contact" [ref=e15] [cursor=pointer]:
+            - /url: "#final-cta"
+        - generic [ref=e16]:
+          - link "Sign in" [ref=e17] [cursor=pointer]:
+            - /url: /auth
+          - link "Book a walkthrough" [ref=e18] [cursor=pointer]:
+            - /url: /auth?signup=true
+    - main [ref=e19]:
+      - region "Workforce control with a quieter kind of authority." [ref=e20]:
+        - generic [ref=e22]:
+          - generic [ref=e23]:
+            - generic [ref=e24]: Private demo collection
+            - heading "Workforce control with a quieter kind of authority." [level=1] [ref=e26]
+            - paragraph [ref=e27]: BALANCE replaces scattered leave requests, blind attendance logs, and manual verification with a precise, understated operating surface built to feel credible at first glance.
+            - generic [ref=e28]:
+              - generic [ref=e29]: Enterprise leave
+              - generic [ref=e31]: Attendance integrity
+              - generic [ref=e33]: Audit clarity
+            - generic [ref=e34]:
+              - link "Start the workspace" [ref=e35] [cursor=pointer]:
+                - /url: /auth?signup=true
+                - text: Start the workspace
+                - img [ref=e36]
+              - link "Explore the platform" [ref=e39] [cursor=pointer]:
+                - /url: "#platform"
+            - generic [ref=e40]:
+              - generic [ref=e41]:
+                - img [ref=e42]
+                - paragraph [ref=e46]: Verified clock-ins
+                - paragraph [ref=e47]: Geo locked
+              - generic [ref=e48]:
+                - img [ref=e49]
+                - paragraph [ref=e58]: Leave orchestration
+                - paragraph [ref=e59]: Policy aware
+              - generic [ref=e60]:
+                - img [ref=e61]
+                - paragraph [ref=e64]: Audit confidence
+                - paragraph [ref=e65]: Always traceable
+          - generic [ref=e67]:
+            - generic [ref=e68]:
+              - img "BALANCE dashboard overview" [ref=e70]
+              - generic [ref=e71]:
+                - article [ref=e72]:
+                  - paragraph [ref=e73]: Primary view
+                  - heading "The command layer should carry the first impression." [level=2] [ref=e74]
+                  - paragraph [ref=e75]: The largest screenshot now establishes the product tone immediately, with the secondary images supporting it instead of competing with it.
+                  - paragraph [ref=e77]: Collection 01
+                - img "BALANCE interface overview" [ref=e79]
+            - generic [ref=e80]:
+              - article [ref=e81]:
+                - paragraph [ref=e82]: Operations signal
+                - paragraph [ref=e83]: 98.4%
+                - paragraph [ref=e84]: Clock-in confidence across distributed teams
+                - paragraph [ref=e86]: Collection 02
+              - generic [ref=e87]:
+                - article [ref=e88]:
+                  - img "Location certainty" [ref=e90]
+                  - generic [ref=e91]:
+                    - paragraph [ref=e92]: Attached view
+                    - heading "Location certainty" [level=2] [ref=e93]
+                    - paragraph [ref=e94]: Clock-ins validated by place, not assumption.
+                - article [ref=e95]:
+                  - img "Leave built for teams" [ref=e97]
+                  - generic [ref=e98]:
+                    - paragraph [ref=e99]: Attached view
+                    - heading "Leave built for teams" [level=2] [ref=e100]
+                    - paragraph [ref=e101]: Requests, approvals, and policy context without bottlenecks.
+      - region "The expensive part is not attendance. It is uncertainty." [ref=e102]:
+        - generic [ref=e103]:
+          - generic [ref=e104]:
+            - generic [ref=e105]:
+              - paragraph [ref=e106]: Where HR systems break
+              - heading "The expensive part is not attendance. It is uncertainty." [level=2] [ref=e107]
+            - paragraph [ref=e108]: "The redesign focuses on clarity under pressure: fewer disconnected surfaces, stronger image hierarchy, and clearer moments of action for both employees and managers."
+          - generic [ref=e109]:
+            - article [ref=e110]:
+              - img "Requests disappear into side channels" [ref=e112]
+              - generic [ref=e113]:
+                - paragraph [ref=e114]: Problem 01
+                - heading "Requests disappear into side channels" [level=3] [ref=e115]
+                - paragraph [ref=e116]: Employees ask through email, chat, or verbal approvals. HR reconstructs decisions after the fact and managers operate with partial context.
+            - article [ref=e118]:
+              - img "Attendance is visible, but not trustworthy" [ref=e120]
+              - generic [ref=e121]:
+                - paragraph [ref=e122]: Problem 02
+                - heading "Attendance is visible, but not trustworthy" [level=3] [ref=e123]
+                - paragraph [ref=e124]: A timestamp without place, role, or audit proof is still a weak signal. Teams need confidence, not more records.
+            - article [ref=e126]:
+              - img "Reports arrive after the staffing risk" [ref=e128]
+              - generic [ref=e129]:
+                - paragraph [ref=e130]: Problem 03
+                - heading "Reports arrive after the staffing risk" [level=3] [ref=e131]
+                - paragraph [ref=e132]: By the time trends are manually assembled, the decision window has already passed. Insight needs to be operational, not archival.
+      - generic [ref=e136]:
+        - generic [ref=e137]:
+          - paragraph [ref=e138]: 98%
+          - paragraph [ref=e139]: clock-in confidence
+          - paragraph [ref=e140]: with place verification
+        - generic [ref=e141]:
+          - paragraph [ref=e142]: 3x
+          - paragraph [ref=e143]: faster approvals
+          - paragraph [ref=e144]: when requests are structured
+        - generic [ref=e145]:
+          - paragraph [ref=e146]: "1"
+          - paragraph [ref=e147]: single source of truth
+          - paragraph [ref=e148]: for HR, managers, employees
+        - generic [ref=e149]:
+          - paragraph [ref=e150]: "0"
+          - paragraph [ref=e151]: tolerance for ambiguity
+          - paragraph [ref=e152]: in attendance audits
+      - region "Each attached image now has a stronger job to do." [ref=e153]:
+        - generic [ref=e155]:
+          - generic [ref=e156]:
+            - paragraph [ref=e157]: Interactive product tour
+            - heading "Each attached image now has a stronger job to do." [level=2] [ref=e158]
+            - paragraph [ref=e159]: "Instead of scattering screenshots into uniform cards, the redesign gives them hierarchy: one active image, one active story, and a clearer sense of progression."
+            - generic [ref=e160]:
+              - button "Attendance surface See presence, friction, and absence in one composition." [ref=e161] [cursor=pointer]:
+                - paragraph [ref=e162]: Attendance surface
+                - generic [ref=e163]:
+                  - heading "See presence, friction, and absence in one composition." [level=3] [ref=e164]
+                  - img [ref=e165]
+              - button "Geolocation verification Turn location proof into a first-class experience." [ref=e168] [cursor=pointer]:
+                - paragraph [ref=e169]: Geolocation verification
+                - generic [ref=e170]:
+                  - heading "Turn location proof into a first-class experience." [level=3] [ref=e171]
+                  - img [ref=e172]
+              - button "Leave orchestration Make requests feel calm for employees and precise for managers." [ref=e175] [cursor=pointer]:
+                - paragraph [ref=e176]: Leave orchestration
+                - generic [ref=e177]:
+                  - heading "Make requests feel calm for employees and precise for managers." [level=3] [ref=e178]
+                  - img [ref=e179]
+              - button "Reporting Reports should explain the operation, not merely export it." [ref=e182] [cursor=pointer]:
+                - paragraph [ref=e183]: Reporting
+                - generic [ref=e184]:
+                  - heading "Reports should explain the operation, not merely export it." [level=3] [ref=e185]
+                  - img [ref=e186]
+          - generic [ref=e190]:
+            - img "See presence, friction, and absence in one composition." [ref=e192]
+            - generic [ref=e193]:
+              - generic [ref=e194]:
+                - paragraph [ref=e195]: Attendance surface
+                - heading "See presence, friction, and absence in one composition." [level=3] [ref=e196]
+                - paragraph [ref=e197]: The dashboard image is treated as a hero artifact instead of a thumbnail. It becomes the operational center of the landing page.
+              - generic [ref=e198]:
+                - generic [ref=e199]:
+                  - img [ref=e200]
+                  - generic [ref=e203]: What improves
+                - list [ref=e204]:
+                  - listitem [ref=e205]: Daily headcount pulse
+                  - listitem [ref=e206]: Exception-first review
+                  - listitem [ref=e207]: Clear manager states
+      - region "A simpler commercial story helps the product feel credible." [ref=e208]:
+        - generic [ref=e209]:
+          - generic [ref=e210]:
+            - generic [ref=e211]:
+              - paragraph [ref=e212]: Pricing with clearer edges
+              - heading "A simpler commercial story helps the product feel credible." [level=2] [ref=e213]
+            - paragraph [ref=e214]: The layout shifts away from generic SaaS pricing tiles into a calmer comparison surface that matches the rest of the redesign.
+          - generic [ref=e215]:
+            - article [ref=e216]:
+              - paragraph [ref=e217]: Studio
+              - paragraph [ref=e218]: $19
+              - paragraph [ref=e219]: For smaller teams replacing spreadsheets and manual sign-off loops.
+              - list [ref=e220]:
+                - listitem [ref=e221]:
+                  - img [ref=e222]
+                  - generic [ref=e224]: Up to 20 employees
+                - listitem [ref=e225]:
+                  - img [ref=e226]
+                  - generic [ref=e228]: Core leave workflows
+                - listitem [ref=e229]:
+                  - img [ref=e230]
+                  - generic [ref=e232]: Verified attendance basics
+            - article [ref=e234]:
+              - paragraph [ref=e235]: Scale
+              - paragraph [ref=e236]: $49
+              - paragraph [ref=e237]: For fast-moving organizations that need policy control and operational visibility.
+              - list [ref=e238]:
+                - listitem [ref=e239]:
+                  - img [ref=e240]
+                  - generic [ref=e242]: Unlimited employees
+                - listitem [ref=e243]:
+                  - img [ref=e244]
+                  - generic [ref=e246]: Geofencing and audit history
+                - listitem [ref=e247]:
+                  - img [ref=e248]
+                  - generic [ref=e250]: Manager approvals and reporting
+            - article [ref=e252]:
+              - paragraph [ref=e253]: Custom
+              - paragraph [ref=e254]: Tailored
+              - paragraph [ref=e255]: For enterprise environments with integration, deployment, or compliance constraints.
+              - list [ref=e256]:
+                - listitem [ref=e257]:
+                  - img [ref=e258]
+                  - generic [ref=e260]: Custom rollout
+                - listitem [ref=e261]:
+                  - img [ref=e262]
+                  - generic [ref=e264]: Dedicated support
+                - listitem [ref=e265]:
+                  - img [ref=e266]
+                  - generic [ref=e268]: Advanced implementation planning
+          - generic [ref=e270]:
+            - paragraph [ref=e271]: Need migration help, policy imports, or a tailored rollout for multiple locations? The sales path should feel as operationally clear as the product itself.
+            - link "Talk to BALANCE" [ref=e272] [cursor=pointer]:
+              - /url: /auth?signup=true
+      - region "The landing page now sells certainty, not just features." [ref=e273]:
+        - generic [ref=e275]:
+          - generic [ref=e276]:
+            - paragraph [ref=e277]: Launch with a cleaner front door
+            - heading "The landing page now sells certainty, not just features." [level=2] [ref=e278]
+            - paragraph [ref=e279]: If the product promise is clarity, the first impression has to embody it. This redesign turns the page into a more confident walkthrough of your screenshots, states, and value.
+            - generic [ref=e280]:
+              - link "Start free trial" [ref=e281] [cursor=pointer]:
+                - /url: /auth?signup=true
+              - link "Review the redesign" [ref=e282] [cursor=pointer]:
+                - /url: "#hero"
+          - generic [ref=e283]:
+            - img "BALANCE reporting preview" [ref=e285]
+            - img "BALANCE geolocation preview" [ref=e287]
+    - contentinfo [ref=e288]:
+      - generic [ref=e289]:
+        - generic [ref=e290]:
+          - generic [ref=e291]:
+            - generic [ref=e292]:
+              - img "BALANCE" [ref=e293]
+              - generic [ref=e294]:
+                - paragraph [ref=e295]: BALANCE
+                - paragraph [ref=e296]: leave and attendance infrastructure
+            - paragraph [ref=e297]: A more elegant landing surface for a product that needs to communicate trust, operational clarity, and calm control from the first scroll.
+          - generic [ref=e298]:
+            - generic [ref=e299]:
+              - paragraph [ref=e300]: Product
+              - generic [ref=e301]:
+                - link "Platform" [ref=e302] [cursor=pointer]:
+                  - /url: "#platform"
+                - link "Capability tour" [ref=e303] [cursor=pointer]:
+                  - /url: "#capabilities"
+                - link "Pricing" [ref=e304] [cursor=pointer]:
+                  - /url: "#pricing"
+            - generic [ref=e305]:
+              - paragraph [ref=e306]: Company
+              - generic [ref=e307]:
+                - link "About BALANCE" [ref=e308] [cursor=pointer]:
+                  - /url: "#hero"
+                - link "Contact" [ref=e309] [cursor=pointer]:
+                  - /url: "#final-cta"
+                - link "Sign in" [ref=e310] [cursor=pointer]:
+                  - /url: /auth
+        - generic [ref=e311]:
+          - generic [ref=e312]: Copyright 2026 BALANCE
+          - generic [ref=e313]: Designed to feel calm under operational pressure

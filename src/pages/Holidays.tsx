@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useState } from "react";
+import { useRole } from "@/hooks/useRole";
 import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,8 @@ import { parseISO } from "date-fns";
 import { PageHeaderSkeleton, TableSkeleton } from "@/components/skeletons";
 import { getErrorMessage } from "@/lib/errors";
 import type { PublicHolidayId } from "@/lib/convexTypes";
+import { useConvexMutation } from "@/hooks/useConvexMutation";
+import { useConvexQuery } from "@/hooks/useConvexQuery";
 
 interface Holiday {
   id: PublicHolidayId; name: string; date: string; description: string | null; is_recurring: boolean; created_at: string;
@@ -30,9 +32,7 @@ const holidayDateFormatter = new Intl.DateTimeFormat(undefined, {
 });
 
 const Holidays = () => {
-  const { hasRole } = useAuth();
-  const isAdmin = hasRole("hr_admin");
-  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const { isAdmin } = useRole();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Holiday | null>(null);
   const [name, setName] = useState("");
@@ -40,38 +40,26 @@ const Holidays = () => {
   const [description, setDescription] = useState("");
   const [isRecurring, setIsRecurring] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Holiday | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [pageLoading, setPageLoading] = useState(true);
   const [yearFilter, setYearFilter] = useState(new Date().getFullYear().toString());
 
-  const loadHolidays = useCallback(async (year: string) => {
-    const data = await convex.query(api.admin.getHolidays, { year: Number(year) });
-    setHolidays(data as Holiday[]);
-  }, []);
+  const year = Number(yearFilter);
+  const { data: holidaysData, loading: pageLoading, refetch: refetchHolidays } = useConvexQuery(
+    api.admin.getHolidays,
+    { year },
+    [year],
+  );
+  const holidays = (holidaysData as Holiday[] | null) ?? [];
 
-  useEffect(() => {
-    let cancelled = false;
+  const { mutate: saveHoliday, loading: saving } = useConvexMutation(api.admin.saveHoliday, {
+    errorFallback: "Failed to save holiday",
+  });
+  const { mutate: deleteHoliday } = useConvexMutation(api.admin.deleteHoliday, {
+    successMessage: "Holiday deleted",
+    errorFallback: "Failed to delete holiday",
+  });
 
-    setPageLoading(true);
-    convex
-      .query(api.admin.getHolidays, { year: Number(yearFilter) })
-      .then((data) => {
-        if (!cancelled) {
-          setHolidays(data as Holiday[]);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) {
-          setPageLoading(false);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [yearFilter]);
-
-  if (pageLoading) return (
+  const isInitialLoad = pageLoading && holidaysData === null;
+  if (isInitialLoad) return (
     <div className="space-y-6">
       <PageHeaderSkeleton />
       <TableSkeleton rows={6} cols={4} />
@@ -83,34 +71,30 @@ const Holidays = () => {
 
   const handleSave = async () => {
     if (!name.trim() || !date) return;
-    setLoading(true);
     try {
-      await convex.mutation(api.admin.saveHoliday, {
+      const result = await saveHoliday({
         holidayId: editing?.id,
         name: name.trim(),
         date,
         description: description.trim() || undefined,
         isRecurring,
       });
-      await loadHolidays(yearFilter);
-      setDialogOpen(false);
-      toast.success(editing ? "Holiday updated" : "Holiday added");
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to save holiday"));
-    } finally {
-      setLoading(false);
+      if (result !== null) {
+        await refetchHolidays();
+        setDialogOpen(false);
+        toast.success(editing ? "Holiday updated" : "Holiday added");
+      }
+    } catch {
+      // saveHoliday already toasts
     }
   };
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    try {
-      await convex.mutation(api.admin.deleteHoliday, { holidayId: deleteTarget.id });
-      await loadHolidays(yearFilter);
+    const result = await deleteHoliday({ holidayId: deleteTarget.id });
+    if (result !== null) {
+      await refetchHolidays();
       setDeleteTarget(null);
-      toast.success("Holiday deleted");
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to delete holiday"));
     }
   };
 
@@ -126,7 +110,7 @@ const Holidays = () => {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Company-wide public holidays calendar.</p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
           <div className="space-y-2">
             <Label className="sr-only" htmlFor="holiday-year-filter">Holiday year</Label>
             <Input
@@ -138,13 +122,13 @@ const Holidays = () => {
               aria-label="Filter holidays by year"
               value={yearFilter}
               onChange={(e) => setYearFilter(e.target.value)}
-              className="w-24 h-10"
+              className="h-10 w-full sm:w-24"
               min={2020}
               max={2030}
             />
           </div>
           {isAdmin && (
-            <Button onClick={openCreate} className="h-10">
+            <Button onClick={openCreate} className="h-10 w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" /> Add Holiday
             </Button>
           )}
@@ -194,7 +178,7 @@ const Holidays = () => {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent onInteractOutside={(e) => e.preventDefault()}>
           <DialogHeader>
             <DialogTitle>{editing ? "Edit Holiday" : "Add Holiday"}</DialogTitle>
             <DialogDescription>
@@ -209,7 +193,7 @@ const Holidays = () => {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={loading || !name.trim() || !date}>{loading ? "Saving…" : "Save"}</Button>
+            <Button onClick={handleSave} disabled={saving || !name.trim() || !date}>{saving ? "Saving…" : "Save"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
