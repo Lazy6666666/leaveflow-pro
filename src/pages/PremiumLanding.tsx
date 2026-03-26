@@ -10,7 +10,7 @@ export const PremiumLanding = () => {
   const [isPreloading, setIsPreloading] = useState(true);
 
   return (
-    <div className="relative min-h-[100dvh] overflow-x-hidden bg-[#09090b] font-['Outfit'] text-white selection:bg-[#e879f9]/30 selection:text-white">
+    <div className="relative min-h-[100dvh] overflow-x-hidden bg-[#09090b] font-['Outfit'] text-white selection:bg-[#10b981]/30 selection:text-white">
       <a href="#premium-landing-main" className="skip-link">
         Skip to content
       </a>

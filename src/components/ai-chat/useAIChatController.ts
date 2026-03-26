@@ -5,14 +5,15 @@ import { useAuth } from "@/contexts/AuthContext";
 import { bucketMessageLength } from "@/lib/analytics";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { chatWithPuter } from "@/lib/puterChat";
-import type { Msg, QuickAction, AssistantSource, AssistantSourceReason } from "@/components/ai-chat/types";
+import type { Msg, QuickAction, AssistantSource, AssistantSourceReason, PromptRequest } from "@/components/ai-chat/types";
 
 type UseAIChatControllerParams = {
   initialPrompt?: string | null;
+  initialPromptRequest?: PromptRequest | null;
   mode: "floating" | "embedded";
 };
 
-export function useAIChatController({ initialPrompt, mode }: UseAIChatControllerParams) {
+export function useAIChatController({ initialPrompt, initialPromptRequest, mode }: UseAIChatControllerParams) {
   const { hasRole } = useAuth();
   const { track } = useAnalytics();
 
@@ -211,21 +212,24 @@ export function useAIChatController({ initialPrompt, mode }: UseAIChatController
   }, [chat, input, isEmbedded, isLoading, messages, mode, providerRoles, runTool, track]);
 
   useEffect(() => {
-    if (!open || !initialPrompt) {
+    const prompt = initialPromptRequest?.prompt ?? initialPrompt;
+    const requestKey = initialPromptRequest?.id ?? initialPrompt;
+
+    if (!open || !prompt || !requestKey) {
       return;
     }
-    if (lastAutoPromptRef.current === initialPrompt) {
+    if (lastAutoPromptRef.current === requestKey) {
       return;
     }
-    lastAutoPromptRef.current = initialPrompt;
-    void send(initialPrompt);
-  }, [initialPrompt, open, send]);
+    lastAutoPromptRef.current = requestKey;
+    void send(prompt);
+  }, [initialPrompt, initialPromptRequest, open, send]);
 
   useEffect(() => {
-    if (!initialPrompt) {
+    if (!initialPrompt && !initialPromptRequest) {
       lastAutoPromptRef.current = null;
     }
-  }, [initialPrompt]);
+  }, [initialPrompt, initialPromptRequest]);
 
   const isSubmitDisabled = isLoading || input.trim().length === 0;
 

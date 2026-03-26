@@ -1,5 +1,5 @@
 "use client";
-import { IconArrowLeft, IconArrowRight } from "@tabler/icons-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 
@@ -103,7 +103,7 @@ export const LandingTestimonials = () => {
         >
           <span className="mb-6 text-[10px] font-bold uppercase tracking-[0.4em] text-white/30">Endorsements</span>
           <h2 id="endorsements-heading" className="font-['Outfit'] text-3xl font-black tracking-tight text-white md:text-5xl">
-            Endorsed by the <span className="font-['Cormorant_Garamond'] font-light italic text-[#e879f9]">EXTRAORDINARY.</span>
+            Endorsed by the <span className="font-['Cormorant_Garamond'] font-light italic text-[#10b981]">EXTRAORDINARY.</span>
           </h2>
         </motion.div>
 
@@ -189,7 +189,7 @@ export const LandingTestimonials = () => {
               <h3 className="font-['Outfit'] text-3xl font-bold tracking-tight text-white">
                 {testimonials[active].name}
               </h3>
-              <p className="mt-2 font-['Outfit'] text-sm font-bold uppercase tracking-widest text-[#e879f9]">
+              <p className="mt-2 font-['Outfit'] text-sm font-bold uppercase tracking-widest text-[#10b981]">
                 {testimonials[active].designation}
               </p>
               <motion.p className="mt-10 font-['Outfit'] text-lg font-light italic leading-relaxed text-white/60 md:text-xl">
@@ -212,14 +212,14 @@ export const LandingTestimonials = () => {
                 aria-label="Previous Testimonial"
                 className="group/button flex h-12 w-12 items-center justify-center rounded-full bg-[#131316] shadow-lg ring-1 ring-white/10 transition-all duration-300 hover:scale-110 active:scale-95 hover:bg-white/5"
               >
-                <IconArrowLeft className="h-6 w-6 text-white transition-transform duration-300 group-hover/button:-translate-x-1" />
+                <ArrowLeft className="h-6 w-6 text-white transition-transform duration-300 group-hover/button:-translate-x-1" />
               </button>
               <button
                 onClick={handleNext}
                 aria-label="Next Testimonial"
                 className="group/button flex h-12 w-12 items-center justify-center rounded-full bg-[#131316] shadow-lg ring-1 ring-white/10 transition-all duration-300 hover:scale-110 active:scale-95 hover:bg-white/5"
               >
-                <IconArrowRight className="h-6 w-6 text-white transition-transform duration-300 group-hover/button:translate-x-1" />
+                <ArrowRight className="h-6 w-6 text-white transition-transform duration-300 group-hover/button:translate-x-1" />
               </button>
             </div>
           </div>

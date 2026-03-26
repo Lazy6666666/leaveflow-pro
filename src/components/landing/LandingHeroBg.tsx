@@ -3,7 +3,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { cn } from "../../lib/utils";
 import { Badge } from "../ui/badge";
-import { IconArrowRight } from "@tabler/icons-react";
+import { ArrowRight } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { RisingLines } from "./RisingLines";
@@ -78,7 +78,7 @@ export const LandingHeroBg = () => {
             className="group relative inline-flex px-8 py-4 rounded-full bg-white text-zinc-950 font-['Outfit'] text-sm font-medium tracking-tight overflow-hidden transition-all duration-300 hover:scale-[0.98] shadow-sm"
           >
             <span className="relative z-10 flex items-center gap-2">
-              Deploy Infrastructure <IconArrowRight className="size-4" />
+              Deploy Infrastructure <ArrowRight className="size-4" />
             </span>
           </Link>
           <button className="px-8 py-4 rounded-full border border-white/10 text-white text-sm font-medium hover:bg-white/5 transition-colors duration-300">

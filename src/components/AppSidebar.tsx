@@ -3,7 +3,7 @@ import {
   LayoutDashboard,
   CalendarDays,
   UserCog,
-  CheckSquare,
+  ClipboardCheck,
   Users,
   Settings,
   LogOut,
@@ -12,6 +12,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   PlusCircle,
+  type LucideIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLocation } from "react-router-dom";
@@ -23,21 +24,27 @@ import { Logo } from "@/components/ui/Logo";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-const employeeItems = [
-  { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard className="h-5 w-5" /> },
-  { label: "AI Workspace", href: "/ai-workspace", icon: <Bot className="h-5 w-5" /> },
-  { label: "Leave & Time Off", href: "/my-leave", icon: <CalendarDays className="h-5 w-5" /> },
-  { label: "Attendance", href: "/attendance", icon: <Fingerprint className="h-5 w-5" /> },
-  { label: "Identity & Security", href: "/profile", icon: <UserCog className="h-5 w-5" /> },
+export type AppSidebarItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+};
+
+export const employeeItems: AppSidebarItem[] = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "AI Workspace", href: "/ai-workspace", icon: Bot },
+  { label: "Leave & Time Off", href: "/my-leave", icon: CalendarDays },
+  { label: "Attendance", href: "/attendance", icon: Fingerprint },
+  { label: "Identity & Security", href: "/profile", icon: UserCog },
 ];
 
-const managerItems = [
-  { label: "Manager Hub", href: "/manager/hub", icon: <CheckSquare className="h-5 w-5" /> },
+export const managerItems: AppSidebarItem[] = [
+  { label: "Manager Hub", href: "/manager/hub", icon: ClipboardCheck },
 ];
 
-const adminItems = [
-  { label: "HR Operations", href: "/admin/hr-operations", icon: <Users className="h-5 w-5" /> },
-  { label: "System Admin", href: "/admin/system", icon: <Settings className="h-5 w-5" /> },
+export const adminItems: AppSidebarItem[] = [
+  { label: "HR Operations", href: "/admin/hr-operations", icon: Users },
+  { label: "System Admin", href: "/admin/system", icon: Settings },
 ];
 
 interface AppSidebarProps {
@@ -75,7 +82,7 @@ export function AppSidebar({ onRequestLeave }: AppSidebarProps) {
           </button>
         </div>
 
-        {/* Action Button - Mobile gets priority if they click menu */}
+        {/* Action Button */}
         <div className="px-2 mb-6">
            <Button 
             onClick={() => {
@@ -97,14 +104,14 @@ export function AppSidebar({ onRequestLeave }: AppSidebarProps) {
 
         {/* Employee */}
         <SidebarGroup label="Employee" open={open}>
-          {employeeItems.map((link, idx) => (
-            <SidebarLink
-              key={idx}
-              link={link}
-              onClick={() => trackSidebarClick(link.label, link.href)}
-              className={cn(
+              {employeeItems.map((link, idx) => (
+                <SidebarLink
+                  key={idx}
+                  link={{ ...link, icon: <link.icon className="h-5 w-5" /> }}
+                  onClick={() => trackSidebarClick(link.label, link.href)}
+                  className={cn(
                 "hover:bg-white/5 rounded-xl px-2 py-2.5 transition-[background-color,border-color] duration-200",
-                isActive(link.href) && "border-l-2 border-emerald-500/60 bg-white/10 text-white font-semibold pl-2"
+                isActive(link.href) && "border-l-2 border-primary bg-white/10 text-white font-semibold pl-2"
               )}
             />
           ))}
@@ -117,11 +124,11 @@ export function AppSidebar({ onRequestLeave }: AppSidebarProps) {
               {managerItems.map((link, idx) => (
                 <SidebarLink
                   key={idx}
-                  link={link}
+                  link={{ ...link, icon: <link.icon className="h-5 w-5" /> }}
                   onClick={() => trackSidebarClick(link.label, link.href)}
                   className={cn(
                     "hover:bg-white/5 rounded-xl px-2 py-2.5 transition-all duration-200",
-                    isActive(link.href) && "bg-white/10 text-white font-bold"
+                    isActive(link.href) && "border-l-2 border-primary bg-white/10 text-white font-semibold pl-2"
                   )}
                 />
               ))}
@@ -136,11 +143,11 @@ export function AppSidebar({ onRequestLeave }: AppSidebarProps) {
               {adminItems.map((link, idx) => (
                 <SidebarLink
                   key={idx}
-                  link={link}
+                  link={{ ...link, icon: <link.icon className="h-5 w-5" /> }}
                   onClick={() => trackSidebarClick(link.label, link.href)}
                   className={cn(
                     "hover:bg-white/5 rounded-xl px-2 py-2.5 transition-all duration-200",
-                    isActive(link.href) && "bg-white/10 text-white font-bold"
+                    isActive(link.href) && "border-l-2 border-primary bg-white/10 text-white font-semibold pl-2"
                   )}
                 />
               ))}
@@ -157,7 +164,7 @@ export function AppSidebar({ onRequestLeave }: AppSidebarProps) {
                 onClick={() => trackSidebarClick("Admin Setup", "/admin-setup")}
                 className={cn(
                   "hover:bg-white/5 rounded-xl px-2 py-2.5 transition-all duration-200",
-                  isActive("/admin-setup") && "bg-white/10 text-white font-bold"
+                  isActive("/admin-setup") && "border-l-2 border-primary bg-white/10 text-white font-semibold pl-2"
                 )}
               />
             </SidebarGroup>
@@ -191,10 +198,10 @@ const SidebarGroup = ({ label, children, open }: { label: string; children: Reac
   <div className="space-y-1 mb-6">
     <motion.p
       animate={{ opacity: open ? 1 : 0, display: open ? "block" : "none" }}
-      className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.15em] text-white/40"
+      className="text-xs font-semibold uppercase tracking-wider text-white/40 mb-2 px-4"
     >
       {label}
     </motion.p>
-    <div className="space-y-0.5">{children}</div>
+    {children}
   </div>
 );

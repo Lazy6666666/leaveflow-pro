@@ -17,11 +17,11 @@ interface RisingLinesProps {
 export const RisingLines: React.FC<RisingLinesProps> = ({
   riseSpeed = 2.5,
   horizonHeight = 0.05,
-  linesColor = "#e879f9",
+  linesColor = "#10b981",
   linesWidth = 2.5,
   linesLength = 0.9,
   particlesSpeed = 1.5,
-  particlesColor = "#e879f9",
+  particlesColor = "#10b981",
   particlesOpacity = 0.95,
   lineCount = 100, // Slightly reduced to optimize
   particleCount = 150, // Slightly reduced to optimize

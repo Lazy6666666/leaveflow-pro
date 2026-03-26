@@ -1,10 +1,11 @@
+import type { ReactNode } from "react";
 import { MobileRuntimeContext, type MobileRuntimeValue } from "./MobileRuntimeContext";
 
 export function MobileRuntimeProvider({
   children,
   value,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   value: MobileRuntimeValue;
 }) {
   return (

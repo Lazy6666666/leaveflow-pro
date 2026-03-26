@@ -41,7 +41,7 @@ export const LandingCTA = () => {
         />
       {/* Background patterns / mesh */}
       <div className="absolute inset-0 opacity-20 pointer-events-none">
-        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,#e879f9_0%,transparent_50%)] blur-[100px]" />
+        <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,#10b981_0%,transparent_50%)] blur-[100px]" />
       </div>
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8">
@@ -53,8 +53,8 @@ export const LandingCTA = () => {
                 transition={{ duration: 1 }}
                 className="mb-8 flex items-center gap-4"
             >
-                <span className="w-12 h-[1px] bg-[#e879f9]/40 block"></span>
-                <span className="text-[10px] tracking-[0.3em] font-bold uppercase text-[#e879f9]/60">The Opportunity</span>
+                <span className="w-12 h-[1px] bg-[#10b981]/40 block"></span>
+                <span className="text-[10px] tracking-[0.3em] font-bold uppercase text-[#10b981]/60">The Opportunity</span>
             </motion.div>
             
             <motion.h2 
@@ -65,7 +65,7 @@ export const LandingCTA = () => {
               className="font-['Outfit'] text-5xl md:text-7xl font-black tracking-tight text-white leading-[0.95]"
             >
               Orchestrate your <br/>
-              <span className="font-['Cormorant_Garamond'] font-light italic text-[#e879f9]">legacy today.</span>
+              <span className="font-['Cormorant_Garamond'] font-light italic text-[#10b981]">legacy today.</span>
             </motion.h2>
 
             <motion.p 
@@ -85,7 +85,7 @@ export const LandingCTA = () => {
             >
               <Link
                 to="/auth/register"
-                aria-label="Start a Leaveflow Pro Trial"
+                aria-label="Start Trial"
                 onClick={() => {
                   void track(
                     "landing_cta_clicked",
@@ -96,7 +96,7 @@ export const LandingCTA = () => {
                 className="group relative flex items-center justify-between gap-8 pl-8 pr-2 py-2 bg-white text-black rounded-[2.5rem] active:scale-[0.98] transition-all duration-500 ease-premium shadow-[0_20px_40px_-12px_rgba(0,0,0,0.3)] hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.5)]"
               >
                 <span className="text-sm uppercase font-bold tracking-[0.2em]">Start Trial</span>
-                <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center transition-all duration-500 group-hover:bg-[#e879f9] group-hover:scale-105" aria-hidden="true">
+                <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center transition-all duration-500 group-hover:bg-[#10b981] group-hover:scale-105" aria-hidden="true">
                   <ArrowUpRight strokeWidth={1.5} size={20} className="text-white transition-transform duration-500 ease-premium group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
                 </div>
               </Link>

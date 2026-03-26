@@ -1,14 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, ChevronRight, Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import {
-  IconMenu2 as Menu,
-  IconX as X,
-  IconChevronRight as ChevronRight,
-} from "@tabler/icons-react";
 
 const navLinks = [
   { name: "Product", href: "#product" },
@@ -87,7 +82,7 @@ export const LandingNavbar = () => {
                 {activeItem === link.name && (
                    <motion.span
                    layoutId="nav-underline-premium"
-                   className="absolute bottom-0 left-4 right-4 h-0.5 bg-[#e879f9] rounded-full"
+                   className="absolute bottom-0 left-4 right-4 h-0.5 bg-[#10b981] rounded-full"
                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
                  />
                 )}
@@ -109,7 +104,7 @@ export const LandingNavbar = () => {
               className="hidden md:flex group relative items-center justify-between gap-6 pl-6 pr-1.5 py-1.5 bg-white text-black rounded-[2rem] active:scale-[0.98] transition-all duration-500 ease-premium shadow-[0_4px_16px_-4px_rgba(0,0,0,0.4)]"
             >
               <span className="text-[10px] uppercase font-bold tracking-[0.2em]">Start Trial</span>
-              <div className="w-8 h-8 rounded-full bg-black/10 flex items-center justify-center transition-all duration-500 group-hover:bg-[#e879f9] group-hover:scale-105">
+              <div className="w-8 h-8 rounded-full bg-black/10 flex items-center justify-center transition-all duration-500 group-hover:bg-[#10b981] group-hover:scale-105">
                 <ArrowUpRight strokeWidth={1} size={16} className="text-black transition-transform duration-500 ease-premium group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
               </div>
             </Link>
@@ -175,7 +170,7 @@ export const LandingNavbar = () => {
                   <ChevronRight
                     size={24}
                     className={`transition-all duration-500 ${
-                      activeItem === link.name ? "text-[#e879f9] translate-x-1" : "text-white/20"
+                      activeItem === link.name ? "text-[#10b981] translate-x-1" : "text-white/20"
                     }`}
                   />
                 </motion.a>
@@ -200,7 +195,7 @@ export const LandingNavbar = () => {
                   className="group relative flex items-center justify-between gap-8 pl-8 pr-2 py-3 bg-white text-black rounded-[2.5rem] active:scale-[0.98] transition-all duration-500 ease-premium shadow-[0_20px_40px_-12px_rgba(0,0,0,0.3)]"
                 >
                   <span className="text-sm uppercase font-bold tracking-[0.2em]">Join Leaveflow</span>
-                  <div className="w-12 h-12 rounded-full bg-black/10 flex items-center justify-center transition-all duration-500 group-hover:bg-[#e879f9] group-hover:scale-105" aria-hidden="true">
+                  <div className="w-12 h-12 rounded-full bg-black/10 flex items-center justify-center transition-all duration-500 group-hover:bg-[#10b981] group-hover:scale-105" aria-hidden="true">
                     <ArrowUpRight strokeWidth={1.5} size={20} className="text-black transition-transform duration-500 ease-premium group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
                   </div>
                 </Link>

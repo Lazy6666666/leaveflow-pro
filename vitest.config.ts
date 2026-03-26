@@ -34,6 +34,11 @@ export default defineConfig(({ mode }) => {
       maxWorkers: 1,
       minWorkers: 1,
       isolate: true,
+      server: {
+        deps: {
+          inline: ["react-router", "react-router-dom"],
+        },
+      },
     },
     resolve: {
       alias: { "@": path.resolve(__dirname, "./src") },

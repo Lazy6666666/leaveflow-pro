@@ -1,8 +1,6 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { IconChevronLeft, IconChevronRight } from "@tabler/icons-react";
-import { motion, PanInfo } from "framer-motion";
 
 interface Product {
   title: string;
@@ -139,8 +137,8 @@ export const InteriorCarousel = () => {
           <span className="font-['Outfit'] text-[clamp(9px,0.75vw,11px)] font-medium uppercase tracking-[0.26em] text-white/25">
              Flow
           </span>
-          <div className="w-[1px] h-3.5 bg-[#e879f9]/25" />
-          <span className="font-['Outfit'] text-[clamp(9px,0.75vw,11px)] font-medium uppercase tracking-[0.26em] text-[#e879f9]/50">
+          <div className="w-[1px] h-3.5 bg-[#10b981]/25" />
+          <span className="font-['Outfit'] text-[clamp(9px,0.75vw,11px)] font-medium uppercase tracking-[0.26em] text-[#10b981]/50">
             Rotate
           </span>
         </div>
