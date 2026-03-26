@@ -1,7 +1,7 @@
 import { ClerkProvider, useAuth, useClerk, useUser } from "@clerk/expo";
 import { resourceCache } from "@clerk/expo/resource-cache";
 import { tokenCache } from "@clerk/expo/token-cache";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
 import { useConvexAuth, useMutation } from "convex/react";
 
@@ -20,7 +20,7 @@ function ClerkRuntimeBridge({
   children,
   tokenProbe,
 }: {
-  children: React.ReactNode;
+  children: ReactNode;
   tokenProbe: ClerkTokenProbe;
 }) {
   const { isLoaded, isSignedIn } = useAuth();
@@ -91,7 +91,13 @@ function ClerkRuntimeBridge({
   );
 }
 
-function ClerkConvexBridge({ children }: { children: React.ReactNode }) {
+function ClerkConvexBridge({
+  children,
+  client,
+}: {
+  children: ReactNode;
+  client: NonNullable<typeof convexClient>;
+}) {
   const { isLoaded, isSignedIn, getToken } = useAuth();
   const { user } = useUser();
   const [convexAuthSeed, setConvexAuthSeed] = useState(0);
@@ -179,7 +185,7 @@ function ClerkConvexBridge({ children }: { children: React.ReactNode }) {
 
   return (
     <ConvexProviderWithClerk
-      client={convexClient}
+      client={client}
       key={providerKey}
       useAuth={useAuth}
     >
@@ -188,8 +194,10 @@ function ClerkConvexBridge({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function AppProviders({ children }: { children: React.ReactNode }) {
-  if (!hasMobileBackendEnv || !convexClient) {
+export function AppProviders({ children }: { children: ReactNode }) {
+  const client = convexClient;
+
+  if (!hasMobileBackendEnv || !client) {
     return (
       <MobileRuntimeProvider
         value={{
@@ -213,7 +221,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       __experimental_resourceCache={resourceCache}
       tokenCache={tokenCache}
     >
-      <ClerkConvexBridge>{children}</ClerkConvexBridge>
+      <ClerkConvexBridge client={client}>{children}</ClerkConvexBridge>
     </ClerkProvider>
   );
 }

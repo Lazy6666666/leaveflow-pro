@@ -39,12 +39,14 @@ export const getBalancesData = query({
     const leaveTypes = await ctx.db.query("leaveTypes").withIndex("by_isActive", (q) => q.eq("isActive", true)).collect();
     const balances = [];
 
-    if (args.employeeId) {
+    const employeeId = args.employeeId;
+
+    if (typeof employeeId === "string") {
       balances.push(
         ...await ctx.db
           .query("leaveBalances")
           .withIndex("by_employeeId_year", (q) =>
-            q.eq("employeeId", args.employeeId).eq("year", args.year),
+            q.eq("employeeId", employeeId).eq("year", args.year),
           )
           .collect(),
       );
@@ -56,19 +58,17 @@ export const getBalancesData = query({
         .sort((a, b) => (a.fullName ?? a.email ?? "").localeCompare(b.fullName ?? b.email ?? ""))
         .map((profile) => ({ id: profile.userId, full_name: profile.fullName ?? null, email: profile.email ?? null })),
       leaveTypes: leaveTypes.map((leaveType) => ({ id: leaveType._id, name: leaveType.name, annual_allocation: leaveType.annualAllocation })),
-      balances: await Promise.all(
-        balances.map(async (balance) => {
-          const leaveType = await ctx.db.get(balance.leaveTypeId);
-          return {
-            id: balance._id,
-            employee_id: balance.employeeId,
-            leave_type_id: balance.leaveTypeId,
-            balance: balance.balance,
-            year: balance.year,
-            leave_types: leaveType ? { name: leaveType.name } : null,
-          };
-        }),
-      ),
+      balances: balances.map((balance) => {
+        const leaveType = leaveTypes.find((candidate) => candidate._id === balance.leaveTypeId);
+        return {
+          id: balance._id,
+          employee_id: balance.employeeId,
+          leave_type_id: balance.leaveTypeId,
+          balance: balance.balance,
+          year: balance.year,
+          leave_types: leaveType ? { name: leaveType.name } : null,
+        };
+      }),
     };
   },
 });

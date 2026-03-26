@@ -7,8 +7,13 @@ import AttendanceDashboard from "./AttendanceDashboard";
 import Reports from "./Reports";
 import AuditLog from "./AuditLog";
 import TrustReviewQueue from "./TrustReviewQueue";
+import { RecruitmentPanel } from "@/components/recruitment/RecruitmentPanel";
+import { OnboardingPanel } from "@/components/onboarding/OnboardingPanel";
+import { PerformanceReviewsPanel } from "@/components/reviews/PerformanceReviewsPanel";
+import { TrainingCenterPanel } from "@/components/training/TrainingCenterPanel";
+import { CertificationsPanel } from "@/components/training/CertificationsPanel";
 
-const TABS = ["directory", "departments", "balances", "attendance", "analytics", "audits", "trust-review"] as const;
+const TABS = ["directory", "departments", "recruitment", "onboarding", "reviews", "training", "certifications", "balances", "attendance", "analytics", "audits", "trust-review"] as const;
 type Tab = (typeof TABS)[number];
 
 const HROperationsHub = () => {
@@ -30,6 +35,11 @@ const HROperationsHub = () => {
         <TabsList className="flex-wrap">
           <TabsTrigger value="directory">Directory</TabsTrigger>
           <TabsTrigger value="departments">Departments</TabsTrigger>
+          <TabsTrigger value="recruitment">Recruitment</TabsTrigger>
+          <TabsTrigger value="onboarding">Onboarding</TabsTrigger>
+          <TabsTrigger value="reviews">Reviews</TabsTrigger>
+          <TabsTrigger value="training">Training</TabsTrigger>
+          <TabsTrigger value="certifications">Certifications</TabsTrigger>
           <TabsTrigger value="balances">Balances</TabsTrigger>
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
@@ -39,6 +49,11 @@ const HROperationsHub = () => {
 
         <TabsContent value="directory" className="mt-6"><Employees /></TabsContent>
         <TabsContent value="departments" className="mt-6"><Departments /></TabsContent>
+        <TabsContent value="recruitment" className="mt-6"><RecruitmentPanel /></TabsContent>
+        <TabsContent value="onboarding" className="mt-6"><OnboardingPanel /></TabsContent>
+        <TabsContent value="reviews" className="mt-6"><PerformanceReviewsPanel /></TabsContent>
+        <TabsContent value="training" className="mt-6"><TrainingCenterPanel /></TabsContent>
+        <TabsContent value="certifications" className="mt-6"><CertificationsPanel /></TabsContent>
         <TabsContent value="balances" className="mt-6"><Balances /></TabsContent>
         <TabsContent value="attendance" className="mt-6"><AttendanceDashboard /></TabsContent>
         <TabsContent value="analytics" className="mt-6"><Reports /></TabsContent>

@@ -468,18 +468,18 @@ export const exportPayrollCsv = action({
     });
     const fileName = `payroll${args.siteId ? `-${args.siteId}` : ""}-${args.startDate}-${args.endDate}.csv`;
     const header = "Name,Department,Rate Source,Worked Hours,Overtime Hours,Overtime Premium,Payable Hours,Paid Leave Days,Unpaid Leave Days,Gross Pay";
-    const rows = data.employees.map((e) =>
+    const rows = data.employees.map((employee: PayrollEmployeeSummary) =>
       [
-        `"${e.employeeName}"`,
-        `"${e.departmentName ?? ""}"`,
-        e.rateSource,
-        e.workedHours,
-        e.overtimeHours,
-        e.overtimePremiumPay,
-        e.payableHours,
-        e.paidLeaveDays,
-        e.unpaidLeaveDays,
-        e.grossPay ?? "",
+        `"${employee.employeeName}"`,
+        `"${employee.departmentName ?? ""}"`,
+        employee.rateSource,
+        employee.workedHours,
+        employee.overtimeHours,
+        employee.overtimePremiumPay,
+        employee.payableHours,
+        employee.paidLeaveDays,
+        employee.unpaidLeaveDays,
+        employee.grossPay ?? "",
       ].join(",")
     );
     return {

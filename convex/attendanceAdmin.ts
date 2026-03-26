@@ -6,6 +6,38 @@ import { attendanceStatusValidator, locationValidator } from "./constants";
 import { applySiteScope, assertRequestedSiteInScope, canManageEmployee, getAccessibleSiteIds, now, recordAudit, requireAnyRole, requireDirectAnyRole, requireIdentity, toIso } from "./lib/auth";
 import { assertAttendanceSelfieOwnership, getSettingsDoc, linkAttendanceSelfie, parseOptionalTimestamp, serializeSettings, validateManagedAttendanceValues } from "./attendanceHelpers";
 import type { AttendanceLogDoc, ProfileDoc } from "./lib/types";
+import type { ActionCtx } from "./_generated/server";
+
+type AbsenceNotificationAutomationResult = {
+  autoMarkResult: {
+    date: string;
+    marked: number;
+    absentEmployeeIds: string[];
+    onLeaveEmployeeIds: string[];
+    skipped: boolean;
+    reason?: "auto_mark_absent_disabled";
+  };
+  notificationResult:
+    | {
+        dryRun: boolean;
+        date: string;
+        managersNotified: number;
+        notificationsCreated: number;
+        emailsSent: number;
+        emailEnabled: boolean;
+      }
+    | null;
+};
+
+async function runAbsenceNotificationAutomationHandler(
+  ctx: ActionCtx,
+  args: { date?: string; dryRun?: boolean },
+): Promise<AbsenceNotificationAutomationResult> {
+  return await ctx.runAction(internal.absenceNotifications.runDailyAttendanceAutomation, {
+    date: args.date,
+    dryRun: args.dryRun,
+  });
+}
 
 export const getAdminAttendanceDashboard = query({
   args: {
@@ -312,11 +344,7 @@ export const runAbsenceNotificationAutomation = internalAction({
     date: v.optional(v.string()),
     dryRun: v.optional(v.boolean()),
   },
-  handler: async (ctx, args) =>
-    await ctx.runAction(internal.absenceNotifications.runDailyAttendanceAutomation, {
-      date: args.date,
-      dryRun: args.dryRun,
-    }),
+  handler: runAbsenceNotificationAutomationHandler,
 });
 
 export const getTrustReviewQueue = query({

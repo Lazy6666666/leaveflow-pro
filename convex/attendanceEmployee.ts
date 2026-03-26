@@ -406,7 +406,9 @@ export const getTeamAttendance = query({
     const managedEmployeeIds = roles.includes("hr_admin") ? null : await getManagedEmployeeIds(ctx, identity.subject);
 
     const logs = await ctx.db.query("attendanceLogs").withIndex("by_date", (q) => q.eq("date", targetDate)).collect();
-    const visible = roles.includes("hr_admin") ? logs : logs.filter((log) => managedEmployeeIds.includes(log.employeeId));
+    const visible = managedEmployeeIds === null
+      ? logs
+      : logs.filter((log) => managedEmployeeIds.includes(log.employeeId));
 
     return await Promise.all(
       visible.sort((a, b) => (a.clockIn ?? 0) - (b.clockIn ?? 0)).map(async (log) => {

@@ -5,7 +5,8 @@ import { v } from "convex/values";
 import { biometricsVendorValidator } from "./constants";
 import type { BiometricsVendor } from "./constants";
 import { applySiteScope, assertRequestedSiteInScope, getAccessibleSiteIds, now, recordAudit, requireAnyRole } from "./lib/auth";
-import type { MutationCtx, QueryCtx } from "./_generated/server";
+import type { ActionCtx, MutationCtx, QueryCtx } from "./_generated/server";
+import type { BiometricsConfigDoc } from "./lib/types";
 import {
   currentConvexSiteUrl,
   getBiometricsErrorMessage,
@@ -20,6 +21,188 @@ import {
 
 async function requireAdmin(ctx: QueryCtx | MutationCtx) {
   return await requireAnyRole(ctx, ["hr_admin"]);
+}
+
+type BiometricsActionResult = {
+  success: boolean;
+  message: string;
+  total_synced?: number;
+  unmatched?: number;
+};
+
+type ScheduledBiometricsResult = {
+  checked: number;
+  due: number;
+  synced: number;
+  results: Array<{
+    configId: string;
+    vendor: BiometricsVendor;
+    success: boolean;
+    total_synced?: number;
+    unmatched?: number;
+    message: string;
+  }>;
+};
+
+type BiometricsWebhookResult = {
+  success: boolean;
+  status: number;
+  message?: string;
+  configId?: string;
+  vendor?: BiometricsVendor;
+  processed?: number;
+  unmatched?: number;
+  received?: number;
+};
+
+async function testBiometricsConnectionHandler(
+  ctx: ActionCtx,
+  args: { configId: BiometricsConfigDoc["_id"] },
+): Promise<BiometricsActionResult> {
+  await requireAdminAction(ctx);
+  const config: BiometricsConfigDoc | null = await ctx.runQuery(
+    internal.admin.getBiometricsConfigInternal,
+    { configId: args.configId },
+  );
+  if (!config) {
+    throw new Error("Biometrics config not found");
+  }
+
+  if (config.vendor === "generic_webhook") {
+    const convexSiteUrl = currentConvexSiteUrl();
+    if (!convexSiteUrl) {
+      await ctx.runMutation(internal.admin.setBiometricsSyncStatusInternal, {
+        configId: args.configId,
+        status: "configuration_required",
+        records: config.lastSyncRecords ?? 0,
+      });
+      return { success: false, message: getMissingSiteUrlMessage() };
+    }
+
+    await ctx.runMutation(internal.admin.setBiometricsSyncStatusInternal, {
+      configId: args.configId,
+      status: "connected",
+      records: config.lastSyncRecords ?? 0,
+    });
+    return {
+      success: true,
+      message: getWebhookReadyMessage(convexSiteUrl, config.webhookSecret),
+    };
+  }
+
+  return await syncBiometricsConfig(ctx, config);
+}
+
+async function syncBiometricsHandler(
+  ctx: ActionCtx,
+  args: { configId: BiometricsConfigDoc["_id"] },
+): Promise<BiometricsActionResult> {
+  await requireAdminAction(ctx);
+  const config: BiometricsConfigDoc | null = await ctx.runQuery(
+    internal.admin.getBiometricsConfigInternal,
+    { configId: args.configId },
+  );
+  if (!config) {
+    throw new Error("Biometrics config not found");
+  }
+  return await syncBiometricsConfig(ctx, config);
+}
+
+async function runScheduledBiometricsSyncHandler(ctx: ActionCtx): Promise<ScheduledBiometricsResult> {
+  const configs: BiometricsConfigDoc[] = await ctx.runQuery(
+    internal.admin.listActiveBiometricsConfigsInternal,
+    {},
+  );
+  const currentTimestamp = now();
+  const dueConfigs = configs.filter((config) => isBiometricsSyncDue(config, currentTimestamp));
+  const results: ScheduledBiometricsResult["results"] = [];
+
+  for (const config of dueConfigs) {
+    try {
+      const result = await syncBiometricsConfig(ctx, config);
+      results.push({
+        configId: String(config._id),
+        vendor: config.vendor,
+        success: result.success,
+        total_synced: result.total_synced,
+        unmatched: result.unmatched,
+        message: result.message,
+      });
+    } catch (error: unknown) {
+      results.push({
+        configId: String(config._id),
+        vendor: config.vendor,
+        success: false,
+        message: getBiometricsErrorMessage(error),
+      });
+    }
+  }
+
+  return {
+    checked: configs.length,
+    due: dueConfigs.length,
+    synced: results.filter((result) => result.success).length,
+    results,
+  };
+}
+
+async function ingestBiometricsWebhookHandler(
+  ctx: ActionCtx,
+  args: { payload: unknown; vendor?: string; webhookSecret?: string },
+): Promise<BiometricsWebhookResult> {
+  const config: BiometricsConfigDoc | null = await ctx.runQuery(
+    internal.admin.getWebhookBiometricsConfigInternal,
+    { vendor: args.vendor, webhookSecret: args.webhookSecret },
+  );
+  if (!config) {
+    return {
+      success: false,
+      status: 404,
+      message: "No active biometrics config matched the incoming webhook.",
+    };
+  }
+  if (!config.webhookSecret) {
+    return {
+      success: false,
+      status: 401,
+      message: "Webhook secret is required for biometrics webhook ingestion.",
+    };
+  }
+  if (config.webhookSecret !== args.webhookSecret) {
+    return {
+      success: false,
+      status: 401,
+      message: "Webhook secret did not match the configured device.",
+    };
+  }
+
+  const records = normalizeWebhookRecords(args.payload);
+  if (records.length === 0) {
+    await ctx.runMutation(internal.admin.setBiometricsSyncStatusInternal, {
+      configId: config._id,
+      status: "webhook_ignored",
+      records: 0,
+    });
+    return {
+      success: false,
+      status: 400,
+      message: "Webhook payload did not contain any recognizable attendance records.",
+    };
+  }
+
+  const result: Awaited<ReturnType<typeof ingestBiometricsRecords>> = await ctx.runMutation(
+    internal.admin.ingestBiometricsRecordsInternal,
+    { configId: config._id, source: config.vendor, records },
+  );
+  return {
+    success: true,
+    status: 202,
+    configId: String(config._id),
+    vendor: config.vendor,
+    processed: result.processed,
+    unmatched: result.unmatched,
+    received: records.length,
+  };
 }
 
 export const getBiometricsConfigInternal = internalQuery({
@@ -185,72 +368,20 @@ export const deleteBiometricsConfig = mutation({
 
 export const testBiometricsConnection = action({
   args: { configId: v.id("biometricsConfigs") },
-  handler: async (ctx, args) => {
-    await requireAdminAction(ctx);
-    const config = await ctx.runQuery(internal.admin.getBiometricsConfigInternal, { configId: args.configId });
-    if (!config) throw new Error("Biometrics config not found");
-
-    if (config.vendor === "generic_webhook") {
-      const convexSiteUrl = currentConvexSiteUrl();
-      if (!convexSiteUrl) {
-        await ctx.runMutation(internal.admin.setBiometricsSyncStatusInternal, { configId: args.configId, status: "configuration_required", records: config.lastSyncRecords ?? 0 });
-        return { success: false, message: getMissingSiteUrlMessage() };
-      }
-
-      await ctx.runMutation(internal.admin.setBiometricsSyncStatusInternal, { configId: args.configId, status: "connected", records: config.lastSyncRecords ?? 0 });
-      return { success: true, message: getWebhookReadyMessage(convexSiteUrl, config.webhookSecret) };
-    }
-
-    return await syncBiometricsConfig(ctx, config);
-  },
+  handler: testBiometricsConnectionHandler,
 });
 
 export const syncBiometrics = action({
   args: { configId: v.id("biometricsConfigs") },
-  handler: async (ctx, args) => {
-    await requireAdminAction(ctx);
-    const config = await ctx.runQuery(internal.admin.getBiometricsConfigInternal, { configId: args.configId });
-    if (!config) throw new Error("Biometrics config not found");
-    return await syncBiometricsConfig(ctx, config);
-  },
+  handler: syncBiometricsHandler,
 });
 
 export const runScheduledBiometricsSync = internalAction({
   args: {},
-  handler: async (ctx) => {
-    const configs = await ctx.runQuery(internal.admin.listActiveBiometricsConfigsInternal, {});
-    const currentTimestamp = now();
-    const dueConfigs = configs.filter((config) => isBiometricsSyncDue(config, currentTimestamp));
-    const results: Array<{ configId: string; vendor: BiometricsVendor; success: boolean; total_synced?: number; unmatched?: number; message: string }> = [];
-
-    for (const config of dueConfigs) {
-      try {
-        const result = await syncBiometricsConfig(ctx, config);
-        results.push({ configId: String(config._id), vendor: config.vendor, success: result.success, total_synced: result.total_synced, unmatched: result.unmatched, message: result.message });
-      } catch (error: unknown) {
-        results.push({ configId: String(config._id), vendor: config.vendor, success: false, message: getBiometricsErrorMessage(error) });
-      }
-    }
-
-    return { checked: configs.length, due: dueConfigs.length, synced: results.filter((result) => result.success).length, results };
-  },
+  handler: runScheduledBiometricsSyncHandler,
 });
 
 export const ingestBiometricsWebhook = internalAction({
   args: { payload: v.any(), vendor: v.optional(v.string()), webhookSecret: v.optional(v.string()) },
-  handler: async (ctx, args) => {
-    const config = await ctx.runQuery(internal.admin.getWebhookBiometricsConfigInternal, { vendor: args.vendor, webhookSecret: args.webhookSecret });
-    if (!config) return { success: false, status: 404, message: "No active biometrics config matched the incoming webhook." };
-    if (!config.webhookSecret) return { success: false, status: 401, message: "Webhook secret is required for biometrics webhook ingestion." };
-    if (config.webhookSecret !== args.webhookSecret) return { success: false, status: 401, message: "Webhook secret did not match the configured device." };
-
-    const records = normalizeWebhookRecords(args.payload);
-    if (records.length === 0) {
-      await ctx.runMutation(internal.admin.setBiometricsSyncStatusInternal, { configId: config._id, status: "webhook_ignored", records: 0 });
-      return { success: false, status: 400, message: "Webhook payload did not contain any recognizable attendance records." };
-    }
-
-    const result = await ctx.runMutation(internal.admin.ingestBiometricsRecordsInternal, { configId: config._id, source: config.vendor, records });
-    return { success: true, status: 202, configId: String(config._id), vendor: config.vendor, processed: result.processed, unmatched: result.unmatched, received: records.length };
-  },
+  handler: ingestBiometricsWebhookHandler,
 });
