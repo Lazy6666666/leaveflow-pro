@@ -6,11 +6,6 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import RoleGuard from "./RoleGuard";
 
-const routerFuture = {
-  v7_startTransition: true,
-  v7_relativeSplatPath: true,
-} as const;
-
 const mockUseAuth = vi.fn();
 
 vi.mock("@/contexts/AuthContext", () => ({
@@ -30,10 +25,7 @@ describe("RoleGuard", () => {
     });
 
     render(
-      <MemoryRouter
-        initialEntries={["/admin/system"]}
-        future={routerFuture}
-      >
+      <MemoryRouter initialEntries={["/admin/system"]}>
         <Routes>
           <Route path="/dashboard" element={<div>Dashboard</div>} />
           <Route
@@ -54,15 +46,13 @@ describe("RoleGuard", () => {
   it("allows delegated manager access when requested", () => {
     mockUseAuth.mockReturnValue({
       hasExplicitRole: () => false,
+      hasFeature: () => true,
       hasRole: (role: string) => role === "manager",
       loading: false,
     });
 
     render(
-      <MemoryRouter
-        initialEntries={["/manager/hub"]}
-        future={routerFuture}
-      >
+      <MemoryRouter initialEntries={["/manager/hub"]}>
         <Routes>
           <Route
             path="/manager/hub"
@@ -77,5 +67,31 @@ describe("RoleGuard", () => {
     );
 
     expect(screen.getByText("Manager hub")).toBeInTheDocument();
+  });
+
+  it("allows convex dev access to admin-gated routes when the feature is enabled", () => {
+    mockUseAuth.mockReturnValue({
+      hasExplicitRole: () => false,
+      hasFeature: (feature: string) => feature === "admin_system",
+      hasRole: (role: string) => role === "hr_admin",
+      loading: false,
+    });
+
+    render(
+      <MemoryRouter initialEntries={["/admin/system"]}>
+        <Routes>
+          <Route
+            path="/admin/system"
+            element={(
+              <RoleGuard allowedRoles={["hr_admin"]} requiredFeature="admin_system">
+                <div>Admin system</div>
+              </RoleGuard>
+            )}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("Admin system")).toBeInTheDocument();
   });
 });

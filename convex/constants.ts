@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 
-export const APP_ROLES = ["employee", "manager", "hr_admin"] as const;
+export const APP_ROLES = ["employee", "manager", "hr_admin", "convex_dev"] as const;
 export const LEAVE_REQUEST_STATUSES = ["pending", "approved", "rejected", "cancelled"] as const;
 export const ATTENDANCE_STATUSES = ["present", "late", "absent", "half_day", "on_leave"] as const;
 export const BIOMETRICS_VENDORS = [
@@ -26,6 +26,7 @@ export const appRoleValidator = v.union(
   v.literal("employee"),
   v.literal("manager"),
   v.literal("hr_admin"),
+  v.literal("convex_dev"),
 );
 
 export const leaveRequestStatusValidator = v.union(

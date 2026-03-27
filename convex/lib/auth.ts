@@ -6,6 +6,14 @@ import { filterRecordsBySiteScope } from "../siteScope";
 
 type ReadCtx = QueryCtx | MutationCtx;
 
+export function hasConvexDeveloperRole(roles: AppRole[]) {
+  return roles.includes("convex_dev");
+}
+
+export function hasHrAdminAccess(roles: AppRole[]) {
+  return roles.includes("hr_admin") || hasConvexDeveloperRole(roles);
+}
+
 export async function requireIdentity(ctx: ReadCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) {
@@ -38,7 +46,7 @@ export async function canManageEmployee(
   roles?: AppRole[],
 ) {
   const resolvedRoles = roles ?? await getUserRoles(ctx, viewerUserId);
-  if (resolvedRoles.includes("hr_admin")) {
+  if (hasHrAdminAccess(resolvedRoles)) {
     return true;
   }
 
@@ -60,7 +68,7 @@ export async function getAccessibleSiteIds(
   roles?: AppRole[],
 ) {
   const resolvedRoles = roles ?? await getUserRoles(ctx, userId);
-  if (resolvedRoles.includes("hr_admin")) {
+  if (hasHrAdminAccess(resolvedRoles)) {
     return null;
   }
 
@@ -84,7 +92,9 @@ export function applySiteScope<T extends { siteId?: string | null }>(
 export async function requireAnyRole(ctx: ReadCtx, allowedRoles: AppRole[]) {
   const identity = await requireIdentity(ctx);
   const roles = await getUserRoles(ctx, identity.subject);
-  const hasAllowedRole = allowedRoles.some((role) => roles.includes(role));
+  const hasAllowedRole =
+    allowedRoles.some((role) => roles.includes(role)) ||
+    hasConvexDeveloperRole(roles);
   const hasDelegatedManagerAccess = !hasAllowedRole &&
     allowedRoles.includes("manager") &&
     await hasActiveManagerDelegation(ctx, identity.subject);
@@ -98,7 +108,9 @@ export async function requireAnyRole(ctx: ReadCtx, allowedRoles: AppRole[]) {
 export async function requireDirectAnyRole(ctx: ReadCtx, allowedRoles: AppRole[]) {
   const identity = await requireIdentity(ctx);
   const roles = await getUserRoles(ctx, identity.subject);
-  const hasAllowedRole = allowedRoles.some((role) => roles.includes(role));
+  const hasAllowedRole =
+    allowedRoles.some((role) => roles.includes(role)) ||
+    hasConvexDeveloperRole(roles);
 
   if (!hasAllowedRole) {
     throw new Error("Forbidden");

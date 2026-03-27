@@ -40,6 +40,7 @@ describe("assistant config", () => {
   });
 
   it("states the current role in the system prompt", () => {
+    expect(buildAssistantSystemPrompt(["convex_dev"])).toContain("Role: Developer");
     expect(buildAssistantSystemPrompt(["hr_admin"])).toContain("Role: HR Admin");
     expect(buildAssistantSystemPrompt(["manager"])).toContain("Role: Manager");
     expect(buildAssistantSystemPrompt([])).toContain("Role: Employee");

@@ -48,6 +48,7 @@ export function formatAmount(value: number | null) {
 }
 
 export function getRoleLabel(currentUser: CurrentUser) {
+  if (currentUser.roles.includes("convex_dev")) return "Developer";
   if (currentUser.roles.includes("hr_admin")) return "HR Admin";
   if (currentUser.roles.includes("manager")) return "Manager";
   return "Employee";
@@ -118,7 +119,13 @@ export function extractDateRange(input: string) {
 }
 
 export function shouldUseTeamBurnoutSummary(input: string, currentUser: CurrentUser) {
-  if (!currentUser.roles.includes("manager") && !currentUser.roles.includes("hr_admin")) return false;
+  if (
+    !currentUser.roles.includes("manager") &&
+    !currentUser.roles.includes("hr_admin") &&
+    !currentUser.roles.includes("convex_dev")
+  ) {
+    return false;
+  }
   return /\b(anyone|who|team|staff)\b/.test(input.toLowerCase());
 }
 

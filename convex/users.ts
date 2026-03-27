@@ -1,6 +1,13 @@
 import { internalMutation, mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { getProfileByUserId, getUserRoles, now, requireIdentity } from "./lib/auth";
+import {
+  getProfileByUserId,
+  getUserRoles,
+  hasConvexDeveloperRole,
+  hasHrAdminAccess,
+  now,
+  requireIdentity,
+} from "./lib/auth";
 import type { MutationCtx } from "./_generated/server";
 import { insertAnalyticsEvent } from "./lib/analytics";
 import { assertStorageFileOwnership, linkStorageFile } from "./lib/storage";
@@ -160,6 +167,8 @@ export const current = query({
       department: department ? { id: department._id, name: department.name } : null,
       managerUserId: profile?.managerUserId ?? null,
       roles,
+      hasDeveloperAccess: hasConvexDeveloperRole(roles),
+      hasAdminAccess: hasHrAdminAccess(roles),
       needsAdminSetup: admins.length === 0,
     };
   },

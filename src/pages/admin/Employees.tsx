@@ -19,7 +19,7 @@ import { buildCSV, downloadCSV } from "@/lib/csv";
 import { getErrorMessage } from "@/lib/errors";
 import type { DepartmentId } from "@/lib/convexTypes";
 
-type AppRole = "employee" | "manager" | "hr_admin";
+type AppRole = "employee" | "manager" | "hr_admin" | "convex_dev";
 
 interface Employee {
   id: string;
@@ -71,7 +71,7 @@ const Employees = () => {
 
   const fetchAll = async () => {
     const data = await convex.query(api.admin.getEmployeesData, {});
-    setEmployees(data.employees as Employee[]);
+    setEmployees(data.employees as unknown as Employee[]);
     setAllProfiles(data.employees.map((profile) => ({ id: profile.id, full_name: profile.full_name })));
     setRoles(data.roles as UserRole[]);
     setDepartments(data.departments as Department[]);
@@ -130,6 +130,8 @@ const Employees = () => {
     setEditRole(
       employeeRoles.includes("hr_admin")
         ? "hr_admin"
+        : employeeRoles.includes("convex_dev")
+          ? "convex_dev"
         : employeeRoles.includes("manager")
           ? "manager"
           : "employee",
@@ -155,7 +157,7 @@ const Employees = () => {
           ? "base_salary"
           : null,
         !getRoles(editEmployee.id).includes(editRole) ||
-        getRoles(editEmployee.id).length !== (editRole === "hr_admin" ? 3 : editRole === "manager" ? 2 : 1)
+        getRoles(editEmployee.id).length !== (editRole === "hr_admin" || editRole === "convex_dev" ? 2 : editRole === "manager" ? 2 : 1)
           ? "role"
           : null,
       ].filter((value): value is string => Boolean(value));
@@ -163,7 +165,7 @@ const Employees = () => {
       await convex.mutation(api.admin.updateEmployee, {
         employeeId: editEmployee.id,
         departmentId: editDeptId || undefined,
-        siteId: editSiteId || undefined,
+        siteId: editSiteId ? (editSiteId as never) : undefined,
         managerId: editManagerId || undefined,
         hourlyRate: editHourlyRate.trim() ? Number(editHourlyRate) : undefined,
         baseSalary: editBaseSalary.trim() ? Number(editBaseSalary) : undefined,
@@ -191,6 +193,8 @@ const Employees = () => {
     switch (role) {
       case "hr_admin":
         return "destructive" as const;
+      case "convex_dev":
+        return "default" as const;
       case "manager":
         return "default" as const;
       default:
@@ -337,6 +341,7 @@ const Employees = () => {
                   <SelectItem value="employee">Employee</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>
                   <SelectItem value="hr_admin">HR Admin</SelectItem>
+                  <SelectItem value="convex_dev">DEV</SelectItem>
                 </SelectContent>
               </Select>
             </div>

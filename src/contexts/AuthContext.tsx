@@ -20,6 +20,14 @@ type AuthSession = {
   userId: string;
 };
 
+export type AppFeature =
+  | "manager_hub"
+  | "admin_system"
+  | "hr_operations"
+  | "agent_workspace"
+  | "document_expiry"
+  | "admin_setup";
+
 interface AuthContextType {
   session: AuthSession | null;
   user: AppUser | null;
@@ -29,6 +37,9 @@ interface AuthContextType {
   hasRole: (role: AppRole) => boolean;
   hasExplicitRole: (role: AppRole) => boolean;
   hasManagerAccess: boolean;
+  hasAdminAccess: boolean;
+  hasDeveloperAccess: boolean;
+  hasFeature: (feature: AppFeature) => boolean;
   needsAdminSetup: boolean;
 }
 
@@ -41,6 +52,9 @@ const AuthContext = createContext<AuthContextType>({
   hasRole: () => false,
   hasExplicitRole: () => false,
   hasManagerAccess: false,
+  hasAdminAccess: false,
+  hasDeveloperAccess: false,
+  hasFeature: () => false,
   needsAdminSetup: false,
 });
 
@@ -147,17 +161,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     (isConvexAuthenticated && (currentUser === undefined || delegationsPageData === undefined));
 
   const roles = useMemo<AppRole[]>(() => currentUser?.roles ?? [], [currentUser?.roles]);
+  const hasDeveloperAccess = useMemo(() => roles.includes("convex_dev"), [roles]);
+  const hasAdminAccess = useMemo(
+    () => roles.includes("hr_admin") || hasDeveloperAccess,
+    [hasDeveloperAccess, roles],
+  );
   const hasManagerAccess = useMemo(
     () => roles.includes("manager") || roles.includes("hr_admin") || activeDelegation,
     [activeDelegation, roles],
   );
+  const needsAdminSetup = currentUser?.needsAdminSetup ?? false;
   const hasExplicitRole = useCallback((role: AppRole) => roles.includes(role), [roles]);
   const hasRole = useCallback((role: AppRole) => {
     if (role === "manager") {
       return hasManagerAccess;
     }
+    if (role === "hr_admin") {
+      return hasAdminAccess;
+    }
     return hasExplicitRole(role);
-  }, [hasExplicitRole, hasManagerAccess]);
+  }, [hasAdminAccess, hasExplicitRole, hasManagerAccess]);
+  const hasFeature = useCallback((feature: AppFeature) => {
+    switch (feature) {
+      case "manager_hub":
+        return hasManagerAccess;
+      case "admin_system":
+      case "hr_operations":
+      case "document_expiry":
+        return hasAdminAccess;
+      case "agent_workspace":
+        return hasDeveloperAccess || hasAdminAccess;
+      case "admin_setup":
+        return needsAdminSetup && !hasAdminAccess;
+      default:
+        return false;
+    }
+  }, [hasAdminAccess, hasDeveloperAccess, hasManagerAccess, needsAdminSetup]);
   const session = useMemo<AuthSession | null>(
     () => (user && isConvexAuthenticated ? { userId: user.id } : null),
     [isConvexAuthenticated, user],
@@ -172,9 +211,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       hasRole,
       hasExplicitRole,
       hasManagerAccess,
-      needsAdminSetup: currentUser?.needsAdminSetup ?? false,
+      hasAdminAccess,
+      hasDeveloperAccess,
+      hasFeature,
+      needsAdminSetup,
     }),
-    [currentUser?.needsAdminSetup, hasExplicitRole, hasManagerAccess, hasRole, loading, roles, session, signOut, user],
+    [
+      hasAdminAccess,
+      hasDeveloperAccess,
+      hasExplicitRole,
+      hasFeature,
+      hasManagerAccess,
+      hasRole,
+      loading,
+      needsAdminSetup,
+      roles,
+      session,
+      signOut,
+      user,
+    ],
   );
 
   return (

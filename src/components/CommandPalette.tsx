@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/command";
 import { PlusCircle } from "lucide-react";
 import { adminItems, employeeItems, managerItems, type AppSidebarItem } from "@/components/AppSidebar";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth, type AppFeature } from "@/contexts/AuthContext";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
 interface CommandPaletteProps {
@@ -61,7 +61,22 @@ export const commandPaletteShortcutLabel = shortcutLabel;
 export const CommandPalette: React.FC<CommandPaletteProps> = ({ onOpenChange, onRequestLeave, open }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { hasRole, hasManagerAccess, needsAdminSetup } = useAuth();
+  const auth = useAuth();
+  const hasFeature = auth.hasFeature ?? ((feature: AppFeature) => {
+    switch (feature) {
+      case "manager_hub":
+        return auth.hasManagerAccess ?? false;
+      case "admin_system":
+      case "hr_operations":
+      case "document_expiry":
+      case "agent_workspace":
+        return auth.hasRole?.("hr_admin") ?? false;
+      case "admin_setup":
+        return (auth.needsAdminSetup ?? false) && !(auth.hasRole?.("hr_admin") ?? false);
+      default:
+        return false;
+    }
+  });
   const { track } = useAnalytics();
 
   const entries = useMemo(() => {
@@ -80,9 +95,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ onOpenChange, on
 
     const navigation = [
       ...mapNavItems("Workspace", employeeItems, ["workspace", "employee"]),
-      ...(hasManagerAccess ? mapNavItems("Management", managerItems, ["manager", "approvals", "calendar"]) : []),
-      ...(hasRole("hr_admin") ? mapNavItems("Administration", adminItems, ["admin", "hr", "operations", "system"]) : []),
-      ...(!hasRole("hr_admin") && needsAdminSetup
+      ...(hasFeature("manager_hub") ? mapNavItems("Management", managerItems, ["manager", "approvals", "calendar"]) : []),
+      ...mapNavItems(
+        "Administration",
+        adminItems.filter((item) => !item.feature || hasFeature(item.feature)),
+        ["admin", "hr", "operations", "system", "developer"],
+      ),
+      ...(hasFeature("admin_setup")
         ? [
             {
               description: "Complete the admin setup flow.",
@@ -98,7 +117,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ onOpenChange, on
     ];
 
     return [...quickActions, ...navigation];
-  }, [hasManagerAccess, hasRole, needsAdminSetup, onRequestLeave]);
+  }, [hasFeature, onRequestLeave]);
 
   useEffect(() => {
     const down = (event: KeyboardEvent) => {

@@ -1,18 +1,21 @@
 import { Navigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-
-type AppRole = "employee" | "manager" | "hr_admin";
+import { useAuth, type AppFeature } from "@/contexts/AuthContext";
+import type { AppRole } from "../../convex/constants";
 
 const RoleGuard = ({
   children,
   allowedRoles,
   allowDelegatedManagerAccess = false,
+  requiredFeature,
+  fallbackTo = "/dashboard",
 }: {
   children: React.ReactNode;
   allowedRoles: AppRole[];
   allowDelegatedManagerAccess?: boolean;
+  requiredFeature?: AppFeature;
+  fallbackTo?: string;
 }) => {
-  const { hasExplicitRole, hasRole, loading } = useAuth();
+  const { hasExplicitRole, hasFeature = () => true, hasRole, loading } = useAuth();
 
   if (loading) {
     return (
@@ -27,11 +30,15 @@ const RoleGuard = ({
       return hasRole("manager");
     }
 
-    return hasExplicitRole(role);
+    if (role === "manager") {
+      return hasExplicitRole("manager") || hasExplicitRole("hr_admin");
+    }
+
+    return hasRole(role);
   });
 
-  if (!hasAccess) {
-    return <Navigate to="/dashboard" replace />;
+  if (!hasAccess || (requiredFeature && !hasFeature(requiredFeature))) {
+    return <Navigate to={fallbackTo} replace />;
   }
 
   return <>{children}</>;

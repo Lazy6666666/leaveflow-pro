@@ -25,6 +25,7 @@ Rules:
 export const MAX_ASSISTANT_TOOL_ROUNDS = 4;
 
 function getRoleLabel(roles: string[]) {
+  if (roles.includes("convex_dev")) return "Developer";
   if (roles.includes("hr_admin")) return "HR Admin";
   if (roles.includes("manager")) return "Manager";
   return "Employee";
@@ -46,8 +47,9 @@ If the user asks to submit, apply, approve, or reject directly, redirect them to
 }
 
 export function buildAssistantTools(roles: string[]): AssistantToolDefinition[] {
-  const canSeeManagerData = roles.includes("manager") || roles.includes("hr_admin");
-  const isHrAdmin = roles.includes("hr_admin");
+  const isDeveloper = roles.includes("convex_dev");
+  const canSeeManagerData = roles.includes("manager") || roles.includes("hr_admin") || isDeveloper;
+  const isHrAdmin = roles.includes("hr_admin") || isDeveloper;
   const tools: AssistantToolDefinition[] = [
     { type: "function", function: { name: "get_leave_balances", description: "Fetch the current employee leave balances and allocations.", parameters: { type: "object", properties: {}, additionalProperties: false } } },
     { type: "function", function: { name: "get_leave_history", description: "Fetch recent leave requests and statuses for the current user.", parameters: { type: "object", properties: { limit: { type: "integer", minimum: 1, maximum: 10 } }, additionalProperties: false } } },

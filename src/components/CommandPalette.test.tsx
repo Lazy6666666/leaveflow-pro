@@ -15,7 +15,13 @@ const ResizeObserverMock = class {
   disconnect() {}
 };
 
-const authState = {
+const authState: {
+  hasFeature: (feature: string) => boolean;
+  hasManagerAccess: boolean;
+  hasRole: (role: string) => boolean;
+  needsAdminSetup: boolean;
+} = {
+  hasFeature: (_feature: string) => false,
   hasManagerAccess: false,
   hasRole: (role: string) => role === "employee",
   needsAdminSetup: false,
@@ -45,6 +51,7 @@ describe("CommandPalette", () => {
   beforeEach(() => {
     navigateMock.mockReset();
     trackMock.mockReset();
+    authState.hasFeature = (_feature: string) => false;
     authState.hasManagerAccess = false;
     authState.hasRole = (role: string) => role === "employee";
     authState.needsAdminSetup = false;
@@ -71,6 +78,8 @@ describe("CommandPalette", () => {
   });
 
   it("shows role-aware actions and admin setup when needed", () => {
+    authState.hasFeature = (feature: string) =>
+      ["manager_hub", "admin_system", "agent_workspace", "document_expiry"].includes(feature);
     authState.hasManagerAccess = true;
     authState.hasRole = (role: string) => role === "hr_admin";
     authState.needsAdminSetup = true;
@@ -83,7 +92,10 @@ describe("CommandPalette", () => {
 
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
     expect(screen.getByText("Manager Hub")).toBeInTheDocument();
+    expect(screen.getByText("Careers")).toBeInTheDocument();
     expect(screen.getByText("HR Operations")).toBeInTheDocument();
+    expect(screen.getByText("Agent Workspace")).toBeInTheDocument();
+    expect(screen.getByText("Document Expiry")).toBeInTheDocument();
     expect(screen.queryByText("Admin Setup")).not.toBeInTheDocument();
   });
 

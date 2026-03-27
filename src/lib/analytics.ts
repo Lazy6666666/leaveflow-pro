@@ -47,6 +47,10 @@ export function claimTrackOnce(key: string) {
 export function getRoleScope(roles: AppRole[], hasManagerAccess: boolean) {
   const scopes = ["employee"];
 
+  if (roles.includes("convex_dev")) {
+    scopes.push("convex_dev");
+  }
+
   if (roles.includes("hr_admin")) {
     scopes.push("hr_admin");
   }
