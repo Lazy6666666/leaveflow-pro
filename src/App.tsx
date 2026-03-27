@@ -3,7 +3,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { lazy, Suspense, useState, useEffect } from "react";
+import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -12,34 +12,54 @@ import RoleGuard from "@/components/RoleGuard";
 import AppLayout from "@/components/AppLayout";
 
 function lazyWithRetry<T extends React.ComponentType<unknown>>(
-  factory: () => Promise<{ default: T }>
+  retryKey: string,
+  factory: () => Promise<{ default: T }>,
 ) {
-  return lazy(() =>
-    factory().catch(() => {
-      window.location.reload();
-      return new Promise<never>(() => {});
-    })
-  );
+  return lazy(async () => {
+    try {
+      const module = await factory();
+
+      if (typeof window !== "undefined") {
+        window.sessionStorage.removeItem(retryKey);
+      }
+
+      return module;
+    } catch (error) {
+      if (typeof window !== "undefined") {
+        const retried = window.sessionStorage.getItem(retryKey) === "1";
+
+        if (!retried) {
+          window.sessionStorage.setItem(retryKey, "1");
+          window.location.reload();
+          return new Promise<never>(() => {});
+        }
+
+        window.sessionStorage.removeItem(retryKey);
+      }
+
+      throw error;
+    }
+  });
 }
 
-const Auth = lazyWithRetry(() => import("./pages/Auth"));
-const Index = lazyWithRetry(() => import("./pages/Index"));
-const ResetPassword = lazyWithRetry(() => import("./pages/ResetPassword"));
-const Dashboard = lazyWithRetry(() => import("./pages/Dashboard"));
-const AIWorkspace = lazyWithRetry(() => import("./pages/AIWorkspace"));
-const AttendanceHistory = lazyWithRetry(() => import("./pages/AttendanceHistory"));
-const AdminSetup = lazyWithRetry(() => import("./pages/AdminSetup"));
-const NotFound = lazyWithRetry(() => import("./pages/NotFound"));
+const Auth = lazyWithRetry("lazy-route:auth", () => import("./pages/Auth"));
+const Index = lazyWithRetry("lazy-route:index", () => import("./pages/Index"));
+const ResetPassword = lazyWithRetry("lazy-route:reset-password", () => import("./pages/ResetPassword"));
+const Dashboard = lazyWithRetry("lazy-route:dashboard", () => import("./pages/Dashboard"));
+const AIWorkspace = lazyWithRetry("lazy-route:ai-workspace", () => import("./pages/AIWorkspace"));
+const AttendanceHistory = lazyWithRetry("lazy-route:attendance-history", () => import("./pages/AttendanceHistory"));
+const AdminSetup = lazyWithRetry("lazy-route:admin-setup", () => import("./pages/AdminSetup"));
+const NotFound = lazyWithRetry("lazy-route:not-found", () => import("./pages/NotFound"));
 
 // Hub pages
-const IdentityHub = lazyWithRetry(() => import("./pages/IdentityHub"));
-const ManagerHub = lazyWithRetry(() => import("./pages/manager/ManagerHub"));
-const SystemHub = lazyWithRetry(() => import("./pages/admin/SystemHub"));
-const HROperationsHub = lazyWithRetry(() => import("./pages/admin/HROperationsHub"));
+const IdentityHub = lazyWithRetry("lazy-route:identity-hub", () => import("./pages/IdentityHub"));
+const ManagerHub = lazyWithRetry("lazy-route:manager-hub", () => import("./pages/manager/ManagerHub"));
+const SystemHub = lazyWithRetry("lazy-route:system-hub", () => import("./pages/admin/SystemHub"));
+const HROperationsHub = lazyWithRetry("lazy-route:hr-operations-hub", () => import("./pages/admin/HROperationsHub"));
 
 // Extracted pages
-const MyLeave = lazyWithRetry(() => import("./pages/MyLeave"));
-const Holidays = lazyWithRetry(() => import("./pages/Holidays"));
+const MyLeave = lazyWithRetry("lazy-route:my-leave", () => import("./pages/MyLeave"));
+const Holidays = lazyWithRetry("lazy-route:holidays", () => import("./pages/Holidays"));
 
 const queryClient = new QueryClient();
 

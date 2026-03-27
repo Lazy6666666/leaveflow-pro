@@ -1,12 +1,13 @@
 "use client";
+import React, { useRef, useState } from "react";
 import {
   motion,
   useMotionValue,
   useSpring,
   useTransform,
 } from "framer-motion";
-import { Sparkles } from "lucide-react";
 import { cn } from "../../lib/utils";
+import { IconPointerFilled } from "@tabler/icons-react";
 
 const FeatureCard = ({ 
   title, 
@@ -50,7 +51,7 @@ const FeatureCard = ({
         transformStyle: "preserve-3d",
       }}
       className={cn(
-        "group relative overflow-hidden rounded-[2.5rem] bg-[#131316] ring-1 ring-white/5 shadow-2xl transition-all duration-700 hover:shadow-[0_32px_64px_-16px_rgba(16,185,129,0.16)]",
+        "group relative overflow-hidden rounded-[2.5rem] bg-[#131316] ring-1 ring-white/5 shadow-2xl transition-all duration-700 hover:shadow-[0_32px_64px_-16px_rgba(232,121,249,0.15)]",
         className
       )}
     >
@@ -60,7 +61,7 @@ const FeatureCard = ({
         style={{
           background: useTransform(
             [mouseX, mouseY],
-            ([mx, my]) => `radial-gradient(600px circle at ${(mx as number) * 100}% ${(my as number) * 100}%, rgba(16,185,129,0.08), transparent 80%)`
+            ([mx, my]) => `radial-gradient(600px circle at ${(mx as number) * 100}% ${(my as number) * 100}%, rgba(232,121,249,0.06), transparent 80%)`
           ),
         }}
       />
@@ -82,13 +83,13 @@ const FeatureCard = ({
         style={{ transform: "translateZ(50px)" }}
         className="relative z-10 flex h-full flex-col justify-end p-8 md:p-12"
       >
-        <div className="mb-6 inline-flex size-14 items-center justify-center rounded-2xl bg-white/10 text-[#10b981] shadow-2xl transition-all duration-500 group-hover:bg-[#10b981] group-hover:text-[#131316] group-hover:rotate-6 group-hover:scale-110">
-          <Sparkles className="size-6" />
+        <div className="mb-6 inline-flex size-14 items-center justify-center rounded-2xl bg-white/10 text-[#e879f9] shadow-2xl transition-all duration-500 group-hover:bg-[#e879f9] group-hover:text-[#131316] group-hover:rotate-6 group-hover:scale-110">
+          <IconPointerFilled className="size-6" />
         </div>
         
         <div className="space-y-4">
-            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#10b981] block">Capability</span>
-            <h3 id={`feature-${title.replace(/\s+/g, '-').toLowerCase()}`} className="font-['Outfit'] text-3xl md:text-4xl font-black tracking-tight text-white leading-[1.1] group-hover:text-[#10b981] transition-colors duration-500">
+            <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#e879f9] block">Capability</span>
+            <h3 id={`feature-${title.replace(/\s+/g, '-').toLowerCase()}`} className="font-['Outfit'] text-3xl md:text-4xl font-black tracking-tight text-white leading-[1.1] group-hover:text-[#e879f9] transition-colors duration-500">
             {title}
             </h3>
             <p className="font-['Outfit'] font-light text-base leading-relaxed text-white/60 block max-w-sm">
@@ -144,7 +145,7 @@ export const LandingFeatures = () => {
             transition={{ duration: 1 }}
             className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8"
         >
-            <span className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse"></span>
+            <span className="w-2 h-2 rounded-full bg-[#e879f9] animate-pulse"></span>
             <span className="text-[10px] uppercase tracking-[0.4em] font-bold text-white/40 leading-none">The Capabilities</span>
         </motion.div>
         
@@ -155,7 +156,7 @@ export const LandingFeatures = () => {
 
         <h2 id="features-heading" className="font-['Outfit'] text-4xl md:text-7xl lg:text-9xl font-black text-white tracking-tight leading-[0.85] max-w-5xl">
           Sovereign Control. <br/>
-          <span className="font-['Cormorant_Garamond'] font-light italic text-[#10b981]">By Design.</span>
+          <span className="font-['Cormorant_Garamond'] font-light italic text-[#e879f9]">By Design.</span>
         </h2>
       </div>
 
