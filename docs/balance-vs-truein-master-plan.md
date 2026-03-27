@@ -563,23 +563,49 @@ These items are implemented in the repository baseline, even where staging or pr
 
 ## Engineering Gate Checklist
 
-### Code gate
+### Gate 1 — Code Readiness (Build + Test)
 
-- [ ] typecheck passes
-- [ ] focused tests pass
-- [ ] touched production flows are manually verified
+- **Mandatory approver roles:** Backend owner + frontend owner + QA lead.
+- **Objective pass conditions:**
+  - `TWI-CODE-01` completed: repository typecheck and lint pass. Evidence: `EVID-CODE-01` (CI run URL + artifact hash).
+  - `TWI-CODE-02` completed: focused automated tests for touched modules pass. Evidence: `EVID-CODE-02` (test run URL + junit artifact ID).
+  - `TWI-CODE-03` completed: migration and schema validation checks pass (if changed). Evidence: `EVID-CODE-03` (migration plan + dry-run output ID).
+- **Explicit failure behavior:** Gate failure blocks start of product validation and blocks merge into release branch.
+- **Exception/override process:** Release manager may approve a time-bound override only with documented business impact, risk acceptance owner, mitigation plan, and expiry timestamp (max 72 hours).
+- **Audit trail location:** Record decision in `docs/audit/gate-decisions.md` under `GATE-1` with approvers, evidence IDs, timestamp, and decision.
 
-### Product gate
+### Gate 2 — Product Validation (User Flows + Analytics)
 
-- [ ] primary success path is tested
-- [ ] primary failure path is tested
-- [ ] analytics exist for success and failure states
+- **Mandatory approver roles:** Product manager + QA lead + design/UX owner.
+- **Objective pass conditions:**
+  - `TWI-PROD-01` completed: primary success path validated in staging. Evidence: `EVID-PROD-01` (test script ID + execution log ID).
+  - `TWI-PROD-02` completed: primary failure and edge path validated in staging. Evidence: `EVID-PROD-02` (negative test report ID).
+  - `TWI-PROD-03` completed: analytics events for success/failure paths verified in telemetry backend. Evidence: `EVID-PROD-03` (dashboard snapshot ID + query ID).
+- **Explicit failure behavior:** Gate failure blocks release candidate promotion and blocks execution of release-runbook tasks.
+- **Exception/override process:** Product director + release manager joint override required, with quantified user impact, affected cohort, rollback trigger, and expiry timestamp (max 7 days).
+- **Audit trail location:** Record decision in `docs/audit/gate-decisions.md` under `GATE-2` with approvers, evidence IDs, timestamp, and decision.
 
-### Release gate
+### Gate 3 — Operational Readiness (Security + Rollback + Runbook)
 
-- [ ] staging validation executed
-- [ ] rollback path documented
-- [ ] env changes documented
+- **Mandatory approver roles:** Security owner + SRE/operations owner + release manager.
+- **Objective pass conditions:**
+  - `TWI-OPS-01` completed: security headers, auth controls, and secret matrix verified for target environment. Evidence: `EVID-OPS-01` (security checklist ID + scan report ID).
+  - `TWI-OPS-02` completed: rollback path tested or rehearsed against current artifact. Evidence: `EVID-OPS-02` (rollback drill log ID).
+  - `TWI-OPS-03` completed: monitoring/alerting and incident runbook validated. Evidence: `EVID-OPS-03` (alert test IDs + on-call acknowledgement ID).
+- **Explicit failure behavior:** Gate failure blocks production deployment approval and blocks change window booking.
+- **Exception/override process:** CTO delegate + security owner joint override required with explicit compensating controls, incident response owner, and expiry timestamp (max 48 hours).
+- **Audit trail location:** Record decision in `docs/audit/gate-decisions.md` under `GATE-3` with approvers, evidence IDs, timestamp, and decision.
+
+### Gate 4 — Production Go/No-Go (Final Launch Decision)
+
+- **Mandatory approver roles:** Release manager + product manager + operations commander (or incident manager on duty).
+- **Objective pass conditions:**
+  - `TWI-GO-01` completed: all prior gates (`GATE-1`..`GATE-3`) marked pass with non-expired approvals. Evidence: `EVID-GO-01` (linked gate decision IDs).
+  - `TWI-GO-02` completed: final smoke suite passes in production-like environment immediately pre-release. Evidence: `EVID-GO-02` (smoke run ID + timestamp).
+  - `TWI-GO-03` completed: communication and support readiness confirmed (status page, support handoff, stakeholder notice). Evidence: `EVID-GO-03` (announcement artifact IDs).
+- **Explicit failure behavior:** Gate failure enforces no-deploy status, cancels launch window, and routes work to remediation backlog before rescheduling.
+- **Exception/override process:** Emergency override requires written approval from executive sponsor + release manager, customer-impact justification, risk memo, rollback SLA, and hard expiry timestamp (max 24 hours).
+- **Audit trail location:** Record decision in `docs/audit/gate-decisions.md` under `GATE-4` with approvers, evidence IDs, timestamp, and decision.
 
 ## Production Readiness Checklist
 
