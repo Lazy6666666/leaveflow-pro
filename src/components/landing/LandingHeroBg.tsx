@@ -1,9 +1,8 @@
 "use client";
 import React from "react";
 import { motion } from "framer-motion";
-import { cn } from "../../lib/utils";
 import { Badge } from "../ui/badge";
-import { ArrowRight } from "lucide-react";
+import { IconArrowRight } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { RisingLines } from "./RisingLines";
@@ -13,7 +12,11 @@ export const LandingHeroBg = () => {
   const { track } = useAnalytics();
 
   return (
-    <header id="hero" aria-labelledby="hero-heading" className="min-h-[100dvh] relative overflow-hidden antialiased bg-[#09090b] flex flex-col pt-24 pb-48 md:pb-64">
+    <header
+      id="hero"
+      aria-labelledby="hero-heading"
+      className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-white pb-48 pt-24 antialiased md:pb-64"
+    >
       {/* Generative Engine Optimization (GEO) / SEO Structured Data */}
       <script
         type="application/ld+json"
@@ -21,50 +24,57 @@ export const LandingHeroBg = () => {
           __html: JSON.stringify({
             "@context": "https://schema.org",
             "@type": "SoftwareApplication",
-            "name": "Leaveflow Pro",
-            "applicationCategory": "BusinessApplication",
-            "operatingSystem": "Web",
-            "description": "Execute compliance and deployment operations with zero latency. Built for distributed teams requiring programmatic precision."
-          })
+            name: "Leaveflow Pro",
+            applicationCategory: "BusinessApplication",
+            operatingSystem: "Web",
+            description:
+              "Execute compliance and deployment operations with zero latency. Built for distributed teams requiring programmatic precision.",
+          }),
         }}
       />
 
-      {/* Dynamic Rising Lines with Light Blue Accents */}
-      <RisingLines 
-        linesColor="#38bdf8" 
-        particlesColor="#38bdf8" 
-        riseSpeed={1.0}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(201,148,98,0.18),transparent_34%),radial-gradient(circle_at_78%_16%,rgba(144,79,30,0.08),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,255,255,0.98))]" />
+
+      <RisingLines
+        backgroundColor="#ffffff"
+        linesColor="#af642d"
+        particlesColor="#c98a58"
+        riseSpeed={0.85}
+        horizonHeight={0.09}
+        lineCount={84}
+        particleCount={110}
       />
 
-      {/* Asymmetric Hero Content (Anti-Center Bias) */}
-      <div className="container relative mx-auto px-6 md:px-12 z-10 flex flex-col items-start text-left mt-4 md:mt-8">
-        
+      <div className="container relative z-10 mx-auto mt-4 flex flex-col items-start px-6 text-left md:mt-8 md:px-12">
         <motion.div
-           initial={{ opacity: 0, y: 10 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ duration: 1 }}
-           className="mb-8"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1 }}
+          className="mb-8"
         >
-          <Badge variant="outline" className="border-white/10 text-white/70 px-5 py-2 text-[11px] font-mono tracking-tight uppercase bg-white/5 backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]">
+          <Badge className="border-0 bg-white/80 px-5 py-2 font-['Inter'] text-[11px] uppercase tracking-[0.24em] text-[#904f1e] shadow-[0_20px_45px_-32px_rgba(144,79,30,0.45)] backdrop-blur-md">
             Active Baseline • v5.0
           </Badge>
         </motion.div>
 
-        {/* Deterministic Typography */}
-        <h1 id="hero-heading" className="font-['Outfit'] text-[3.5rem] md:text-[5rem] lg:text-[6rem] font-medium leading-[0.9] tracking-tighter text-white mb-6">
-          Global Operations.<br/>
-          <span className="text-zinc-600">Deterministically.</span>
+        <h1
+          id="hero-heading"
+          className="mb-6 font-['Manrope'] text-[3.5rem] font-semibold leading-[0.9] tracking-[-0.04em] text-[#191c1d] md:text-[5rem] lg:text-[6rem]"
+        >
+          Global Operations.<br />
+          <span className="text-[#af642d]">Deterministically.</span>
         </h1>
 
-        <p className="max-w-xl text-base md:text-lg font-normal text-zinc-400 leading-relaxed font-['Outfit'] mb-10">
-          Execute compliance and deployment operations with zero latency. Built for distributed teams requiring programmatic precision.
+        <p className="mb-10 max-w-xl font-['Inter'] text-base font-normal leading-relaxed text-[#5d5348] md:text-lg">
+          Execute compliance and deployment operations with zero latency. Built for distributed teams requiring
+          programmatic precision.
         </p>
 
         <motion.div
-           initial={{ opacity: 0, y: 10 }}
-           animate={{ opacity: 1, y: 0 }}
-           transition={{ delay: 0.3 }}
-           className="flex items-center gap-4 mb-8"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="mb-8 flex flex-wrap items-center gap-4"
         >
           <Link
             to="/auth/register"
@@ -75,25 +85,23 @@ export const LandingHeroBg = () => {
                 { surface: "landing", path: "/" },
               );
             }}
-            className="group relative inline-flex px-8 py-4 rounded-full bg-white text-zinc-950 font-['Outfit'] text-sm font-medium tracking-tight overflow-hidden transition-all duration-300 hover:scale-[0.98] shadow-sm"
+            className="group relative inline-flex overflow-hidden rounded-full bg-[linear-gradient(135deg,#af642d,#904f1e)] px-8 py-4 font-['Inter'] text-sm font-semibold tracking-[0.01em] text-white shadow-[0_26px_60px_-28px_rgba(144,79,30,0.58)] transition-all duration-300 hover:scale-[0.98]"
           >
             <span className="relative z-10 flex items-center gap-2">
-              Deploy Infrastructure <ArrowRight className="size-4" />
+              Deploy Infrastructure <IconArrowRight className="size-4" />
             </span>
           </Link>
-          <button className="px-8 py-4 rounded-full border border-white/10 text-white text-sm font-medium hover:bg-white/5 transition-colors duration-300">
+          <button className="rounded-full bg-white px-8 py-4 font-['Inter'] text-sm font-medium text-[#3a3128] shadow-[0_24px_60px_-36px_rgba(87,61,35,0.28)] transition-colors duration-300 hover:bg-[#fff7f0]">
             View Documentation
           </button>
         </motion.div>
       </div>
 
-      {/* 3D Interior Carousel - Positioned Below Text */}
-      <div className="relative w-full z-10 flex flex-col items-center mt-4 md:mt-8">
+      <div className="relative z-10 mt-4 flex w-full flex-col items-center md:mt-8">
         <InteriorCarousel />
       </div>
 
-      {/* Subtle fade overlay for scroll transition */}
-      <div className="absolute bottom-0 left-0 right-0 h-48 bg-gradient-to-t from-[#09090b] to-transparent z-20 pointer-events-none" />
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 h-48 bg-gradient-to-t from-white via-white/92 to-transparent" />
     </header>
   );
 };

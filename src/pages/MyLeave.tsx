@@ -1,14 +1,23 @@
 import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "@/contexts/AuthContext";
 import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { FileX, Download, CalendarDays, PlusCircle, ArrowRight } from "lucide-react";
 import { format, parseISO } from "date-fns";
@@ -39,9 +48,14 @@ interface LeaveRequest {
   leave_types: { name: string } | null;
 }
 
-const cardShellClass = "rounded-xl border bg-card text-card-foreground shadow-sm";
+// Motion configs
+const premiumSpring = { type: "spring", stiffness: 100, damping: 20 };
+const staggerReveal = {
+  hidden: { opacity: 0, y: 15 },
+  show: { opacity: 1, y: 0, transition: premiumSpring }
+};
 
-const MyLeave = () => {
+export default function MyLeave() {
   const { user } = useAuth();
   const currentYear = new Date().getFullYear();
   const { trackOnce } = useAnalytics();
@@ -90,15 +104,6 @@ const MyLeave = () => {
     onError: (err) => toast.error(getErrorMessage(err, "Failed to cancel request")),
   });
 
-  const statusVariant = (status: string) => {
-    switch (status) {
-      case "approved": return "default" as const;
-      case "rejected": return "destructive" as const;
-      case "cancelled": return "secondary" as const;
-      default: return "outline" as const;
-    }
-  };
-
   const exportCSV = () => {
     if (requests.length === 0) return;
     const csv = buildCSV(
@@ -109,170 +114,250 @@ const MyLeave = () => {
   };
 
   if (isLoading) return (
-    <div className="space-y-10">
+    <div className="space-y-10 max-w-7xl mx-auto">
       <PageHeaderSkeleton />
-      <div className="grid gap-6 md:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, i) => <BalanceCardSkeleton key={i} />)}
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => <BalanceCardSkeleton key={i} />)}
       </div>
       <TableSkeleton rows={5} cols={6} />
     </div>
   );
 
   return (
-    <div className="mx-auto max-w-6xl space-y-10 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase mb-1.5">
-            <CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />
+    <motion.div 
+      initial="hidden" 
+      animate="show" 
+      variants={{
+        hidden: { opacity: 0 },
+        show: { opacity: 1, transition: { staggerChildren: 0.1 } }
+      }}
+      className="mx-auto max-w-7xl space-y-12 pb-12"
+    >
+      {/* 1. Header Area with noise/glassmorphism */}
+      <motion.div variants={staggerReveal} className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between pb-6 border-[color:var(--balance-ghost-border)] border-b">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-[var(--balance-surface-top)] px-4 py-2 text-xs font-semibold uppercase tracking-widest text-[color:var(--balance-primary)] shadow-[var(--balance-shadow-soft)] ring-1 ring-black/[0.03]">
+            <CalendarDays className="h-4 w-4" aria-hidden="true" />
             <span>Time Off</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
-            Leave & Time Off
+          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tighter text-[color:var(--balance-ink)] font-display mt-4">
+            Leave <span className="text-[color:var(--balance-muted)]">&</span> Balances
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">Manage your balances and requests for {currentYear}.</p>
+          <p className="max-w-[40ch] text-lg text-[color:var(--balance-muted)]">
+            Manage your time away. Completely transparent, always up to date.
+          </p>
         </div>
-        <div className="flex items-center gap-3">
+        
+        <div className="flex flex-wrap items-center gap-4">
           {requests.length > 0 && (
-            <Button variant="outline" size="sm" className="gap-1 hidden sm:flex shrink-0 shadow-sm" onClick={exportCSV}>
-              <Download className="h-4 w-4" /> Export CSV
+            <Button 
+              variant="outline" 
+              className="rounded-full shadow-sm ring-1 ring-black/[0.05] border-0 hover:bg-[var(--balance-surface-top)] transition-all h-12 px-6" 
+              onClick={exportCSV}
+            >
+              <Download className="h-4 w-4 mr-2" /> 
+              <span className="font-semibold">Export CSV</span>
             </Button>
           )}
-          <Button onClick={() => setIsRequestSheetOpen(true)} className="gap-2 shadow-sm shrink-0 sm:flex hidden">
-            <PlusCircle className="h-4 w-4" /> Request Time Off
-          </Button>
-          <Button onClick={() => setIsRequestSheetOpen(true)} className="sm:hidden w-full shadow-sm">
-             Request Time Off
+          <Button 
+            onClick={() => setIsRequestSheetOpen(true)} 
+            className="rounded-full shadow-[0_10px_20px_-10px_var(--balance-primary)] bg-[color:var(--balance-primary)] hover:bg-[color:var(--balance-primary-deep)] text-white h-12 px-8 transition-all hover:scale-[1.02]"
+          >
+            <PlusCircle className="h-5 w-5 mr-2" /> 
+            <span className="font-bold text-sm">Request Time Off</span>
           </Button>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Balances Grid */}
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold tracking-tight">Balances</h2>
+      {/* 2. Bento Balances */}
+      <div className="space-y-6">
+        <h2 className="text-2xl font-bold tracking-tight text-[color:var(--balance-ink)]">Current Balances</h2>
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {balances.map((b) => {
+          {balances.map((b, i) => {
             const total = b.leave_types?.annual_allocation || 0;
             const used = total - b.balance;
             const pct = total > 0 ? (b.balance / total) * 100 : 0;
+            
             return (
-              <Card key={b.leave_type_id} className={cardShellClass}>
-                <CardHeader className="pb-3 border-b">
-                  <CardTitle className="text-sm font-semibold flex items-center justify-between">
+              <motion.div 
+                variants={staggerReveal}
+                whileHover={{ y: -4, shadow: "0 24px 48px -12px rgba(0,0,0,0.08)" }}
+                key={b.leave_type_id} 
+                className="relative overflow-hidden rounded-[2rem] bg-[var(--balance-surface-top)] p-8 shadow-[0_15px_30px_-15px_rgba(0,0,0,0.05)] ring-1 ring-black/[0.03] dark:ring-white/[0.03] transition-all duration-300"
+              >
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-lg font-semibold text-[color:var(--balance-ink)] truncate pr-4">
                     {b.leave_types?.name}
-                    <span className="text-2xl font-bold tabular-nums">
+                  </h3>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-4xl font-extrabold tracking-tighter text-[color:var(--balance-primary)] tabular-nums leading-none">
                       {b.balance}
                     </span>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-4 space-y-4">
-                  <Progress value={pct} className="h-2" />
-                  <div className="flex justify-between text-xs text-muted-foreground font-medium">
-                    <span>{used} days used</span>
-                    <span>{b.balance} of {total} left</span>
+                    <span className="text-sm font-semibold text-[color:var(--balance-muted)]">left</span>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-800/50 rounded-full overflow-hidden shadow-inner">
+                    <motion.div 
+                      className="h-full bg-[color:var(--balance-primary)] rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: i * 0.1 }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-sm font-semibold text-[color:var(--balance-muted)] px-1">
+                    <span>{used} used</span>
+                    <span>{total} total</span>
+                  </div>
+                </div>
+              </motion.div>
             );
           })}
+          
           {balances.length === 0 && (
-            <div className="col-span-full py-8 text-center text-sm text-muted-foreground border rounded-xl border-dashed">
-              No leave balances allocated yet. Contact HR.
-            </div>
+            <motion.div variants={staggerReveal} className="col-span-full py-12 text-center text-[color:var(--balance-muted)] rounded-[2rem] bg-[var(--balance-surface-top)] ring-1 ring-black/[0.03] ring-dashed">
+              <p className="text-lg font-semibold">No balances allocated</p>
+              <p className="text-sm mt-1">Contact your administrator if you believe this is an error.</p>
+            </motion.div>
           )}
         </div>
       </div>
 
-      {/* History Table */}
-      <div className="space-y-4 pt-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold tracking-tight">History</h2>
-        </div>
+      {/* 3. Ghost-style History List */}
+      <motion.div variants={staggerReveal} className="space-y-6 pt-6">
+        <h2 className="text-2xl font-bold tracking-tight text-[color:var(--balance-ink)]">Request History</h2>
         
-        <Card className={cardShellClass}>
-          <CardContent className="p-0">
-            {requests.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                <FileX className="h-8 w-8 mb-4 opacity-40 text-muted-foreground" />
-                <p className="text-sm font-medium text-foreground">No leave history</p>
-                <p className="text-xs mt-1">Your past and upcoming requests will appear here.</p>
+        <div className="rounded-[2rem] bg-[var(--balance-surface-top)] shadow-[0_15px_30px_-15px_rgba(0,0,0,0.05)] ring-1 ring-black/[0.03] dark:ring-white/[0.03] overflow-hidden">
+          {requests.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <FileX className="h-10 w-10 mb-4 text-[color:var(--balance-muted)] opacity-50" />
+              <p className="text-lg font-bold text-[color:var(--balance-ink)]">No history found</p>
+              <p className="text-sm text-[color:var(--balance-muted)] max-w-[250px] mt-2">Past and upcoming leave requests will be elegantly organized here.</p>
+            </div>
+          ) : (
+            <div className="flex flex-col divide-y divide-[color:var(--balance-ghost-border)]">
+              {/* Ghost Header - Only shown on larger screens */}
+              <div className="hidden md:grid grid-cols-12 gap-4 px-8 py-5 text-xs font-bold uppercase tracking-widest text-[color:var(--balance-muted)] bg-slate-50/50 dark:bg-white/[0.02]">
+                <div className="col-span-3">Type & Dates</div>
+                <div className="col-span-4">Details</div>
+                <div className="col-span-2">Status</div>
+                <div className="col-span-3 text-right">Action</div>
               </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent border-b">
-                      <TableHead className="font-semibold px-4 md:px-6">Type</TableHead>
-                      <TableHead className="font-semibold">Duration</TableHead>
-                      <TableHead className="font-semibold hidden md:table-cell">Reason</TableHead>
-                      <TableHead className="font-semibold">Status</TableHead>
-                      <TableHead className="font-semibold hidden lg:table-cell">Note from HR/Manager</TableHead>
-                      <TableHead className="w-20 font-semibold px-4 md:px-6">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginatedItems.map((req) => (
-                      <TableRow key={req.id} className="group hover:bg-muted/50 transition-colors">
-                        <TableCell className="font-medium px-4 md:px-6 py-4">{req.leave_types?.name}</TableCell>
-                        <TableCell className="tabular-nums whitespace-nowrap py-4">
-                          {format(parseISO(req.start_date), "MMM d")} 
-                          {req.start_date !== req.end_date && ` — ${format(parseISO(req.end_date), "MMM d")}`}
-                          <span className="text-muted-foreground text-xs ml-1.5">
-                            {format(parseISO(req.end_date), "yyyy")}
-                          </span>
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate text-muted-foreground hidden md:table-cell py-4">{req.reason || "—"}</TableCell>
-                        <TableCell className="py-4">
-                          <Badge variant={statusVariant(req.status)} className="capitalize shadow-none font-medium text-xs rounded-md">
-                            {req.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate text-muted-foreground hidden lg:table-cell py-4">{req.manager_comment || "—"}</TableCell>
-                        <TableCell className="px-4 md:px-6 py-4">
-                          {req.status === "pending" && (
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 px-2 text-xs">
-                                  Cancel
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent className="rounded-2xl">
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Cancel Leave Request</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to cancel this {req.leave_types?.name} request ({format(parseISO(req.start_date), "MMM d")} — {format(parseISO(req.end_date), "MMM d")})? This action cannot be undone.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel className="rounded-xl">Keep Request</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => cancelMutation.mutate(req.id)}
-                                    disabled={cancelMutation.isPending}
-                                    className="rounded-xl bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                  >
-                                    {cancelMutation.isPending ? "Cancelling..." : "Cancel Request"}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-                <div className="border-t px-4 py-3">
-                  <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} />
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+
+              {/* Rows */}
+              <AnimatePresence>
+                {paginatedItems.map((req, i) => (
+                  <motion.div 
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    transition={{ delay: i * 0.05 }}
+                    key={req.id} 
+                    className="group flex flex-col md:grid md:grid-cols-12 gap-4 px-8 py-6 items-center hover:bg-[color:var(--balance-surface)] transition-colors duration-300"
+                  >
+                    
+                    {/* 1. Type & Dates */}
+                    <div className="col-span-3 w-full md:w-auto">
+                      <p className="font-bold text-base text-[color:var(--balance-ink)] mb-1">{req.leave_types?.name}</p>
+                      <p className="text-sm font-medium text-[color:var(--balance-muted)] tabular-nums">
+                        {format(parseISO(req.start_date), "MMM d")} 
+                        {req.start_date !== req.end_date && ` — ${format(parseISO(req.end_date), "MMM d")}`}
+                        <span className="opacity-60 ml-2">{format(parseISO(req.end_date), "yyyy")}</span>
+                      </p>
+                    </div>
+
+                    {/* 2. Details (Reason & Comments) */}
+                    <div className="col-span-4 w-full md:w-auto space-y-1">
+                      {req.reason ? (
+                        <p className="text-sm text-[color:var(--balance-ink)] line-clamp-1 opacity-90">{req.reason}</p>
+                      ) : (
+                        <p className="text-sm text-[color:var(--balance-muted)] italic">No comments provided</p>
+                      )}
+                      
+                      {req.manager_comment && (
+                        <p className="text-xs font-medium text-[color:var(--balance-primary)] bg-[color:var(--balance-primary-soft)] inline-block px-2 py-0.5 rounded-md mt-1">
+                          HR: {req.manager_comment}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* 3. Status */}
+                    <div className="col-span-2 w-full md:w-auto">
+                      <StatusPill status={req.status} />
+                    </div>
+
+                    {/* 4. Action */}
+                    <div className="col-span-3 w-full md:w-auto md:text-right flex md:justify-end">
+                      {req.status === "pending" && (
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button 
+                              variant="ghost" 
+                              className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-full font-bold px-4"
+                            >
+                              Withdraw
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent className="rounded-[2rem] p-8 border-0 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)]">
+                            <AlertDialogHeader className="mb-4">
+                              <AlertDialogTitle className="text-2xl font-bold font-display">Recall Request</AlertDialogTitle>
+                              <AlertDialogDescription className="text-base">
+                                Are you sure you want to withdraw this {req.leave_types?.name} request for {format(parseISO(req.start_date), "MMM do")}? This action is instantaneous.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter className="gap-3">
+                              <AlertDialogCancel className="rounded-full rounded-tr-full font-semibold border-0 ring-1 ring-black/5 hover:bg-slate-50 px-6">
+                                Keep It
+                              </AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => cancelMutation.mutate(req.id)}
+                                disabled={cancelMutation.isPending}
+                                className="rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold px-8 border-0 shadow-lg shadow-rose-500/20"
+                              >
+                                {cancelMutation.isPending ? "Processing..." : "Confirm Withdrawal"}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      )}
+                    </div>
+
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {/* Pagination */}
+          {requests.length > 0 && (
+            <div className="bg-slate-50/50 dark:bg-white/[0.01] px-8 py-5 border-t border-[color:var(--balance-ghost-border)]">
+              <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} />
+            </div>
+          )}
+        </div>
+      </motion.div>
 
       <RequestLeaveSheet open={isRequestSheetOpen} onOpenChange={setIsRequestSheetOpen} />
-    </div>
+    </motion.div>
   );
-};
+}
 
-export default MyLeave;
+function StatusPill({ status }: { status: string }) {
+  let style = "bg-[color:var(--balance-ghost-border)] text-[color:var(--balance-muted)]";
+  
+  if (status === "approved") {
+    style = "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 ring-1 ring-emerald-500/20";
+  }
+  if (status === "rejected") {
+    style = "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400 ring-1 ring-rose-500/20";
+  }
+  if (status === "pending") {
+    style = "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400 ring-1 ring-amber-500/30";
+  }
+  
+  return (
+    <span className={`px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-full ${style}`}>
+      {status}
+    </span>
+  );
+}

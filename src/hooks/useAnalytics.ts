@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { useMutation } from "convex/react";
+import { useConvex } from "convex/react";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { api } from "@/lib/convexApi";
@@ -8,13 +8,17 @@ import { claimTrackOnce, getAnalyticsSessionId, getAnalyticsSurface, getRoleScop
 
 export function useAnalytics() {
   const location = useLocation();
+  const convex = useConvex();
   const { roles, hasManagerAccess } = useAuth();
-  const trackMutation = useMutation(api.analytics.track);
 
   const track = useCallback(
     async (eventName: string, properties?: Record<string, unknown>, options?: { path?: string; surface?: string }) => {
+      if (!convex) {
+        return;
+      }
+
       try {
-        await trackMutation({
+        await convex.mutation(api.analytics.track, {
           eventName,
           sessionId: getAnalyticsSessionId(),
           roleScope: getRoleScope(roles, hasManagerAccess),
@@ -27,7 +31,7 @@ export function useAnalytics() {
         // Analytics must never interrupt product flows.
       }
     },
-    [hasManagerAccess, location.pathname, roles, trackMutation],
+    [convex, hasManagerAccess, location.pathname, roles],
   );
 
   const trackOnce = useCallback(

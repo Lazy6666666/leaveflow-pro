@@ -59,7 +59,7 @@ export const Footer = () => {
                     key={social.label}
                     href={social.href}
                     aria-label={social.label}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 ring-1 ring-white/10 text-white/70 transition hover:bg-[#10b981] hover:text-black hover:ring-[#10b981]"
+                    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/5 ring-1 ring-white/10 text-white/70 transition hover:bg-[#e879f9] hover:text-black hover:ring-[#e879f9]"
                     initial={{ opacity: 0, scale: 0 }}
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
@@ -86,7 +86,7 @@ export const Footer = () => {
                 <div key={heading}>
                   <motion.p
                     className="text-[10px] font-bold uppercase tracking-[0.32em] text-white/60 mb-5"
-                    whileHover={{ x: 4, color: "#10b981" }}
+                    whileHover={{ x: 4, color: "#e879f9" }}
                   >
                     {heading}
                   </motion.p>
@@ -99,7 +99,7 @@ export const Footer = () => {
                           whileHover={{ x: 4 }}
                         >
                           {link.label}
-                          <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-0 h-0.5 bg-[#10b981] group-hover:w-2 transition-all duration-300" />
+                          <span className="absolute -left-3 top-1/2 -translate-y-1/2 w-0 h-0.5 bg-[#e879f9] group-hover:w-2 transition-all duration-300" />
                         </motion.a>
                       </li>
                     ))}
