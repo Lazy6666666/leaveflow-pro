@@ -19,6 +19,12 @@ export default defineConfig(({ mode }) => {
           },
         }
       : undefined,
+    define: isTest
+      ? {
+          "import.meta.env.VITE_CONVEX_URL": JSON.stringify("https://placeholder.convex.cloud"),
+          "import.meta.env.VITE_CLERK_PUBLISHABLE_KEY": JSON.stringify("pk_test_placeholder"),
+        }
+      : undefined,
     test: {
       // jsdom currently hangs in this workspace. Keep the default environment
       // on node and let any future DOM-dependent tests opt into jsdom per-file.

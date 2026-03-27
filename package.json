@@ -19,7 +19,9 @@
     "prod:check:strict": "node scripts/prod_readiness_check.mjs --strict-production",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test --config=playwright.config.mjs"
+    "test:e2e": "playwright test --config=playwright.config.mjs",
+    "release:preflight": "npm run prod:check:strict && npm run build && npm run pages:verify-dist",
+    "release:staging-smoke": "node scripts/release_staging_smoke.mjs"
   },
   "dependencies": {
     "@clerk/backend": "^3.2.0",
