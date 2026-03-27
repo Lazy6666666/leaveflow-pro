@@ -23,6 +23,16 @@ crons.daily(
   {},
 );
 
+crons.daily(
+  "document-expiry-notifications",
+  {
+    hourUTC: 5,
+    minuteUTC: 0,
+  },
+  internal.documentExpiry.checkDocumentExpiry,
+  {},
+);
+
 crons.interval(
   "scheduled-biometrics-sync",
   {

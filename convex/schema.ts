@@ -16,39 +16,95 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_name", ["name"]),
 
-  recruitmentJobs: defineTable({
+  jobListings: defineTable({
     title: v.string(),
     departmentId: v.optional(v.id("departments")),
     location: v.optional(v.string()),
     status: v.union(v.literal("draft"), v.literal("open"), v.literal("closed")),
     description: v.optional(v.string()),
+    source: v.union(
+      v.literal("manual"),
+      v.literal("greenhouse"),
+      v.literal("linkedin"),
+      v.literal("bayt"),
+      v.literal("scraper"),
+    ),
+    externalId: v.optional(v.string()),
+    externalUrl: v.optional(v.string()),
+    sourceLabel: v.optional(v.string()),
     createdBy: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
+    lastSyncedAt: v.optional(v.number()),
   })
     .index("by_status", ["status"])
-    .index("by_departmentId", ["departmentId"]),
+    .index("by_departmentId", ["departmentId"])
+    .index("by_source_externalId", ["source", "externalId"]),
 
-  recruitmentCandidates: defineTable({
+  jobApplications: defineTable({
     fullName: v.string(),
-    email: v.string(),
-    jobId: v.id("recruitmentJobs"),
+    email: v.optional(v.string()),
+    listingId: v.id("jobListings"),
+    positionTitle: v.string(),
+    source: v.union(
+      v.literal("manual"),
+      v.literal("greenhouse"),
+      v.literal("linkedin"),
+      v.literal("bayt"),
+      v.literal("scraper"),
+    ),
+    externalId: v.optional(v.string()),
+    appliedAt: v.string(),
     stage: v.union(
-      v.literal("applied"),
-      v.literal("screening"),
+      v.literal("new"),
+      v.literal("under_review"),
       v.literal("interview"),
       v.literal("offer"),
-      v.literal("hired"),
       v.literal("rejected"),
     ),
     notes: v.optional(v.string()),
     createdBy: v.string(),
     createdAt: v.number(),
     updatedAt: v.number(),
+    stageUpdatedAt: v.number(),
   })
-    .index("by_jobId", ["jobId"])
+    .index("by_listingId", ["listingId"])
     .index("by_stage", ["stage"])
-    .index("by_jobId_stage", ["jobId", "stage"]),
+    .index("by_source_externalId", ["source", "externalId"])
+    .index("by_listingId_stage", ["listingId", "stage"]),
+
+  documents: defineTable({
+    name: v.string(),
+    ownerName: v.string(),
+    ownerUserId: v.optional(v.string()),
+    ownerType: v.union(v.literal("company"), v.literal("employee")),
+    category: v.union(v.literal("corporate"), v.literal("employee")),
+    expiryDate: v.string(),
+    notifyDaysBefore: v.array(v.number()),
+    hrRecipients: v.optional(v.array(v.string())),
+    linkPath: v.optional(v.string()),
+    createdBy: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_expiryDate", ["expiryDate"])
+    .index("by_category", ["category"])
+    .index("by_ownerUserId", ["ownerUserId"]),
+
+  documentExpiryNotifications: defineTable({
+    documentId: v.id("documents"),
+    threshold: v.number(),
+    notificationDate: v.string(),
+    daysRemaining: v.number(),
+    recipients: v.array(v.string()),
+    status: v.union(v.literal("sent"), v.literal("skipped"), v.literal("failed")),
+    resendId: v.optional(v.string()),
+    error: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_documentId", ["documentId"])
+    .index("by_document_threshold_date", ["documentId", "threshold", "notificationDate"])
+    .index("by_notificationDate", ["notificationDate"]),
 
   onboardingTemplates: defineTable({
     name: v.string(),
