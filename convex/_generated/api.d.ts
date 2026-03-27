@@ -30,6 +30,7 @@ import type * as careers from "../careers.js";
 import type * as constants from "../constants.js";
 import type * as crons from "../crons.js";
 import type * as documentExpiry from "../documentExpiry.js";
+import type * as documentExpiryHelpers from "../documentExpiryHelpers.js";
 import type * as expenses from "../expenses.js";
 import type * as faceVerification from "../faceVerification.js";
 import type * as files from "../files.js";
@@ -93,6 +94,7 @@ declare const fullApi: ApiFromModules<{
   constants: typeof constants;
   crons: typeof crons;
   documentExpiry: typeof documentExpiry;
+  documentExpiryHelpers: typeof documentExpiryHelpers;
   expenses: typeof expenses;
   faceVerification: typeof faceVerification;
   files: typeof files;

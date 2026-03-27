@@ -1,5 +1,3 @@
-"use node";
-
 import { v } from "convex/values";
 import { action, mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 

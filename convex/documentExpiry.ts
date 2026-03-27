@@ -1,5 +1,3 @@
-"use node";
-
 import { v } from "convex/values";
 import { internalAction, internalMutation, internalQuery, mutation, query } from "./_generated/server";
 import { getConvexSiteUrl, getResendApiKey, getResendFromEmail } from "./lib/env";
