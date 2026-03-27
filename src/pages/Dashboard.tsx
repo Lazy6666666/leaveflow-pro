@@ -1,13 +1,14 @@
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
-import { endOfWeek, parseISO, startOfToday, startOfWeek } from "date-fns";
+import { parseISO, startOfToday } from "date-fns";
 import {
   ArrowRight,
-  TrendingUp,
-  Users,
-  Sparkles,
   Calendar,
+  Clock,
+  Briefcase,
+  ShieldCheck,
+  TrendingUp,
 } from "lucide-react";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { Link } from "react-router-dom";
@@ -15,47 +16,50 @@ import { Link } from "react-router-dom";
 import { ClockInOutWidget } from "@/components/attendance/ClockInOutWidget";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { DashboardSkeleton } from "@/components/skeletons";
 import { useAuth } from "@/contexts/AuthContext";
 import { convex } from "@/lib/convex";
 import { api } from "@/lib/convexApi";
+import { cn } from "@/lib/utils";
 
-const DONUT_COLORS = ["hsl(var(--primary))", "hsl(var(--muted))"];
 const STALE_TIME = 5 * 60 * 1000;
-const cardShellClass = "rounded-2xl border bg-card text-card-foreground shadow-sm";
-
-const revealItem = {
-  hidden: { opacity: 0, y: 15 },
-  show: {
-    opacity: 1,
-    y: 0,
-    transition: { type: "spring" as const, stiffness: 300, damping: 24 },
-  },
+const dashboardDateFormatters = {
+  currentDate: new Intl.DateTimeFormat(undefined, {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  }),
+  requestStart: new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+  }),
+  requestEnd: new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  }),
+  holiday: new Intl.DateTimeFormat(undefined, {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  }),
+  absence: new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+  }),
 };
 
-const fullDateFormatter = new Intl.DateTimeFormat(undefined, {
-  weekday: "long",
-  month: "long",
-  day: "numeric",
-  year: "numeric",
-});
-const monthDayFormatter = new Intl.DateTimeFormat(undefined, {
-  month: "short",
-  day: "numeric",
-});
-const monthDayYearFormatter = new Intl.DateTimeFormat(undefined, {
-  month: "short",
-  day: "numeric",
-  year: "numeric",
-});
-const weekdayMonthDayFormatter = new Intl.DateTimeFormat(undefined, {
-  weekday: "short",
-  month: "short",
-  day: "numeric",
-});
+// "The Digital Concierge" Styles
+const sectionClass = "space-y-12 pb-24 animate-in fade-in slide-in-from-bottom-4 duration-1000 ease-concierge";
+const conciergeCardClass = "relative bg-card p-10 shadow-float rounded-xl border-0 transition-all duration-500 hover:scale-[1.01]";
+const labelClass = "text-[11px] font-bold uppercase tracking-[0.25em] text-muted-foreground mb-4 block";
+const displayTitleClass = "font-display text-4xl font-bold tracking-tight text-foreground md:text-5xl lg:text-6xl mb-4";
+const formatRequestRange = (startDate: string, endDate: string) =>
+  `${dashboardDateFormatters.requestStart.format(parseISO(startDate))} — ${dashboardDateFormatters.requestEnd.format(parseISO(endDate))}`;
+const formatHolidayDate = (date: string) =>
+  dashboardDateFormatters.holiday.format(parseISO(date));
+const formatAbsenceRange = (startDate: string, endDate: string) =>
+  `${dashboardDateFormatters.absence.format(parseISO(startDate))} — ${dashboardDateFormatters.absence.format(parseISO(endDate))}`;
 
 const Dashboard = () => {
   const { user, hasManagerAccess } = useAuth();
@@ -76,32 +80,19 @@ const Dashboard = () => {
   const totalAllocation = balances.reduce((sum, balance) => sum + (balance.leave_types?.annual_allocation || 0), 0);
   const totalRemaining = balances.reduce((sum, balance) => sum + balance.balance, 0);
   const totalUsed = totalAllocation - totalRemaining;
+
   const hour = new Date().getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const greeting = hour < 12 ? "Good Morning" : hour < 17 ? "Good Afternoon" : "Good Evening";
   const firstName =
     data?.viewer.firstName ||
     user?.user_metadata?.full_name?.split(" ")[0] ||
     user?.email?.split("@")[0] ||
-    "there";
-
-  const statusColor = (status: string) => {
-    switch (status) {
-      case "approved": return "approved";
-      case "rejected": return "rejected";
-      case "cancelled": return "cancelled";
-      default: return "pending";
-    }
-  };
+    "Friend";
 
   const getInitials = (name: string | null | undefined) => {
-    if (!name) return "?";
+    if (!name) return "??";
     return name.split(" ").map((word) => word[0]).join("").toUpperCase().slice(0, 2);
   };
-
-  const donutData = [
-    { name: "Remaining", value: totalRemaining },
-    { name: "Used", value: totalUsed },
-  ];
 
   useEffect(() => {
     if (!isLoading && data && user?.id) {
@@ -115,218 +106,218 @@ const Dashboard = () => {
   if (isLoading) return <DashboardSkeleton />;
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <motion.div
-        className="space-y-1.5"
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 24 }}
-      >
-        <div className="flex items-center gap-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-          <span>{fullDateFormatter.format(new Date())}</span>
+    <div className={sectionClass}>
+      {/* 01. Welcome Header: Editorial & Warm */}
+      <header className="flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+        <div className="max-w-3xl">
+          <div className="flex items-center gap-3 mb-4">
+             <div className="h-1 w-12 terracotta-gradient rounded-full" />
+             <span className="text-xs font-bold uppercase tracking-[0.3em] text-primary">
+               Digital Concierge Active
+             </span>
+          </div>
+          <h1 className={displayTitleClass}>
+            {greeting}, <br className="hidden sm:block" />
+            <span className="text-primary italic font-medium">{firstName}.</span>
+          </h1>
+          <p className="text-lg text-muted-foreground leading-relaxed max-w-2xl font-sans">
+             Your workforce environment is synchronized. Everything is in its place, just as you left it.
+          </p>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
-          {greeting}, {firstName}
-        </h1>
-      </motion.div>
+        <div className="bg-muted px-8 py-4 rounded-xl shadow-sm text-center">
+           <span className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Current Date</span>
+           <span className="font-display text-xl font-bold text-foreground">
+             {dashboardDateFormatters.currentDate.format(new Date())}
+           </span>
+        </div>
+      </header>
 
-      <div className="grid gap-6 lg:grid-cols-12">
+      {/* 02. Layers of Insight: Using Surface Hierarchy instead of lines */}
+      <div className="grid gap-12 lg:grid-cols-12">
         {/* Main Column */}
-        <div className="space-y-6 lg:col-span-8">
-          <motion.div variants={revealItem} initial="hidden" animate="show">
-            <ClockInOutWidget />
-          </motion.div>
+        <div className="space-y-12 lg:col-span-8">
+          {/* Clocking Widget Section: Depth over borders */}
+          <div className="rounded-xl overflow-hidden shadow-float">
+             <ClockInOutWidget />
+          </div>
 
-          <motion.div variants={revealItem} initial="hidden" animate="show">
-            <Card className={cardShellClass}>
-              <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
-                <CardTitle className="text-base font-semibold">Leave Balance</CardTitle>
-                <Link to="/my-leave" className="text-sm font-medium text-primary hover:underline group flex items-center gap-1.5">
-                  View all <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-                </Link>
-              </CardHeader>
-              <CardContent className="pt-6">
-                {balances.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No leave balances found for this year.</p>
-                ) : (
-                  <div className="flex flex-col gap-8 sm:flex-row sm:items-center">
-                    <div className="relative h-32 w-32 shrink-0 max-sm:mx-auto">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie
-                            data={donutData}
-                            cx="50%"
-                            cy="50%"
-                            innerRadius={42}
-                            outerRadius={56}
-                            dataKey="value"
-                            strokeWidth={0}
-                          >
-                            {donutData.map((_, index) => (
-                              <Cell key={index} fill={DONUT_COLORS[index]} />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            formatter={(value: number, name: string) => [`${value} days`, name]}
-                            contentStyle={{ borderRadius: "8px", fontSize: "12px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-2xl font-bold tabular-nums text-foreground">{totalRemaining}</span>
-                        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">remaining</span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex-1 space-y-6">
-                      <div className="flex gap-8">
-                        <div>
-                          <p className="text-2xl font-semibold tabular-nums leading-none">{totalRemaining}</p>
-                          <p className="mt-1 text-xs text-muted-foreground font-medium">Available Days</p>
-                        </div>
-                        <div>
-                          <p className="text-2xl font-semibold tabular-nums leading-none">{totalUsed}</p>
-                          <p className="mt-1 text-xs text-muted-foreground font-medium">Used Days</p>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        {balances.slice(0, 3).map((balance) => {
-                          const total = balance.leave_types?.annual_allocation || 0;
-                          const percentage = total > 0 ? (balance.balance / total) * 100 : 0;
-                          return (
-                            <div key={balance.leave_type_id} className="space-y-1.5">
-                              <div className="flex items-baseline justify-between text-sm">
-                                <span className="font-medium text-foreground">{balance.leave_types?.name}</span>
-                                <span className="tabular-nums text-muted-foreground">
-                                  {balance.balance} / {total}
-                                </span>
-                              </div>
-                              <Progress value={percentage} className="h-1.5" />
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
+          {/* Leave Inventory: Layers and asymmetry */}
+          <div className={conciergeCardClass}>
+             <span className={labelClass}>Allocated Resources</span>
+             <h2 className="font-display text-3xl font-bold mb-10">Leave Inventory</h2>
+
+             <div className="flex flex-col gap-12 md:flex-row md:items-center">
+                <div className="relative h-48 w-48 shrink-0">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: "Remaining", value: totalRemaining },
+                          { name: "Used", value: totalUsed },
+                        ]}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={65}
+                        outerRadius={85}
+                        dataKey="value"
+                        strokeWidth={0}
+                        paddingAngle={4}
+                      >
+                        <Cell fill="var(--primary)" />
+                        <Cell fill="var(--muted)" />
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="font-display text-5xl font-bold text-primary tabular-nums tracking-tighter">{totalRemaining}</span>
+                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-muted-foreground">Days Left</span>
                   </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+                </div>
 
-          <motion.div variants={revealItem} initial="hidden" animate="show">
-            <Card className={cardShellClass}>
-              <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
-                <CardTitle className="text-base font-semibold">Recent Requests</CardTitle>
-                <Link to="/my-leave" className="text-sm font-medium text-primary hover:underline group flex items-center gap-1.5">
-                  History <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
+                <div className="flex-1 space-y-8">
+                   <div className="grid grid-cols-2 gap-8">
+                      <div className="bg-muted/50 p-6 rounded-xl">
+                         <span className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Total Capacity</span>
+                         <span className="text-3xl font-bold font-mono text-foreground">{totalAllocation}d</span>
+                      </div>
+                      <div className="bg-muted/50 p-6 rounded-xl">
+                         <span className="block text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Logged Utilization</span>
+                         <span className="text-3xl font-bold font-mono text-foreground">{totalUsed}d</span>
+                      </div>
+                   </div>
+
+                   <div className="space-y-5 pt-4">
+                      {balances.slice(0, 2).map((b) => (
+                        <div key={b.leave_type_id} className="space-y-2">
+                           <div className="flex justify-between items-end">
+                              <span className="text-sm font-semibold text-foreground">{b.leave_types?.name}</span>
+                              <span className="font-mono text-xs font-bold text-primary">{b.balance} / {b.leave_types?.annual_allocation}d</span>
+                           </div>
+                           <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                              <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${(b.balance / (b.leave_types?.annual_allocation || 1)) * 100}%` }}
+                                className="h-full terracotta-gradient rounded-full"
+                              />
+                           </div>
+                        </div>
+                      ))}
+                   </div>
+                </div>
+             </div>
+
+             <div className="mt-12 flex justify-end">
+                <Link to="/my-leave" className="group flex items-center gap-3 text-sm font-bold text-primary uppercase tracking-widest">
+                   Manage Inventory <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1.5" />
                 </Link>
-              </CardHeader>
-              <CardContent className="pt-0">
+             </div>
+          </div>
+
+          {/* History Ledger: Alternate background shifts instead of dividers */}
+          <div className={conciergeCardClass}>
+             <span className={labelClass}>Activity History</span>
+             <h2 className="font-display text-3xl font-bold mb-8 text-foreground">Recent Log Telemetry</h2>
+
+             <div className="space-y-4">
                 {recentRequests.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <Calendar className="h-8 w-8 text-muted-foreground/50 mb-3" />
-                    <p className="text-sm font-medium text-foreground">No recent requests</p>
-                    <p className="text-xs text-muted-foreground mt-1">When you request time off, it will appear here.</p>
+                  <div className="py-16 text-center bg-muted/30 rounded-xl">
+                     <p className="text-sm italic text-muted-foreground">No recent activity recorded.</p>
                   </div>
                 ) : (
-                  <div className="divide-y">
-                    {recentRequests.slice(0, 4).map((request) => (
-                      <div key={request.id} className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between">
-                        <div>
-                          <p className="text-sm font-medium text-foreground">{request.leave_types?.name}</p>
-                          <p className="mt-0.5 text-xs text-muted-foreground">
-                            {monthDayFormatter.format(parseISO(request.start_date))} - {monthDayYearFormatter.format(parseISO(request.end_date))}
-                          </p>
-                        </div>
-                        <Badge variant={statusColor(request.status) as "default" | "secondary" | "destructive" | "outline"} className="w-fit text-xs capitalize shadow-none">
-                          {request.status}
-                        </Badge>
+                  recentRequests.slice(0, 4).map((req, i) => (
+                    <div key={req.id} className={cn(
+                      "flex flex-col sm:flex-row sm:items-center justify-between p-6 rounded-xl transition-all hover:bg-muted/30",
+                      i % 2 === 0 ? "bg-muted/40" : "bg-transparent"
+                    )}>
+                      <div className="flex items-center gap-5">
+                         <div className="h-10 w-10 flex items-center justify-center bg-white rounded-xl shadow-sm text-primary">
+                            <Calendar className="h-5 w-5" />
+                         </div>
+                         <div>
+                            <p className="text-sm font-bold text-foreground">{req.leave_types?.name}</p>
+                            <p className="text-[11px] text-muted-foreground font-mono">
+                              {formatRequestRange(req.start_date, req.end_date)}
+                            </p>
+                         </div>
                       </div>
-                    ))}
-                  </div>
+                      <div className="mt-4 sm:mt-0 flex items-center gap-4">
+                         <div className={cn(
+                            "status-badge",
+                            req.status === 'approved' ? 'status-approved' :
+                            req.status === 'rejected' ? 'status-rejected' :
+                            'status-pending'
+                         )}>
+                            {req.status}
+                         </div>
+                      </div>
+                    </div>
+                  ))
                 )}
-              </CardContent>
-            </Card>
-          </motion.div>
+             </div>
+          </div>
         </div>
 
-        {/* Side Column */}
-        <div className="space-y-6 lg:col-span-4">
-          <motion.div variants={revealItem} initial="hidden" animate="show">
-            <Card className={cardShellClass}>
-              <CardHeader className="pb-4 border-b">
-                <CardTitle className="text-base font-semibold">Upcoming Holidays</CardTitle>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {upcomingHolidays.length === 0 ? (
-                  <p className="py-6 text-center text-sm text-muted-foreground">No upcoming holidays.</p>
-                ) : (
-                  <div className="divide-y">
-                    {upcomingHolidays.slice(0, 5).map((holiday) => {
-                      const days = Math.ceil((parseISO(holiday.date).getTime() - startOfToday().getTime()) / (1000 * 60 * 60 * 24));
-                      const label = days === 0 ? "Today" : days === 1 ? "Tomorrow" : `In ${days} days`;
+        {/* Side Column: Layers of auxiliary info */}
+        <div className="space-y-12 lg:col-span-4">
+           {/* Upcoming Holidays: Glassmorphism moments */}
+           <div className={cn(conciergeCardClass, "bg-muted/50")}>
+              <span className={labelClass}>System Observations</span>
+              <h2 className="font-display text-2xl font-bold mb-8">Service Interruptions</h2>
 
-                      return (
-                        <div key={holiday.id} className="flex flex-col gap-1 py-3.5">
-                          <div className="flex items-center justify-between">
-                            <p className="text-sm font-medium text-foreground">{holiday.name}</p>
-                            <span className="text-xs font-medium text-muted-foreground">{label}</span>
-                          </div>
-                          <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                            <Calendar className="h-3 w-3" />
-                            {weekdayMonthDayFormatter.format(parseISO(holiday.date))}
-                          </p>
+              <div className="space-y-6">
+                 {upcomingHolidays.slice(0, 4).map(holiday => (
+                   <div key={holiday.id} className="group relative bg-white p-5 rounded-xl shadow-sm hover:shadow-md transition-all">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className="text-sm font-bold text-foreground">{holiday.name}</span>
+                        <div className="bg-primary/5 text-primary text-[10px] font-bold px-2 py-0.5 rounded-full">
+                          T-{Math.ceil((parseISO(holiday.date).getTime() - startOfToday().getTime()) / (1000 * 60 * 60 * 24))}d
                         </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] font-mono text-muted-foreground uppercase">
+                         <Clock className="h-3 w-3" />
+                         {formatHolidayDate(holiday.date)}
+                      </div>
+                   </div>
+                 ))}
+                 {upcomingHolidays.length === 0 && <p className="text-sm italic text-muted-foreground">No interruptions detected.</p>}
+              </div>
+           </div>
 
-          <motion.div variants={revealItem} initial="hidden" animate="show">
-            <Card className={cardShellClass}>
-              <CardHeader className="pb-4 border-b">
-                <CardTitle className="text-base font-semibold">Team Absent</CardTitle>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {monthDayFormatter.format(startOfWeek(new Date(), { weekStartsOn: 1 }))} - {monthDayFormatter.format(endOfWeek(new Date(), { weekStartsOn: 1 }))}
-                </p>
-              </CardHeader>
-              <CardContent className="pt-0">
-                {teamAbsences.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-10 text-center">
-                    <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                      <Users className="h-4 w-4 text-primary" aria-hidden="true" />
-                    </div>
-                    <p className="text-sm font-medium text-foreground">Everyone is in this week</p>
-                  </div>
-                ) : (
-                  <div className="divide-y mt-2">
-                    {teamAbsences.map((absence) => (
-                      <div key={absence.id} className="flex items-center gap-3 py-3">
-                        <Avatar className="h-8 w-8 border">
-                          <AvatarFallback className="bg-muted text-xs text-muted-foreground font-medium">
+           {/* Team Absence: Bio-metrics and Presence */}
+           <div className={conciergeCardClass}>
+              <span className={labelClass}>Workforce Proximity</span>
+              <h2 className="font-display text-2xl font-bold mb-8">External Units</h2>
+
+              <div className="space-y-6">
+                 {teamAbsences.slice(0, 5).map(absence => (
+                   <div key={absence.id} className="flex items-center gap-5 p-2 rounded-xl hover:bg-muted/30 transition-all">
+                      <div className="relative">
+                        <Avatar className="h-12 w-12 rounded-xl shadow-sm border-0">
+                          <AvatarFallback className="bg-muted text-xs font-bold text-primary">
                             {getInitials(absence.profiles?.full_name)}
                           </AvatarFallback>
                         </Avatar>
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium text-foreground">
-                            {absence.profiles?.full_name || "Unknown"}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {monthDayFormatter.format(parseISO(absence.start_date))} - {monthDayFormatter.format(parseISO(absence.end_date))}
-                          </p>
-                        </div>
+                        <div className="absolute -bottom-1 -right-1 h-4 w-4 bg-emerald-500 border-4 border-white rounded-full" />
                       </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-bold text-foreground uppercase tracking-tight">
+                          {absence.profiles?.full_name || "Guest Unit"}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground font-mono leading-none mt-1">
+                          OFF-SITE • {formatAbsenceRange(absence.start_date, absence.end_date)}
+                        </p>
+                      </div>
+                   </div>
+                 ))}
+                 {teamAbsences.length === 0 && (
+                   <div className="text-center py-8">
+                      <ShieldCheck className="h-8 w-8 text-emerald-500/30 mx-auto mb-4" />
+                      <p className="text-sm font-medium text-muted-foreground">Full Workforce Integrity</p>
+                   </div>
+                 )}
+              </div>
+           </div>
         </div>
       </div>
     </div>

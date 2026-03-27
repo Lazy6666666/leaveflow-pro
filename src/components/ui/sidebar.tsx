@@ -146,10 +146,15 @@ export const MobileSidebar = ({
         {...props}
       >
         <div className="flex justify-end z-20 w-full">
-          <IconMenu2
-            className="text-foreground"
+          <button
+            type="button"
+            aria-label={open ? "Close sidebar menu" : "Open sidebar menu"}
+            title={open ? "Close sidebar menu" : "Open sidebar menu"}
             onClick={() => setOpen(!open)}
-          />
+            className="rounded-md p-1 text-foreground transition-colors hover:bg-foreground/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          >
+            <IconMenu2 aria-hidden="true" className="text-foreground" />
+          </button>
         </div>
         <AnimatePresence>
           {open && (
@@ -166,12 +171,15 @@ export const MobileSidebar = ({
                 className
               )}
             >
-              <div
-                className="absolute right-10 top-10 z-50 text-foreground"
+              <button
+                type="button"
+                aria-label="Close sidebar menu"
+                title="Close sidebar menu"
+                className="absolute right-10 top-10 z-50 rounded-md p-1 text-foreground transition-colors hover:bg-foreground/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
                 onClick={() => setOpen(!open)}
               >
-                <IconX />
-              </div>
+                <IconX aria-hidden="true" />
+              </button>
               {children}
             </motion.div>
           )}
@@ -184,11 +192,13 @@ export const MobileSidebar = ({
 export const SidebarLink = ({
   link,
   className,
+  labelClassName,
   onClick,
   ...props
 }: {
   link: Links;
   className?: string;
+  labelClassName?: string;
 } & Omit<React.ComponentProps<typeof NavLink>, "to" | "className" | "children" | "onClick"> & {
   onClick?: React.ComponentProps<typeof NavLink>["onClick"];
 }) => {
@@ -216,7 +226,10 @@ export const SidebarLink = ({
           display: animate ? (open ? "inline-block" : "none") : "inline-block",
           opacity: animate ? (open ? 1 : 0) : 1,
         }}
-        className="text-current text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0"
+        className={cn(
+          "text-current text-sm group-hover/sidebar:translate-x-1 transition duration-150 whitespace-pre inline-block !p-0 !m-0",
+          labelClassName
+        )}
       >
         {link.label}
       </motion.span>

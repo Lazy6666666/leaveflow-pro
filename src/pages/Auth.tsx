@@ -65,8 +65,7 @@ const Auth = () => {
     <div className="flex min-h-screen bg-[#FDFDFB]">
       <div className="relative hidden overflow-hidden bg-[#171411] lg:flex lg:w-1/2">
         <div
-          className="absolute inset-0 z-0 bg-cover bg-center"
-          style={{ backgroundImage: "url('/images/landing/hero-1.png')" }}
+          className="auth-hero-bg absolute inset-0 z-0"
         >
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -76,38 +75,38 @@ const Auth = () => {
           <Logo size="lg" variant="white" showText={true} />
 
           <div className="max-w-md space-y-8">
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 backdrop-blur-md">
-              <Sparkles className="h-4 w-4 text-teal-400" strokeWidth={2.5} />
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-teal-300">
-                Workforce Control Center
+            <div className="inline-flex items-center gap-2 border border-white/15 bg-white/5 px-4 py-2 rounded-none">
+              <Sparkles className="h-4 w-4 text-[hsl(230,100%,70%)]" strokeWidth={1.5} />
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/50">
+                Workforce Command Center
               </span>
             </div>
 
             <h1 className="text-6xl font-black leading-[0.95] tracking-tighter">
-              Manage <br />
-              <span className="bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
-                workforce
+              Balance.<br />
+              <span className="font-['Cormorant_Garamond'] font-light italic text-white/50">
+                Every absence
               </span>{" "}
               <br />
-              with clarity.
+              accounted for.
             </h1>
 
-            <p className="text-xl font-medium leading-relaxed text-white/80">
-              Track leave balances, submit requests, and stay aligned with your team in one unified workspace.
+            <p className="text-lg font-light leading-relaxed text-white/55">
+              Precise leave management, real-time team visibility, and sovereign workforce tracking — built for HR-forward organizations.
             </p>
 
-            <div className="grid grid-cols-3 gap-8 border-t border-white/10 pt-8">
+            <div className="grid grid-cols-3 gap-6 border-t border-white/10 pt-8">
               <div>
-                <p className="text-3xl font-black text-white">100%</p>
-                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-white/60">Paperless</p>
+                <p className="stat-num text-3xl font-black text-white font-['JetBrains_Mono']">4.7k</p>
+                <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-white/40 font-['JetBrains_Mono']">Employees tracked</p>
               </div>
               <div>
-                <p className="text-3xl font-black text-white">2x</p>
-                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-white/60">Faster</p>
+                <p className="stat-num text-3xl font-black text-white font-['JetBrains_Mono']">99.3%</p>
+                <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-white/40 font-['JetBrains_Mono']">Compliance rate</p>
               </div>
               <div>
-                <p className="text-3xl font-black text-white">24/7</p>
-                <p className="mt-1 text-xs font-bold uppercase tracking-widest text-white/60">Service</p>
+                <p className="stat-num text-3xl font-black text-white font-['JetBrains_Mono']">83ms</p>
+                <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-white/40 font-['JetBrains_Mono']">Avg. response</p>
               </div>
             </div>
           </div>
@@ -117,14 +116,14 @@ const Auth = () => {
       </div>
 
       <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-[#FDFDFB] p-6 lg:p-12">
-        <div className="pointer-events-none absolute left-1/4 top-1/4 h-96 w-96 rounded-full bg-teal-500/5 blur-[120px]" />
+        <div className="pointer-events-none absolute left-1/3 top-1/4 h-72 w-72 rounded-none bg-[hsl(230,100%,50%)]/[0.04] blur-[120px]" />
 
         <Button
           type="button"
           variant="ghost"
           size="icon"
           onClick={toggleTheme}
-          className="absolute right-6 top-6 rounded-full border border-stone-200"
+          className="absolute right-6 top-6 rounded-none border border-border"
           aria-label={theme === "light" ? "Switch to dark mode" : "Switch to light mode"}
         >
           {theme === "light" ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5" />}
@@ -145,7 +144,7 @@ const Auth = () => {
               </p>
             </div>
 
-            <div className="overflow-hidden rounded-[32px] border border-[#171411]/5 bg-white p-2 shadow-2xl shadow-[#171411]/5">
+            <div className="overflow-hidden rounded-none border border-[#171411]/8 bg-white p-1.5 shadow-2xl shadow-[#171411]/5">
               <div className="auth-card-container">
                 {isSignUp ? (
                   <SignUp routing="hash" signInUrl="/auth" fallbackRedirectUrl="/dashboard" />

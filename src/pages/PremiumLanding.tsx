@@ -2,104 +2,110 @@ import React, { useState } from "react";
 import { LandingPreloader } from "@/components/landing/LandingPreloader";
 import { LandingNavbar } from "@/components/landing/LandingNavbar";
 import { LandingHeroBg } from "@/components/landing/LandingHeroBg";
-import { LandingFeatures } from "@/components/landing/LandingFeatures";
-import { LandingTestimonials } from "@/components/landing/LandingTestimonials";
-import { LandingCTA } from "@/components/landing/LandingCTA";
+import { motion } from "framer-motion";
+import { Bot, Sparkles, ChevronRight } from "lucide-react";
+import { Logo } from "@/components/ui/Logo";
 
+/**
+ * Redesigned Landing Page: "The Digital Concierge"
+ * Aesthetic: Warm, Layered, Authoritative.
+ */
 export const PremiumLanding = () => {
   const [isPreloading, setIsPreloading] = useState(true);
 
   return (
-    <div className="relative min-h-[100dvh] overflow-x-hidden bg-white font-['Outfit'] text-[#191c1d] selection:bg-[#af642d]/20 selection:text-[#191c1d]">
-      <a href="#premium-landing-main" className="skip-link">
-        Skip to content
-      </a>
+    <div className="relative min-h-[100dvh] overflow-x-hidden bg-background font-sans text-foreground selection:bg-primary/20">
       <LandingPreloader onComplete={() => setIsPreloading(false)} />
 
       <LandingNavbar />
 
-      <main id="premium-landing-main" tabIndex={-1}>
-        <section id="product">
+      <main id="premium-landing-main" tabIndex={-1} className="outline-none">
+        {/* Hero Section */}
+        <section id="hero-section" className="relative">
           <LandingHeroBg />
         </section>
-        <section id="engine">
-          <LandingFeatures />
-        </section>
-        <section id="global">
-          <LandingTestimonials />
-        </section>
-        <section id="company">
-          <LandingCTA />
+
+        {/* The "Concierge" Philosophy Section */}
+        <section id="philosophy" className="bg-muted/30 py-32 md:py-64 relative overflow-hidden">
+          <div className="container mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 40 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
+              className="flex flex-col items-center justify-center text-center space-y-12"
+            >
+              <div className="inline-flex items-center gap-3 px-4 py-1.5 bg-white rounded-full shadow-sm text-[11px] font-bold uppercase tracking-[0.2em] text-primary">
+                <Bot size={14} />
+                <span>The Concierge Protocol</span>
+              </div>
+
+              <h2 className="font-display text-5xl md:text-7xl font-bold tracking-tighter text-foreground max-w-4xl leading-[0.95]">
+                HR is no longer a filing cabinet. <br />
+                <span className="text-primary italic font-medium">It's a curated experience.</span>
+              </h2>
+
+              <p className="max-w-2xl text-xl text-muted-foreground leading-relaxed">
+                We believe workforce management should feel like a premium service.
+                Our "No-Line" design philosophy ensures your data breathes, while our
+                deterministic neural engine handles the complexity.
+              </p>
+
+              {/* Editorial Feature Grid: Soft layers, no lines */}
+              <div className="mt-24 grid w-full max-w-6xl gap-10 md:grid-cols-3">
+                <div className="bg-white p-12 rounded-[40px] shadow-float text-left hover:scale-[1.02] transition-transform duration-500">
+                   <div className="h-14 w-14 bg-primary/5 rounded-2xl flex items-center justify-center text-primary mb-8">
+                      <Sparkles size={28} />
+                   </div>
+                   <h3 className="font-display text-2xl font-bold mb-4">Precision Flow</h3>
+                   <p className="text-muted-foreground leading-relaxed">Deterministic orchestration of leave policies with zero friction.</p>
+                </div>
+                <div className="bg-white p-12 rounded-[40px] shadow-float text-left hover:scale-[1.02] transition-transform duration-500">
+                   <div className="h-14 w-14 bg-primary/5 rounded-2xl flex items-center justify-center text-primary mb-8">
+                      <Bot size={28} />
+                   </div>
+                   <h3 className="font-display text-2xl font-bold mb-4">Neural Insight</h3>
+                   <p className="text-muted-foreground leading-relaxed">Real-time telemetry and predictive risk assessment for legal compliance.</p>
+                </div>
+                <div className="bg-white p-12 rounded-[40px] shadow-float text-left hover:scale-[1.02] transition-transform duration-500">
+                   <div className="h-14 w-14 bg-primary/5 rounded-2xl flex items-center justify-center text-primary mb-8">
+                      <ChevronRight size={28} />
+                   </div>
+                   <h3 className="font-display text-2xl font-bold mb-4">Sovereign Data</h3>
+                   <p className="text-muted-foreground leading-relaxed">End-to-end cryptographic security for your organization's human capital.</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+
+          {/* Decorative Bloom */}
+          <div className="absolute -bottom-48 -left-48 w-96 h-96 bg-primary/5 rounded-full blur-[100px]" />
         </section>
       </main>
 
-      <Footer />
+      <SimpleFooter />
     </div>
   );
 };
 
-const Footer = () => {
-  const platformLinks = [
-    { label: "Architecture", href: "#product" },
-    { label: "Ecosystem", href: "#engine" },
-    { label: "Security", href: "#global" },
-  ];
-  const companyLinks = [
-    { label: "About", href: "#company" },
-    { label: "Careers" },
-    { label: "Contact" },
-  ];
-  const legalItems = ["Privacy", "Terms"];
-
+const SimpleFooter = () => {
   return (
-    <footer className="flex w-full justify-center border-t border-black/5 bg-[#f8f9fa] px-4 pb-12 pt-32">
-      <div className="w-full max-w-[1240px]">
-        <div className="mb-32 flex flex-col items-start justify-between gap-24 md:flex-row">
-          <div className="max-w-[300px]">
-            <span className="mb-8 block font-['Cormorant_Garamond'] text-3xl font-medium uppercase tracking-[0.08em] text-[#191c1d]">
-              Balance.
-            </span>
-            <p className="text-sm font-light leading-relaxed text-[#191c1d]/50">
-              The high-end standard for workforce orchestration. Designed in California, engineered globally.
+    <footer className="bg-background py-24 relative">
+      <div className="container mx-auto px-6">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-12">
+          <div className="flex flex-col items-center md:items-start gap-4">
+            <div className="flex items-center gap-3">
+               <Logo size="sm" showText={false} />
+               <span className="font-display text-2xl font-bold tracking-tighter uppercase">Balance.</span>
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground/40 text-center md:text-left">
+               © {new Date().getFullYear()} Balance Orchestration Systems. <br className="sm:hidden" /> All Rights Reserved.
             </p>
           </div>
-
-          <div className="flex gap-24 font-light">
-            <div className="flex flex-col gap-6">
-              <span className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#191c1d]/30">Platform</span>
-              {platformLinks.map((link) => (
-                <a key={link.label} href={link.href} className="text-sm text-[#191c1d]/60 transition-colors duration-500 hover:text-[#191c1d]">
-                  {link.label}
-                </a>
-              ))}
-            </div>
-            <div className="flex flex-col gap-6">
-              <span className="mb-2 text-[10px] font-bold uppercase tracking-widest text-[#191c1d]/30">Company</span>
-              {companyLinks.map((link) =>
-                link.href ? (
-                  <a key={link.label} href={link.href} className="text-sm text-[#191c1d]/60 transition-colors duration-500 hover:text-[#191c1d]">
-                    {link.label}
-                  </a>
-                ) : (
-                  <span key={link.label} className="text-sm text-[#191c1d]/40">
-                    {link.label}
-                  </span>
-                ),
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-col items-center justify-between gap-8 border-t border-black/5 py-8 md:flex-row">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-[#191c1d]/30">
-            Copyright {new Date().getFullYear()} BALANCE TECHNOLOGIES
-          </p>
-          <div className="flex gap-8">
-            {legalItems.map((item) => (
-              <span key={item} className="text-[10px] font-bold uppercase tracking-widest text-[#191c1d]/30">
-                {item}
-              </span>
-            ))}
+          <div className="flex gap-12 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+            <a href="#" className="hover:text-primary transition-colors">Legal</a>
+            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
+            <a href="#" className="hover:text-primary transition-colors">Concierge</a>
           </div>
         </div>
       </div>

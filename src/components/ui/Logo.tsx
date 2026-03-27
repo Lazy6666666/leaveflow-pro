@@ -1,5 +1,4 @@
 import React from 'react';
-import { PulsingBorder } from '@paper-design/shaders-react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
@@ -12,60 +11,55 @@ interface LogoProps {
 
 /**
  * Balance Logo Component
- * Integrated with Paper Design dynamic shader for a premium, pulsing brand effect.
+ * High-contrast, architectural mark representing stable geometry.
  */
-export const Logo = ({ className, size = 'md', variant = 'default', showText = false }: LogoProps) => {
+export const Logo = ({ className, size = 'md', variant = 'default', showText = true }: LogoProps) => {
   const sizeClasses = {
-    sm: 'w-10 h-10',
-    md: 'w-16 h-16',
-    lg: 'w-24 h-24',
-    hero: 'w-48 h-48'
+    sm: 'w-6 h-6',
+    md: 'w-8 h-8',
+    lg: 'w-20 h-20',   // 80px
+    hero: 'w-48 h-48'  // 192px
   };
 
   const textSizes = {
-    sm: 'text-lg tracking-[0.1em]',
-    md: 'text-2xl tracking-[0.15em]',
-    lg: 'text-4xl tracking-[0.2em]',
-    hero: 'text-8xl tracking-[0.3em]'
+    sm: 'text-lg tracking-tight',
+    md: 'text-2xl tracking-tighter',
+    lg: 'text-4xl tracking-tighter',
+    hero: 'text-8xl tracking-tighter'
+  };
+
+  const colorVariants = {
+    default: 'text-foreground',
+    white: 'text-white',
+    dark: 'text-black',
   };
 
   return (
-    <div className={cn("inline-flex items-center gap-3", className)}>
-      <div className={cn("relative flex items-center justify-center shrink-0", sizeClasses[size])}>
-        {/* Ambient Glow */}
-        <motion.div 
-          className="absolute inset-0 bg-teal-500/20 blur-xl rounded-full"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.6, 0.3] }}
-          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+    <div className={cn("inline-flex items-center gap-2", className)}>
+      <motion.div
+        initial={{ rotate: -90, opacity: 0 }}
+        animate={{ rotate: 0, opacity: 1 }}
+        transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+        className={cn("relative flex items-center justify-center shrink-0", sizeClasses[size], colorVariants[variant])}
+      >
+        <img
+          src="/BALANCE-FINAL-01-01.svg"
+          alt="Balance Logo"
+          className="w-full h-full object-contain"
         />
-        
-        <PulsingBorder 
-          speed={1} 
-          roundness={1} 
-          thickness={0.08} 
-          softness={0.8} 
-          intensity={0.2} 
-          bloom={0.4} 
-          spots={0} 
-          pulse={0.4} 
-          smoke={0} 
-          scale={0.9} 
-          colors={['#C9A962', '#1A1815']} 
-          colorBack="#00000000" 
-          className="w-full h-full bg-contain bg-center bg-no-repeat relative z-10" 
-          style={{ 
-            backgroundImage: 'url(/logo.svg)' 
-          }} 
-        />
-      </div>
+      </motion.div>
       {showText && (
-        <span className={cn(
-          "font-['Fraunces'] font-black uppercase leading-none mt-1",
+        <motion.span
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.5, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+          className={cn(
+          "font-display font-bold leading-none mt-1",
           textSizes[size],
-          variant === 'white' ? "text-white" : "text-[#181512]"
+          colorVariants[variant]
         )}>
           Balance
-        </span>
+        </motion.span>
       )}
     </div>
   );
