@@ -1,107 +1,113 @@
 "use client";
 import React from "react";
 import { motion } from "framer-motion";
-import { Badge } from "../ui/badge";
-import { IconArrowRight } from "@tabler/icons-react";
 import { Link } from "react-router-dom";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import { RisingLines } from "./RisingLines";
+import { Sparkles, ChevronRight } from "lucide-react";
 import { InteriorCarousel } from "./InteriorCarousel";
 
+const EASE_CONCIERGE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
+/**
+ * Redesigned LandingHeroBg: "The Digital Concierge"
+ * Aesthetic: Warm, Editorial, Integrated Carousel.
+ */
 export const LandingHeroBg = () => {
   const { track } = useAnalytics();
 
   return (
     <header
       id="hero"
-      aria-labelledby="hero-heading"
-      className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-white pb-48 pt-24 antialiased md:pb-64"
+      className="relative flex min-h-[120dvh] flex-col pt-32 overflow-hidden bg-background antialiased selection:bg-primary/20"
     >
-      {/* Generative Engine Optimization (GEO) / SEO Structured Data */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "SoftwareApplication",
-            name: "Leaveflow Pro",
-            applicationCategory: "BusinessApplication",
-            operatingSystem: "Web",
-            description:
-              "Execute compliance and deployment operations with zero latency. Built for distributed teams requiring programmatic precision.",
-          }),
-        }}
-      />
+      {/* Editorial Background Layers */}
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <div className="absolute -top-[10%] -left-[10%] h-[70%] w-[70%] bg-primary/5 blur-[120px] rounded-full" />
+        <div className="absolute bottom-[10%] -right-[5%] h-[60%] w-[60%] bg-primary/3 blur-[100px] rounded-full" />
+        <div className="absolute inset-0 bg-grid-small-black/[0.02] opacity-50" />
+      </div>
 
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(201,148,98,0.18),transparent_34%),radial-gradient(circle_at_78%_16%,rgba(144,79,30,0.08),transparent_28%),linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,255,255,0.98))]" />
-
-      <RisingLines
-        backgroundColor="#ffffff"
-        linesColor="#af642d"
-        particlesColor="#c98a58"
-        riseSpeed={0.85}
-        horizonHeight={0.09}
-        lineCount={84}
-        particleCount={110}
-      />
-
-      <div className="container relative z-10 mx-auto mt-4 flex flex-col items-start px-6 text-left md:mt-8 md:px-12">
+      <div className="container relative z-10 mx-auto flex flex-col items-center text-center px-6 md:px-12">
+        {/* Editorial Label */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1 }}
-          className="mb-8"
+          transition={{ duration: 0.8, ease: EASE_CONCIERGE }}
+          className="mb-10 flex items-center gap-4 px-5 py-2 bg-white rounded-full shadow-sm"
         >
-          <Badge className="border-0 bg-white/80 px-5 py-2 font-['Inter'] text-[11px] uppercase tracking-[0.24em] text-[#904f1e] shadow-[0_20px_45px_-32px_rgba(144,79,30,0.45)] backdrop-blur-md">
-            Active Baseline • v5.0
-          </Badge>
+          <Sparkles className="size-4 text-primary" />
+          <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-primary">
+            The Digital Concierge has Arrived
+          </span>
         </motion.div>
 
-        <h1
-          id="hero-heading"
-          className="mb-6 font-['Manrope'] text-[3.5rem] font-semibold leading-[0.9] tracking-[-0.04em] text-[#191c1d] md:text-[5rem] lg:text-[6rem]"
-        >
-          Global Operations.<br />
-          <span className="text-[#af642d]">Deterministically.</span>
-        </h1>
-
-        <p className="mb-10 max-w-xl font-['Inter'] text-base font-normal leading-relaxed text-[#5d5348] md:text-lg">
-          Execute compliance and deployment operations with zero latency. Built for distributed teams requiring
-          programmatic precision.
-        </p>
-
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
+        {/* Hero Heading */}
+        <motion.h1
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mb-8 flex flex-wrap items-center gap-4"
+          transition={{ duration: 1, delay: 0.1, ease: EASE_CONCIERGE }}
+          className="mb-10 font-display text-[4.5rem] font-bold leading-[0.9] tracking-tighter text-foreground md:text-[8rem] lg:text-[9.5rem] max-w-5xl"
+        >
+          Workforce <br />
+          <span className="text-primary italic font-medium">Orchestrated.</span>
+        </motion.h1>
+
+        {/* Hero Description */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.2, ease: EASE_CONCIERGE }}
+          className="mb-16 max-w-2xl font-sans text-lg md:text-xl text-muted-foreground leading-relaxed"
+        >
+          Experience the "Digital Concierge" for HR. Precise leave management, real-time telemetry,
+          and sovereign workforce tracking.
+        </motion.p>
+
+        {/* CTAs */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.3, ease: EASE_CONCIERGE }}
+          className="flex flex-col sm:flex-row items-center gap-8 mb-24"
         >
           <Link
             to="/auth/register"
-            onClick={() => {
-              void track(
-                "landing_cta_clicked",
-                { cta_location: "hero_primary", target_path: "/auth/register" },
-                { surface: "landing", path: "/" },
-              );
-            }}
-            className="group relative inline-flex overflow-hidden rounded-full bg-[linear-gradient(135deg,#af642d,#904f1e)] px-8 py-4 font-['Inter'] text-sm font-semibold tracking-[0.01em] text-white shadow-[0_26px_60px_-28px_rgba(144,79,30,0.58)] transition-all duration-300 hover:scale-[0.98]"
+            className="group relative inline-flex items-center justify-center h-16 px-12 terracotta-gradient font-bold text-white shadow-xl shadow-primary/20 transition-all duration-500 hover:scale-105 active:scale-95 rounded-2xl text-lg"
           >
-            <span className="relative z-10 flex items-center gap-2">
-              Deploy Infrastructure <IconArrowRight className="size-4" />
-            </span>
+            Initiate Deployment <ChevronRight className="ml-3 size-5" />
           </Link>
-          <button className="rounded-full bg-white px-8 py-4 font-['Inter'] text-sm font-medium text-[#3a3128] shadow-[0_24px_60px_-36px_rgba(87,61,35,0.28)] transition-colors duration-300 hover:bg-[#fff7f0]">
-            View Documentation
+
+          <button className="group flex items-center gap-3 font-bold text-foreground hover:text-primary transition-colors">
+            View Philosophy <div className="h-10 w-10 bg-white rounded-full shadow-float flex items-center justify-center transition-colors"><ChevronRight size={18} /></div>
           </button>
+        </motion.div>
+
+        {/* RESTORED: Interior Carousel */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.2, delay: 0.5, ease: EASE_CONCIERGE }}
+          className="w-full max-w-7xl"
+        >
+          <InteriorCarousel />
         </motion.div>
       </div>
 
-      <div className="relative z-10 mt-4 flex w-full flex-col items-center md:mt-8">
-        <InteriorCarousel />
-      </div>
+      {/* Floating Trust Indicators */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1.5, duration: 1.5 }}
+        className="absolute bottom-16 left-0 right-0 flex justify-center z-10"
+      >
+        <div className="flex items-center gap-12 text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground/40">
+           <span>Sovereign Data</span>
+           <div className="h-1 w-1 bg-muted-foreground/20 rounded-full" />
+           <span>Concierge Ethics</span>
+        </div>
+      </motion.div>
 
-      <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 h-48 bg-gradient-to-t from-white via-white/92 to-transparent" />
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-20 h-48 bg-gradient-to-t from-background to-transparent" />
     </header>
   );
 };

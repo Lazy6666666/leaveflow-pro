@@ -86,11 +86,11 @@ const NotFound = () => {
             className="flex flex-col sm:flex-row items-center gap-10"
           >
             <Link
-              to="/dashboard"
+              to="/"
               className="group h-16 px-10 terracotta-gradient text-white rounded-2xl font-bold uppercase tracking-widest text-[11px] flex items-center gap-4 shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all"
             >
               <ArrowLeft size={18} />
-              Return to Command Center
+              Return to Homepage
             </Link>
 
             <div className="flex items-center gap-4 text-muted-foreground/40">

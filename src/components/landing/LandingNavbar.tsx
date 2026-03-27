@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { Logo } from "@/components/ui/Logo";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +19,7 @@ const navLinks = [
 export const LandingNavbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const { track } = useAnalytics();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -81,6 +83,13 @@ export const LandingNavbar = () => {
             </Link>
             <Link
               to="/auth/register"
+              onClick={() => {
+                void track(
+                  "landing_cta_clicked",
+                  { cta_location: "navbar_primary", target_path: "/auth/register" },
+                  { surface: "landing", path: "/" },
+                );
+              }}
               className="hidden md:flex items-center justify-center h-12 px-8 terracotta-gradient text-white text-sm font-bold rounded-2xl shadow-lg shadow-primary/10 transition-all hover:scale-105 active:scale-95"
             >
               Get Started
@@ -132,7 +141,14 @@ export const LandingNavbar = () => {
               >
                 <Link
                   to="/auth/register"
-                  onClick={() => setIsOpen(false)}
+                  onClick={() => {
+                    setIsOpen(false);
+                    void track(
+                      "landing_cta_clicked",
+                      { cta_location: "navbar_mobile_primary", target_path: "/auth/register" },
+                      { surface: "landing", path: "/" },
+                    );
+                  }}
                   className="flex items-center justify-center h-16 terracotta-gradient text-white font-bold rounded-3xl text-lg shadow-xl"
                 >
                   Join the Balance Ecosystem

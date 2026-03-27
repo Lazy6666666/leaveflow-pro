@@ -15,6 +15,9 @@ export const PremiumLanding = () => {
 
   return (
     <div className="relative min-h-[100dvh] overflow-x-hidden bg-background font-sans text-foreground selection:bg-primary/20">
+      <a href="#premium-landing-main" className="skip-link">
+        Skip to content
+      </a>
       <LandingPreloader onComplete={() => setIsPreloading(false)} />
 
       <LandingNavbar />
@@ -103,9 +106,9 @@ const SimpleFooter = () => {
             </p>
           </div>
           <div className="flex gap-12 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-            <a href="#" className="hover:text-primary transition-colors">Legal</a>
-            <a href="#" className="hover:text-primary transition-colors">Privacy</a>
-            <a href="#" className="hover:text-primary transition-colors">Concierge</a>
+            <span>Legal</span>
+            <span>Privacy</span>
+            <span>Concierge</span>
           </div>
         </div>
       </div>
