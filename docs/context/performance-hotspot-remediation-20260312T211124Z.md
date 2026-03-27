@@ -7,6 +7,18 @@ Execute the remaining performance findings from the earlier review in `leaveflow
 - Reduce obvious hot-path full-table scans and N+1 lookups on the employee dashboard, leave conflict summary, and admin reporting/insight queries.
 - Preserve current behavior.
 - Avoid touching unrelated in-flight user changes elsewhere in the dirty worktree.
+- Establish a clear source of truth for hot paths that must be reviewed in each performance pass:
+  - dashboard endpoints
+  - assistant queries
+  - report generators
+- Define and enforce a measurable “hot path” threshold:
+  - frequency: route/query appears in top 20% of production-facing request volume
+  - latency: p95 >= 300 ms on staging representative dataset
+  - critical flow: any user journey required for sign-in-to-value (dashboard load, assistant response, manager approvals, reporting export)
+- Require implementation notes in the format:
+  - `query -> filter/sort -> index mapping`
+- Require verification evidence from a staging representative dataset for each hot-path change.
+- Reject any solution that leaves a full scan in place on production-facing routes.
 
 # Known Facts / Evidence
 
@@ -38,6 +50,15 @@ Execute the remaining performance findings from the earlier review in `leaveflow
 - Preserve API response shapes.
 - Do not touch unrelated frontend/design work.
 - Follow repo AGENTS instructions and keep changes directly in this repo.
+- Any production-facing route that still requires a full scan after the change is out of scope for acceptance and must be reworked before merge.
+
+# Required Deliverables (TWI-36)
+
+- Hot-path source-of-truth list covering dashboard endpoints, assistant queries, and report generators.
+- Hot-path threshold decision per query/path with measured evidence (frequency/latency/critical flow classification).
+- For every changed query: `query -> filter/sort -> index mapping`.
+- Staging representative dataset verification evidence (before/after metrics, explain-style plan notes, or Convex query inspection traces).
+- Explicit confirmation that no production-facing route in scope performs a full scan.
 
 # Unknowns / Open Questions
 
