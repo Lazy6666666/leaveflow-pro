@@ -39,6 +39,7 @@ npm run build
 - Deployment: [docs/cloudflare-pages-deploy.md](C:/Users/NeilEdwardBaja/desktop/new%20folder/leaveflow-pro/docs/cloudflare-pages-deploy.md)
 - Deploy runbook: [docs/deploy-runbook.md](C:/Users/NeilEdwardBaja/desktop/new%20folder/leaveflow-pro/docs/deploy-runbook.md)
 - Staging smoke tests: [docs/staging-smoke-tests.md](C:/Users/NeilEdwardBaja/desktop/new%20folder/leaveflow-pro/docs/staging-smoke-tests.md)
+- Assistant failure-response contract: [docs/failure-response-contract.md](C:/Users/NeilEdwardBaja/desktop/new%20folder/leaveflow-pro/docs/failure-response-contract.md)
 - Environment matrix: [docs/prod-env-matrix.md](C:/Users/NeilEdwardBaja/desktop/new%20folder/leaveflow-pro/docs/prod-env-matrix.md)
 - Security headers: [docs/security-headers.md](C:/Users/NeilEdwardBaja/desktop/new%20folder/leaveflow-pro/docs/security-headers.md)
 - Production audit: [docs/prod-launch-audit.md](C:/Users/NeilEdwardBaja/desktop/new%20folder/leaveflow-pro/docs/prod-launch-audit.md)

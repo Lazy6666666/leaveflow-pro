@@ -39,6 +39,8 @@ Example:
 - Mistral fallback works when Puter is unavailable.
 - Deterministic fallback still returns a response for handled intents.
 - Assistant rate limits produce a controlled message instead of a crash.
+- Failure responses conform to `docs/failure-response-contract.md` (error shape, mapping, intent fallback, and UI redaction).
+- Failure injection validates missing-key, transport, HTTP, parse, and tool-loop exhaustion behavior before sign-off.
 
 ## Webhooks and Integrations
 
