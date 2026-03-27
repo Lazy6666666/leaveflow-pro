@@ -3,12 +3,14 @@ import { resourceCache } from "@clerk/expo/resource-cache";
 import { tokenCache } from "@clerk/expo/token-cache";
 import { type ReactNode, useEffect, useState } from "react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
-import { useConvexAuth, useMutation } from "convex/react";
+import { useConvexAuth, useMutation, useQuery } from "convex/react";
 
 import { api } from "../../../../convex/_generated/api";
 import { mobileEnv, hasMobileBackendEnv } from "../config/env";
 import { convexClient } from "../lib/convex";
 import { MobileRuntimeProvider } from "./MobileRuntime";
+import type { MobileRole } from "./MobileRuntimeContext";
+import { resolveMobileRoleState } from "./mobileRoles";
 import { describeAuthSyncState } from "./authSync";
 
 type ClerkTokenProbe = {
@@ -27,6 +29,10 @@ function ClerkRuntimeBridge({
   const { signOut } = useClerk();
   const { user } = useUser();
   const { isLoading: convexAuthLoading, isAuthenticated: isConvexAuthenticated } = useConvexAuth();
+  const currentUser = useQuery(
+    api.users.current,
+    isLoaded && isSignedIn && isConvexAuthenticated ? {} : "skip",
+  );
   const ensureCurrentUser = useMutation(api.users.ensureCurrentUser);
   const [isSyncingUser, setIsSyncingUser] = useState(false);
 
@@ -73,14 +79,26 @@ function ClerkRuntimeBridge({
     authSyncState.status === "waiting_for_convex" && tokenProbe.detail
       ? `${authSyncState.detail}\n\n${tokenProbe.detail}`
       : authSyncState.detail;
+  const isRoleStatePending =
+    authSyncState.runtimeSignedIn &&
+    isLoaded &&
+    isConvexAuthenticated &&
+    currentUser === undefined;
+  const roleState = resolveMobileRoleState(
+    (currentUser?.roles ?? []) as MobileRole[],
+    authSyncState.runtimeSignedIn && !isRoleStatePending,
+  );
 
   return (
     <MobileRuntimeProvider
       value={{
         hasBackendEnv: true,
-        isLoaded: authSyncState.runtimeLoaded,
-        isSignedIn: authSyncState.runtimeSignedIn,
+        isLoaded: authSyncState.runtimeLoaded && !isRoleStatePending,
+        isSignedIn: authSyncState.runtimeSignedIn && !isRoleStatePending,
         userLabel: user?.fullName ?? user?.primaryEmailAddress?.emailAddress ?? null,
+        roles: roleState.roles,
+        primaryRole: roleState.primaryRole,
+        hasManagerAccess: roleState.hasManagerAccess,
         signOut,
         authSyncStatus: authSyncState.status,
         authSyncDetail: authSyncDetail,
@@ -205,6 +223,9 @@ export function AppProviders({ children }: { children: ReactNode }) {
           isLoaded: true,
           isSignedIn: false,
           userLabel: null,
+          roles: [],
+          primaryRole: "employee",
+          hasManagerAccess: false,
           signOut: null,
           authSyncStatus: null,
           authSyncDetail: null,
