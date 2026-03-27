@@ -12,19 +12,21 @@ interface RisingLinesProps {
   particlesOpacity?: number;
   lineCount?: number;
   particleCount?: number;
+  backgroundColor?: string;
 }
 
 export const RisingLines: React.FC<RisingLinesProps> = ({
   riseSpeed = 2.5,
   horizonHeight = 0.05,
-  linesColor = "#10b981",
+  linesColor = "#e879f9",
   linesWidth = 2.5,
   linesLength = 0.9,
   particlesSpeed = 1.5,
-  particlesColor = "#10b981",
+  particlesColor = "#e879f9",
   particlesOpacity = 0.95,
-  lineCount = 100, // Slightly reduced to optimize
-  particleCount = 150, // Slightly reduced to optimize
+  lineCount = 100,
+  particleCount = 150,
+  backgroundColor = "#09090b",
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -33,7 +35,7 @@ export const RisingLines: React.FC<RisingLinesProps> = ({
     if (!canvas) return;
     if (window.navigator.userAgent.includes("jsdom")) return;
 
-    const _ctx = canvas.getContext("2d", { alpha: false }); // explicit alpha: false if we fillRect
+    const _ctx = canvas.getContext("2d", { alpha: false });
     if (!_ctx) return;
 
     let W: number, H: number;
@@ -67,30 +69,30 @@ export const RisingLines: React.FC<RisingLinesProps> = ({
     const mkLine = () => {
       const x = rand(0, W);
       const h = rand(H * linesLength * 0.4, H * linesLength);
-      const y = H + rand(10, H * 0.3); // start below viewport
+      const y = H + rand(10, H * 0.3);
       return {
         x,
         y,
         h,
         speed: rand(riseSpeed * 0.6, riseSpeed * 1.4),
-        opacity: rand(0.3, 0.9),
-        width: rand(linesWidth * 0.5, linesWidth * 1.5),
+        opacity: rand(0.16, 0.42),
+        width: rand(linesWidth * 0.5, linesWidth * 1.2),
       };
     };
 
-    const mkParticle = () => {
-      return {
-        x: rand(0, W),
-        y: H + rand(0, H * 0.5),
-        r: rand(1.5, 3.5),
-        speed: rand(particlesSpeed * 0.5, particlesSpeed * 1.8),
-        opacity: rand(0.4, particlesOpacity),
-        pulse: rand(0, Math.PI * 2),
-      };
-    };
+    const mkParticle = () => ({
+      x: rand(0, W),
+      y: H + rand(0, H * 0.5),
+      r: rand(1.25, 3),
+      speed: rand(particlesSpeed * 0.5, particlesSpeed * 1.6),
+      opacity: rand(0.14, particlesOpacity * 0.38),
+      pulse: rand(0, Math.PI * 2),
+    });
 
     const hexToRgb = (hex: string) => {
-      let r = 0, g = 0, b = 0;
+      let r = 0;
+      let g = 0;
+      let b = 0;
       if (hex.length === 7) {
         r = parseInt(hex.slice(1, 3), 16);
         g = parseInt(hex.slice(3, 5), 16);
@@ -108,42 +110,42 @@ export const RisingLines: React.FC<RisingLinesProps> = ({
       bgCanvas.height = H;
       horizonY = H * (1 - horizonHeight);
 
-      // We clear the context and then draw the background color
-      // Since it's a fixed canvas bg, we'll draw #09090b so we don't have transparency overhead
-      bgCtx.fillStyle = "#09090b";
+      bgCtx.fillStyle = backgroundColor;
       bgCtx.fillRect(0, 0, W, H);
 
-      bgCtx.globalCompositeOperation = "screen";
+      bgCtx.globalCompositeOperation = "source-over";
 
-      // 1. Central Vertical Flare
+      const ambient = bgCtx.createLinearGradient(0, 0, 0, H);
+      ambient.addColorStop(0, "rgba(255,255,255,0.22)");
+      ambient.addColorStop(0.58, `rgba(${lc},0.05)`);
+      ambient.addColorStop(1, `rgba(${lc},0.12)`);
+      bgCtx.fillStyle = ambient;
+      bgCtx.fillRect(0, 0, W, H);
+
       bgCtx.save();
-      bgCtx.translate(W / 2, H / 2);
-      bgCtx.scale(0.06, 1);
+      bgCtx.translate(W / 2, H * 0.42);
+      bgCtx.scale(0.08, 1);
       const flare = bgCtx.createRadialGradient(0, 0, 0, 0, 0, H);
-      flare.addColorStop(0, "rgba(255,255,255,0.95)");
-      flare.addColorStop(0.1, `rgba(${lc},0.85)`);
-      flare.addColorStop(0.4, `rgba(${lc},0.2)`);
+      flare.addColorStop(0, `rgba(${lc},0.2)`);
+      flare.addColorStop(0.28, `rgba(${lc},0.12)`);
       flare.addColorStop(1, `rgba(${lc},0)`);
       bgCtx.fillStyle = flare;
       bgCtx.fillRect(-H * 2, -H * 2, H * 4, H * 4);
       bgCtx.restore();
 
-      // 2. Horizon Glow
-      const hg = bgCtx.createLinearGradient(0, horizonY - H * 0.45, 0, H);
+      const hg = bgCtx.createLinearGradient(0, horizonY - H * 0.4, 0, H);
       hg.addColorStop(0, `rgba(${lc},0)`);
-      hg.addColorStop(0.25, `rgba(${lc},0.05)`);
-      hg.addColorStop(0.8, `rgba(${lc},0.3)`);
-      hg.addColorStop(1, `rgba(${lc},0.9)`);
+      hg.addColorStop(0.35, `rgba(${lc},0.04)`);
+      hg.addColorStop(1, `rgba(${lc},0.18)`);
       bgCtx.fillStyle = hg;
       bgCtx.fillRect(0, 0, W, H);
 
-      // 3. Horizon Core
       bgCtx.save();
       bgCtx.translate(W / 2, H);
-      bgCtx.scale(1, 0.15);
-      const core = bgCtx.createRadialGradient(0, 0, 0, 0, 0, W * 0.8);
-      core.addColorStop(0, "rgba(255,255,255,1)");
-      core.addColorStop(0.15, `rgba(${lc},0.9)`);
+      bgCtx.scale(1, 0.18);
+      const core = bgCtx.createRadialGradient(0, 0, 0, 0, 0, W * 0.78);
+      core.addColorStop(0, `rgba(${lc},0.16)`);
+      core.addColorStop(0.2, `rgba(${pc},0.14)`);
       core.addColorStop(1, `rgba(${lc},0)`);
       bgCtx.fillStyle = core;
       bgCtx.fillRect(-W, -W, W * 2, W * 2);
@@ -163,15 +165,12 @@ export const RisingLines: React.FC<RisingLinesProps> = ({
     };
 
     const draw = () => {
-      // Draw pre-rendered background in ONE fast blit
       if (bgCanvas.width > 0) {
         _ctx.globalCompositeOperation = "source-over";
         _ctx.drawImage(bgCanvas, 0, 0);
       }
 
-      _ctx.globalCompositeOperation = "screen";
-
-      // Draw lines
+      _ctx.globalCompositeOperation = "multiply";
       _ctx.beginPath();
       lines.forEach((l) => {
         l.y -= l.speed;
@@ -190,16 +189,13 @@ export const RisingLines: React.FC<RisingLinesProps> = ({
 
         _ctx.moveTo(l.x, l.y);
         _ctx.lineTo(l.x, l.y - l.h);
-
-        // Optimization: draw lines with single global settings rather than per-line gradients
-        // Grouping colors/alphas would be better, but we do simple alpha per line now
         _ctx.strokeStyle = `rgba(${lc},${alpha})`;
         _ctx.lineWidth = l.width * perspScale;
         _ctx.stroke();
-        _ctx.beginPath(); // start new path for next line width
+        _ctx.beginPath();
       });
 
-      // Draw particles safely
+      _ctx.globalCompositeOperation = "source-over";
       particles.forEach((p) => {
         p.y -= p.speed;
         p.pulse += 0.04;
@@ -213,16 +209,14 @@ export const RisingLines: React.FC<RisingLinesProps> = ({
         const alpha = p.opacity * fade * (0.7 + 0.3 * Math.sin(p.pulse));
         if (alpha < 0.01) return;
 
-        // Draw center
         _ctx.beginPath();
         _ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
         _ctx.fillStyle = `rgba(${pc},${alpha})`;
         _ctx.fill();
-        
-        // Draw faked inner glow (faster than shadowBlur)
+
         _ctx.beginPath();
         _ctx.arc(p.x, p.y, p.r * 2.5, 0, Math.PI * 2);
-        _ctx.fillStyle = `rgba(${pc},${alpha * 0.15})`;
+        _ctx.fillStyle = `rgba(${pc},${alpha * 0.12})`;
         _ctx.fill();
       });
 
@@ -240,6 +234,7 @@ export const RisingLines: React.FC<RisingLinesProps> = ({
       window.removeEventListener("resize", resize);
     };
   }, [
+    backgroundColor,
     riseSpeed,
     horizonHeight,
     linesColor,
@@ -252,10 +247,5 @@ export const RisingLines: React.FC<RisingLinesProps> = ({
     particleCount,
   ]);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className="pointer-events-none absolute inset-0 z-0 h-full w-full"
-    />
-  );
+  return <canvas ref={canvasRef} className="pointer-events-none absolute inset-0 z-0 h-full w-full" />;
 };
