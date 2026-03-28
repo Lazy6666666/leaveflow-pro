@@ -95,7 +95,7 @@ describe("AppLayout", () => {
 
     expect(screen.getByText("Outlet content")).toBeInTheDocument();
     expect(screen.getByTestId("ai-chat-panel")).toHaveTextContent("chat:floating");
-    expect(screen.getByRole("button", { name: /search or type a command/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /open command palette/i })).toBeInTheDocument();
   });
 
   it("hides the floating AI panel on the dedicated AI workspace route", () => {
