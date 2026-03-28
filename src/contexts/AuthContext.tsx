@@ -39,6 +39,7 @@ interface AuthContextType {
   hasManagerAccess: boolean;
   hasAdminAccess: boolean;
   hasDeveloperAccess: boolean;
+  isDev: boolean;
   hasFeature: (feature: AppFeature) => boolean;
   needsAdminSetup: boolean;
 }
@@ -54,6 +55,7 @@ const AuthContext = createContext<AuthContextType>({
   hasManagerAccess: false,
   hasAdminAccess: false,
   hasDeveloperAccess: false,
+  isDev: false,
   hasFeature: () => false,
   needsAdminSetup: false,
 });
@@ -161,7 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     (isConvexAuthenticated && (currentUser === undefined || delegationsPageData === undefined));
 
   const roles = useMemo<AppRole[]>(() => currentUser?.roles ?? [], [currentUser?.roles]);
-  const hasDeveloperAccess = useMemo(() => roles.includes("convex_dev"), [roles]);
+  const hasDeveloperAccess = useMemo(() => roles.includes("convex_dev") || roles.includes("dev"), [roles]);
   const hasAdminAccess = useMemo(
     () => roles.includes("hr_admin") || hasDeveloperAccess,
     [hasDeveloperAccess, roles],
@@ -176,11 +178,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (role === "manager") {
       return hasManagerAccess;
     }
-    if (role === "hr_admin") {
-      return hasAdminAccess;
-    }
     return hasExplicitRole(role);
-  }, [hasAdminAccess, hasExplicitRole, hasManagerAccess]);
+  }, [hasExplicitRole, hasManagerAccess]);
   const hasFeature = useCallback((feature: AppFeature) => {
     switch (feature) {
       case "manager_hub":
@@ -213,6 +212,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       hasManagerAccess,
       hasAdminAccess,
       hasDeveloperAccess,
+      isDev: hasDeveloperAccess,
       hasFeature,
       needsAdminSetup,
     }),

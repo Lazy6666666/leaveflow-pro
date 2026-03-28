@@ -10,8 +10,8 @@ export function useRole() {
 
   const flags = useMemo(() => {
     const isEmployee = roles.includes("employee");
-    const isAdmin = roles.includes("hr_admin") || roles.includes("convex_dev");
-    const isDeveloper = roles.includes("convex_dev");
+    const isAdmin = roles.includes("hr_admin") || roles.includes("convex_dev") || roles.includes("dev");
+    const isDeveloper = roles.includes("convex_dev") || roles.includes("dev");
 
     return {
       isEmployee,

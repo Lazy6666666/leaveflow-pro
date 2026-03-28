@@ -24,7 +24,7 @@ interface OfflineAttendanceDB extends DBSchema {
   };
 }
 
-const DB_NAME = 'leaveflow-offline-db';
+const DB_NAME = 'balance-offline-db';
 const DB_VERSION = 1;
 const STORE_NAME = 'events';
 

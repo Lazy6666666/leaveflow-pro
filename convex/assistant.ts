@@ -40,7 +40,7 @@ type AssistantCtx = {
 type UsersCurrentResult = {
   userId: string;
   fullName: string | null;
-  roles: Array<"employee" | "manager" | "hr_admin" | "convex_dev">;
+  roles: Array<"employee" | "manager" | "hr_admin" | "convex_dev" | "dev">;
 };
 
 type AdminAttendanceDashboardLog = {

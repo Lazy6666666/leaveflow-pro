@@ -56,11 +56,8 @@ export default function MobileHome() {
         animate="show"
         className="space-y-3"
       >
-        <motion.div variants={fadeUp} className="flex items-center gap-3 pb-2">
-          <Logo size="sm" showText={false} />
-          <span className="font-display text-2xl font-bold tracking-tighter uppercase text-foreground">
-            Balance.
-          </span>
+        <motion.div variants={fadeUp} className="flex items-center gap-3 pb-4">
+          <Logo size="md" showText={false} />
         </motion.div>
         <motion.div variants={fadeUp} className="flex items-center gap-3">
           <div className="h-1 w-8 terracotta-gradient rounded-full" />

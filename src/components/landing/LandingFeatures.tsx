@@ -9,15 +9,15 @@ import {
 import { cn } from "../../lib/utils";
 import { IconPointerFilled } from "@tabler/icons-react";
 
-const FeatureCard = ({ 
-  title, 
-  description, 
-  image, 
+const FeatureCard = ({
+  title,
+  description,
+  image,
   className,
-  delay = 0 
-}: { 
-  title: string; 
-  description: string; 
+  delay = 0
+}: {
+  title: string;
+  description: string;
   image: string;
   className?: string;
   delay?: number;
@@ -51,13 +51,13 @@ const FeatureCard = ({
         transformStyle: "preserve-3d",
       }}
       className={cn(
-        "group relative overflow-hidden rounded-[2.5rem] bg-[#131316] ring-1 ring-white/5 shadow-2xl transition-all duration-700 hover:shadow-[0_32px_64px_-16px_rgba(232,121,249,0.15)]",
+        "group relative overflow-hidden rounded-none border-2 border-border bg-[#131316] shadow-[0_20px_40px_rgba(0,0,0,0.5)] transition-all duration-700 hover:shadow-[0_0_0_2px_#e879f9]",
         className
       )}
     >
       {/* Dynamic Spotlight Effect */}
       <motion.div
-        className="pointer-events-none absolute -inset-px rounded-[2.5rem] transition duration-300 opacity-0 group-hover:opacity-100"
+        className="pointer-events-none absolute -inset-px rounded-none transition duration-300 opacity-0 group-hover:opacity-100"
         style={{
           background: useTransform(
             [mouseX, mouseY],
@@ -67,26 +67,25 @@ const FeatureCard = ({
       />
 
       <div className="absolute inset-0 z-0">
-        <img 
-          src={image} 
+        <img
+          src={image}
           width="1200"
           height="900"
           loading="lazy"
           decoding="async"
-          className="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-110 grayscale-[100%] group-hover:grayscale-0 opacity-20 group-hover:opacity-40" 
-          alt={`Leaveflow Pro feature interface showing ${title}`} 
+          className="h-full w-full object-cover transition-transform duration-1000 group-hover:scale-110 grayscale-[100%] group-hover:grayscale-0 opacity-20 group-hover:opacity-40"
+          alt={`Balance feature interface showing ${title}`}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#131316] via-[#131316]/60 to-transparent" />
       </div>
 
-      <div 
-        style={{ transform: "translateZ(50px)" }}
-        className="relative z-10 flex h-full flex-col justify-end p-8 md:p-12"
+      <div
+        className="feature-content-layer relative z-10 flex h-full flex-col justify-end p-8 md:p-12"
       >
-        <div className="mb-6 inline-flex size-14 items-center justify-center rounded-2xl bg-white/10 text-[#e879f9] shadow-2xl transition-all duration-500 group-hover:bg-[#e879f9] group-hover:text-[#131316] group-hover:rotate-6 group-hover:scale-110">
+        <div className="mb-6 inline-flex size-14 items-center justify-center rounded-none border border-border bg-white/10 text-[#e879f9] shadow-2xl transition-all duration-500 group-hover:bg-[#e879f9] group-hover:text-[#131316]">
           <IconPointerFilled className="size-6" />
         </div>
-        
+
         <div className="space-y-4">
             <span className="text-[10px] font-black uppercase tracking-[0.4em] text-[#e879f9] block">Capability</span>
             <h3 id={`feature-${title.replace(/\s+/g, '-').toLowerCase()}`} className="font-['Outfit'] text-3xl md:text-4xl font-black tracking-tight text-white leading-[1.1] group-hover:text-[#e879f9] transition-colors duration-500">
@@ -99,7 +98,7 @@ const FeatureCard = ({
       </div>
 
       {/* Luxury Border Gradient */}
-      <div className="absolute inset-0 rounded-[2.5rem] ring-1 ring-inset ring-white/20 pointer-events-none" />
+      <div className="absolute inset-0 rounded-none pointer-events-none" />
     </motion.article>
   );
 };
@@ -109,28 +108,28 @@ export const LandingFeatures = () => {
     {
       title: "Global Resilience Infrastructure",
       description: "Scale your workforce orchestration with infinite resilience across every continent and jurisdiction.",
-      image: "/images/landing/feature_dashboard.png",
+      image: "/images/team-collaboration.png",
       className: "md:col-span-2 md:row-span-2 h-[600px]",
       delay: 0,
     },
     {
       title: "Intelligent Governance",
       description: "Automate compliance and regulatory sync with zero-latency precision.",
-      image: "/images/landing/feat_guardrails.png",
+      image: "/images/focused-workspace.png",
       className: "md:col-span-1 md:row-span-1 h-[280px]",
       delay: 0.2,
     },
     {
       title: "Strategic Insight",
       description: "Transform complex human resource data into pure aesthetic clarity.",
-      image: "/images/landing/feat_reporting.png",
+      image: "/images/hr-dashboard-detail.png",
       className: "md:col-span-1 md:row-span-1 h-[280px]",
       delay: 0.4,
     },
     {
       title: "Human Synergy",
       description: "Unite teams through fluid collaborative environments designed for global motion.",
-      image: "/images/landing/feat_surface.png",
+      image: "/images/office-lounge.png",
       className: "md:col-span-3 md:row-span-1 h-[350px]",
       delay: 0.6,
     },
@@ -143,15 +142,15 @@ export const LandingFeatures = () => {
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             transition={{ duration: 1 }}
-            className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-8"
+            className="inline-flex items-center gap-3 px-4 py-1.5 rounded-none bg-white/5 border border-white/10 mb-8"
         >
-            <span className="w-2 h-2 rounded-full bg-[#e879f9] animate-pulse"></span>
+            <span className="w-2 h-2 rounded-none bg-[#e879f9] animate-pulse"></span>
             <span className="text-[10px] uppercase tracking-[0.4em] font-bold text-white/40 leading-none">The Capabilities</span>
         </motion.div>
-        
+
         {/* GEO/SEO Visually Hidden Summary for AI Crawlers */}
         <div className="sr-only">
-          Leaveflow Pro's core features include Global Resilience Infrastructure, Intelligent Governance for compliance, Strategic Insight reporting, and Human Synergy collaboration environments.
+          Balance's core features include Global Resilience Infrastructure, Intelligent Governance for compliance, Strategic Insight reporting, and Human Synergy collaboration environments.
         </div>
 
         <h2 id="features-heading" className="font-['Outfit'] text-4xl md:text-7xl lg:text-9xl font-black text-white tracking-tight leading-[0.85] max-w-5xl">

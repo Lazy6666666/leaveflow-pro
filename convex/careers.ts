@@ -163,6 +163,55 @@ export const getCareersData = query({
   },
 });
 
+export const listOpenJobs = query({
+  args: {},
+  handler: async (ctx) => {
+    await requireCareersAdmin(ctx);
+    const listings = await ctx.db
+      .query("jobListings")
+      .withIndex("by_status", (q) => q.eq("status", "open"))
+      .collect();
+
+    return listings
+      .sort((left, right) => right.updatedAt - left.updatedAt)
+      .map((listing) => ({
+        id: listing._id,
+        title: listing.title,
+        location: listing.location ?? null,
+        source: listing.source,
+        status: listing.status,
+        externalUrl: listing.externalUrl ?? null,
+        updatedAt: new Date(listing.updatedAt).toISOString(),
+      }));
+  },
+});
+
+export const listApplicationsByJob = query({
+  args: {
+    listingId: v.id("jobListings"),
+  },
+  handler: async (ctx, args) => {
+    await requireCareersAdmin(ctx);
+    const applications = await ctx.db
+      .query("jobApplications")
+      .withIndex("by_listingId", (q) => q.eq("listingId", args.listingId))
+      .collect();
+
+    return applications
+      .sort((left, right) => right.updatedAt - left.updatedAt)
+      .map((application) => ({
+        id: application._id,
+        fullName: application.fullName,
+        email: application.email ?? null,
+        positionTitle: application.positionTitle,
+        source: application.source,
+        stage: application.stage,
+        appliedAt: application.appliedAt,
+        updatedAt: new Date(application.updatedAt).toISOString(),
+      }));
+  },
+});
+
 export const saveJobListing = mutation({
   args: {
     departmentId: v.optional(v.id("departments")),

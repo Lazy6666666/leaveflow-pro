@@ -22,7 +22,7 @@ export const Navbar = () => {
         aria-label="Main navigation"
       >
         <Link to="/" className="flex items-center gap-3">
-          <Logo size="sm" showText={true} />
+          <Logo size="md" showText={false} className="w-12 h-12" />
         </Link>
 
         <div className="hidden items-center gap-8 md:flex">

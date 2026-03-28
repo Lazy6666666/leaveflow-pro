@@ -17,10 +17,11 @@ theme: {
 	},
 	extend: {
 			transitionTimingFunction: {
-				'apple-ease': 'cubic-bezier(0.23, 1, 0.32, 1)'
+				'apple-ease': 'cubic-bezier(0.23, 1, 0.32, 1)',
+        'concierge': 'cubic-bezier(0.16, 1, 0.3, 1)'
 			},
 			colors: {
-			border: 'hsl(var(--border))',
+			border: 'hsl(var(--border) / 0.15)', /* Ghost Border Default */
 			input: 'hsl(var(--input))',
 			ring: 'hsl(var(--ring))',
 			background: 'hsl(var(--background))',
@@ -52,22 +53,13 @@ theme: {
 			card: {
 				DEFAULT: 'hsl(var(--card))',
 				foreground: 'hsl(var(--card-foreground))'
-			},
-			sidebar: {
-				DEFAULT: 'hsl(var(--sidebar-background))',
-				foreground: 'hsl(var(--sidebar-foreground))',
-				primary: 'hsl(var(--sidebar-primary))',
-				'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
-				accent: 'hsl(var(--sidebar-accent))',
-				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-				border: 'hsl(var(--sidebar-border))',
-				ring: 'hsl(var(--sidebar-ring))'
 			}
 		},
 		borderRadius: {
-			lg: 'var(--radius)',
-			md: 'calc(var(--radius) - 2px)',
-			sm: 'calc(var(--radius) - 4px)'
+			xl: 'var(--radius)',
+			lg: 'calc(var(--radius) - 2px)',
+			md: 'calc(var(--radius) - 4px)',
+			sm: 'calc(var(--radius) - 8px)'
 		},
 			keyframes: {
 				'accordion-down': {
@@ -101,21 +93,17 @@ theme: {
 				'fade-in': 'fade-in 0.4s ease-out',
 				shimmer: 'shimmer 2.6s linear infinite',
 				float: 'float 16s ease-in-out infinite',
-				reveal: 'reveal 0.7s cubic-bezier(0.23, 1, 0.32, 1) both'
+				reveal: 'reveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) both'
 			},
 			boxShadow: {
-				'2xs': 'var(--shadow-2xs)',
-				xs: 'var(--shadow-xs)',
-				sm: 'var(--shadow-sm)',
-				md: 'var(--shadow-md)',
-				lg: 'var(--shadow-lg)',
-				xl: 'var(--shadow-xl)',
-				'2xl': 'var(--shadow-2xl)'
+				sm: '0 1px 2px rgba(25, 28, 29, 0.05)',
+        md: '0 4px 12px rgba(25, 28, 29, 0.08)',
+				float: '0 12px 32px rgba(25, 28, 29, 0.12), 0 0 0 1px rgba(25, 28, 29, 0.05)',
 			},
 			fontFamily: {
-				sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
-				serif: ['var(--font-serif)', 'ui-serif', 'Georgia', 'Cambria', 'Times New Roman', 'Times', 'serif'],
-				mono: ['var(--font-mono)', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace']
+				sans: ['"Inter"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+				display: ['"Manrope"', 'sans-serif'],
+				mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace']
 			}
 		}
 	},

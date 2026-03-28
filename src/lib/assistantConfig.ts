@@ -25,7 +25,7 @@ Rules:
 export const MAX_ASSISTANT_TOOL_ROUNDS = 4;
 
 function getRoleLabel(roles: string[]) {
-  if (roles.includes("convex_dev")) return "Developer";
+  if (roles.includes("convex_dev") || roles.includes("dev")) return "Developer";
   if (roles.includes("hr_admin")) return "HR Admin";
   if (roles.includes("manager")) return "Manager";
   return "Employee";
@@ -47,7 +47,7 @@ If the user asks to submit, apply, approve, or reject directly, redirect them to
 }
 
 export function buildAssistantTools(roles: string[]): AssistantToolDefinition[] {
-  const isDeveloper = roles.includes("convex_dev");
+  const isDeveloper = roles.includes("convex_dev") || roles.includes("dev");
   const canSeeManagerData = roles.includes("manager") || roles.includes("hr_admin") || isDeveloper;
   const isHrAdmin = roles.includes("hr_admin") || isDeveloper;
   const tools: AssistantToolDefinition[] = [

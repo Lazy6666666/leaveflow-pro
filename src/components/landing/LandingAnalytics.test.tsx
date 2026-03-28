@@ -34,8 +34,8 @@ describe("landing analytics", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("link", { name: /deploy infrastructure/i }));
-    fireEvent.click(screen.getByRole("link", { name: /start trial/i }));
+    fireEvent.click(screen.getByRole("link", { name: /initiate deployment/i }));
+    fireEvent.click(screen.getByRole("link", { name: /start a balance trial/i }));
     fireEvent.click(screen.getByRole("link", { name: /explore engine/i }));
 
     expect(mockTrack).toHaveBeenCalledWith(
@@ -62,7 +62,7 @@ describe("landing analytics", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("link", { name: /start trial/i }));
+    fireEvent.click(screen.getByRole("link", { name: /get started/i }));
 
     expect(mockTrack).toHaveBeenCalledWith(
       "landing_cta_clicked",

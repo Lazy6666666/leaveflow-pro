@@ -114,249 +114,260 @@ export default function MyLeave() {
   };
 
   if (isLoading) return (
-    <div className="space-y-10 max-w-7xl mx-auto">
+    <div className="space-y-10 max-w-7xl mx-auto px-4 md:px-8">
       <PageHeaderSkeleton />
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {Array.from({ length: 3 }).map((_, i) => <BalanceCardSkeleton key={i} />)}
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="bg-white p-8 rounded-xl shadow-float">
+            <BalanceCardSkeleton />
+          </div>
+        ))}
       </div>
       <TableSkeleton rows={5} cols={6} />
     </div>
   );
 
   return (
-    <motion.div 
-      initial="hidden" 
-      animate="show" 
-      variants={{
-        hidden: { opacity: 0 },
-        show: { opacity: 1, transition: { staggerChildren: 0.1 } }
-      }}
-      className="mx-auto max-w-7xl space-y-12 pb-12"
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="mx-auto max-w-7xl space-y-12 pb-24 px-4 md:px-8"
     >
-      {/* 1. Header Area with noise/glassmorphism */}
-      <motion.div variants={staggerReveal} className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between pb-6 border-[color:var(--balance-ghost-border)] border-b">
-        <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 rounded-full bg-[var(--balance-surface-top)] px-4 py-2 text-xs font-semibold uppercase tracking-widest text-[color:var(--balance-primary)] shadow-[var(--balance-shadow-soft)] ring-1 ring-black/[0.03]">
-            <CalendarDays className="h-4 w-4" aria-hidden="true" />
-            <span>Time Off</span>
+      {/* 1. Header Area - Editorial & Approachable */}
+      <header className="flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between pb-12">
+        <div className="space-y-4">
+          <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider text-primary">
+            <CalendarDays className="h-3.5 w-3.5" />
+            <span>Time Off & Attendance</span>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tighter text-[color:var(--balance-ink)] font-display mt-4">
-            Leave <span className="text-[color:var(--balance-muted)]">&</span> Balances
+          <h1 className="text-5xl sm:text-6xl font-display font-black tracking-tight text-foreground leading-[1.1]">
+            My Leave <br />
+            <span className="text-primary/40 italic font-light">Overview.</span>
           </h1>
-          <p className="max-w-[40ch] text-lg text-[color:var(--balance-muted)]">
-            Manage your time away. Completely transparent, always up to date.
+          <p className="max-w-[45ch] text-lg text-muted-foreground font-sans leading-relaxed">
+            Your personalized concierge for time-off management and historical request records.
           </p>
         </div>
-        
+
         <div className="flex flex-wrap items-center gap-4">
           {requests.length > 0 && (
-            <Button 
-              variant="outline" 
-              className="rounded-full shadow-sm ring-1 ring-black/[0.05] border-0 hover:bg-[var(--balance-surface-top)] transition-all h-12 px-6" 
+            <Button
+              variant="secondary"
+              className="rounded-xl h-12 px-6 bg-muted hover:bg-muted/80 text-foreground transition-all shadow-sm"
               onClick={exportCSV}
             >
-              <Download className="h-4 w-4 mr-2" /> 
-              <span className="font-semibold">Export CSV</span>
+              <Download className="h-4 w-4 mr-2" />
+              <span>Export Ledger</span>
             </Button>
           )}
-          <Button 
-            onClick={() => setIsRequestSheetOpen(true)} 
-            className="rounded-full shadow-[0_10px_20px_-10px_var(--balance-primary)] bg-[color:var(--balance-primary)] hover:bg-[color:var(--balance-primary-deep)] text-white h-12 px-8 transition-all hover:scale-[1.02]"
+          <Button
+            onClick={() => setIsRequestSheetOpen(true)}
+            className="rounded-xl terracotta-gradient text-white h-12 px-8 font-bold hover:opacity-90 transition-all shadow-float"
           >
-            <PlusCircle className="h-5 w-5 mr-2" /> 
-            <span className="font-bold text-sm">Request Time Off</span>
+            <PlusCircle className="h-4 w-4 mr-2" />
+            <span>Request Leave</span>
           </Button>
         </div>
-      </motion.div>
+      </header>
 
-      {/* 2. Bento Balances */}
-      <div className="space-y-6">
-        <h2 className="text-2xl font-bold tracking-tight text-[color:var(--balance-ink)]">Current Balances</h2>
+      {/* 2. Bento Balances - Layered Surface Layout */}
+      <section className="space-y-8">
+        <div className="flex items-baseline gap-4">
+          <h2 className="font-display text-xs font-bold uppercase tracking-[0.2em] text-primary/60">Active Allocations</h2>
+          <div className="h-[2px] flex-1 bg-muted/40 rounded-full" />
+        </div>
+
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {balances.map((b, i) => {
             const total = b.leave_types?.annual_allocation || 0;
             const used = total - b.balance;
             const pct = total > 0 ? (b.balance / total) * 100 : 0;
-            
+
             return (
-              <motion.div 
-                variants={staggerReveal}
-                whileHover={{ y: -4, shadow: "0 24px 48px -12px rgba(0,0,0,0.08)" }}
-                key={b.leave_type_id} 
-                className="relative overflow-hidden rounded-[2rem] bg-[var(--balance-surface-top)] p-8 shadow-[0_15px_30px_-15px_rgba(0,0,0,0.05)] ring-1 ring-black/[0.03] dark:ring-white/[0.03] transition-all duration-300"
+              <motion.div
+                key={b.leave_type_id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.1, ...premiumSpring }}
+                className="group relative bg-white p-8 rounded-xl shadow-float hover:shadow-lg transition-all duration-300"
               >
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-lg font-semibold text-[color:var(--balance-ink)] truncate pr-4">
-                    {b.leave_types?.name}
-                  </h3>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-extrabold tracking-tighter text-[color:var(--balance-primary)] tabular-nums leading-none">
-                      {b.balance}
+                <div className="flex flex-col h-full justify-between gap-10">
+                  <div className="space-y-2">
+                    <span className="text-[11px] font-bold text-primary uppercase tracking-widest font-sans">
+                      {b.leave_types?.name}
                     </span>
-                    <span className="text-sm font-semibold text-[color:var(--balance-muted)]">left</span>
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-6xl font-display font-black tracking-tighter text-foreground tabular-nums">
+                        {b.balance}
+                      </span>
+                      <span className="text-xs font-bold text-muted-foreground uppercase">Days Left</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="h-2 w-full bg-muted/40 rounded-full overflow-hidden">
+                      <motion.div
+                        className="h-full terracotta-gradient rounded-full"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1], delay: i * 0.1 + 0.3 }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-wider font-sans">
+                      <span>{used} Days Used</span>
+                      <span>{total} Total Allocation</span>
+                    </div>
                   </div>
                 </div>
-                
-                <div className="space-y-4">
-                  <div className="h-2.5 w-full bg-slate-100 dark:bg-slate-800/50 rounded-full overflow-hidden shadow-inner">
-                    <motion.div 
-                      className="h-full bg-[color:var(--balance-primary)] rounded-full"
-                      initial={{ width: 0 }}
-                      animate={{ width: `${pct}%` }}
-                      transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1], delay: i * 0.1 }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-sm font-semibold text-[color:var(--balance-muted)] px-1">
-                    <span>{used} used</span>
-                    <span>{total} total</span>
-                  </div>
+                {/* Visual anchor */}
+                <div className="absolute top-6 right-6 p-2 bg-primary/5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
+                  <ArrowRight className="h-4 w-4 text-primary" />
                 </div>
               </motion.div>
             );
           })}
-          
+
           {balances.length === 0 && (
-            <motion.div variants={staggerReveal} className="col-span-full py-12 text-center text-[color:var(--balance-muted)] rounded-[2rem] bg-[var(--balance-surface-top)] ring-1 ring-black/[0.03] ring-dashed">
-              <p className="text-lg font-semibold">No balances allocated</p>
-              <p className="text-sm mt-1">Contact your administrator if you believe this is an error.</p>
-            </motion.div>
+            <div className="col-span-full py-24 text-center bg-muted/20 rounded-xl">
+              <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">No active balances</p>
+              <p className="text-xs mt-2 text-muted-foreground/60">System indicates no active leave policies assigned to your profile.</p>
+            </div>
           )}
         </div>
-      </div>
+      </section>
 
-      {/* 3. Ghost-style History List */}
-      <motion.div variants={staggerReveal} className="space-y-6 pt-6">
-        <h2 className="text-2xl font-bold tracking-tight text-[color:var(--balance-ink)]">Request History</h2>
-        
-        <div className="rounded-[2rem] bg-[var(--balance-surface-top)] shadow-[0_15px_30px_-15px_rgba(0,0,0,0.05)] ring-1 ring-black/[0.03] dark:ring-white/[0.03] overflow-hidden">
+      {/* 3. History Ledger - Editorial Table Layout */}
+      <section className="space-y-8 pt-8">
+        <div className="flex items-baseline gap-4">
+          <h2 className="font-display text-xs font-bold uppercase tracking-[0.2em] text-primary/60">Request Archive</h2>
+          <div className="h-[2px] flex-1 bg-muted/40 rounded-full" />
+        </div>
+
+        <div className="bg-white rounded-xl shadow-float overflow-hidden">
           {requests.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <FileX className="h-10 w-10 mb-4 text-[color:var(--balance-muted)] opacity-50" />
-              <p className="text-lg font-bold text-[color:var(--balance-ink)]">No history found</p>
-              <p className="text-sm text-[color:var(--balance-muted)] max-w-[250px] mt-2">Past and upcoming leave requests will be elegantly organized here.</p>
+            <div className="flex flex-col items-center justify-center py-32 text-center">
+              <div className="w-16 h-16 bg-muted/40 rounded-full flex items-center justify-center mb-6">
+                <FileX className="h-8 w-8 text-muted-foreground/40" />
+              </div>
+              <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">No historical records</p>
             </div>
           ) : (
-            <div className="flex flex-col divide-y divide-[color:var(--balance-ghost-border)]">
-              {/* Ghost Header - Only shown on larger screens */}
-              <div className="hidden md:grid grid-cols-12 gap-4 px-8 py-5 text-xs font-bold uppercase tracking-widest text-[color:var(--balance-muted)] bg-slate-50/50 dark:bg-white/[0.02]">
-                <div className="col-span-3">Type & Dates</div>
-                <div className="col-span-4">Details</div>
-                <div className="col-span-2">Status</div>
-                <div className="col-span-3 text-right">Action</div>
-              </div>
-
-              {/* Rows */}
-              <AnimatePresence>
-                {paginatedItems.map((req, i) => (
-                  <motion.div 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    transition={{ delay: i * 0.05 }}
-                    key={req.id} 
-                    className="group flex flex-col md:grid md:grid-cols-12 gap-4 px-8 py-6 items-center hover:bg-[color:var(--balance-surface)] transition-colors duration-300"
-                  >
-                    
-                    {/* 1. Type & Dates */}
-                    <div className="col-span-3 w-full md:w-auto">
-                      <p className="font-bold text-base text-[color:var(--balance-ink)] mb-1">{req.leave_types?.name}</p>
-                      <p className="text-sm font-medium text-[color:var(--balance-muted)] tabular-nums">
-                        {format(parseISO(req.start_date), "MMM d")} 
-                        {req.start_date !== req.end_date && ` — ${format(parseISO(req.end_date), "MMM d")}`}
-                        <span className="opacity-60 ml-2">{format(parseISO(req.end_date), "yyyy")}</span>
-                      </p>
-                    </div>
-
-                    {/* 2. Details (Reason & Comments) */}
-                    <div className="col-span-4 w-full md:w-auto space-y-1">
-                      {req.reason ? (
-                        <p className="text-sm text-[color:var(--balance-ink)] line-clamp-1 opacity-90">{req.reason}</p>
-                      ) : (
-                        <p className="text-sm text-[color:var(--balance-muted)] italic">No comments provided</p>
-                      )}
-                      
-                      {req.manager_comment && (
-                        <p className="text-xs font-medium text-[color:var(--balance-primary)] bg-[color:var(--balance-primary-soft)] inline-block px-2 py-0.5 rounded-md mt-1">
-                          HR: {req.manager_comment}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* 3. Status */}
-                    <div className="col-span-2 w-full md:w-auto">
-                      <StatusPill status={req.status} />
-                    </div>
-
-                    {/* 4. Action */}
-                    <div className="col-span-3 w-full md:w-auto md:text-right flex md:justify-end">
-                      {req.status === "pending" && (
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button 
-                              variant="ghost" 
-                              className="text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-full font-bold px-4"
-                            >
-                              Withdraw
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent className="rounded-[2rem] p-8 border-0 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.2)]">
-                            <AlertDialogHeader className="mb-4">
-                              <AlertDialogTitle className="text-2xl font-bold font-display">Recall Request</AlertDialogTitle>
-                              <AlertDialogDescription className="text-base">
-                                Are you sure you want to withdraw this {req.leave_types?.name} request for {format(parseISO(req.start_date), "MMM do")}? This action is instantaneous.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter className="gap-3">
-                              <AlertDialogCancel className="rounded-full rounded-tr-full font-semibold border-0 ring-1 ring-black/5 hover:bg-slate-50 px-6">
-                                Keep It
-                              </AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => cancelMutation.mutate(req.id)}
-                                disabled={cancelMutation.isPending}
-                                className="rounded-full bg-rose-500 hover:bg-rose-600 text-white font-bold px-8 border-0 shadow-lg shadow-rose-500/20"
-                              >
-                                {cancelMutation.isPending ? "Processing..." : "Confirm Withdrawal"}
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      )}
-                    </div>
-
-                  </motion.div>
-                ))}
-              </AnimatePresence>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-muted/30">
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-widest text-primary/60">Classification</th>
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-widest text-primary/60">Timeline</th>
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-widest text-primary/60">Annotations</th>
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-widest text-primary/60">Status</th>
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-widest text-primary/60 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-muted/30">
+                  <AnimatePresence>
+                    {paginatedItems.map((req, i) => (
+                      <motion.tr
+                        key={req.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        className="group hover:bg-muted/10 transition-colors"
+                      >
+                        <td className="px-8 py-6">
+                          <span className="font-bold text-foreground text-base">{req.leave_types?.name}</span>
+                        </td>
+                        <td className="px-8 py-6">
+                          <div className="flex flex-col gap-1">
+                            <span className="text-foreground font-semibold text-sm">
+                              {format(parseISO(req.start_date), "MMM d, yyyy")}
+                            </span>
+                            {req.start_date !== req.end_date && (
+                              <span className="text-muted-foreground text-xs">
+                                to {format(parseISO(req.end_date), "MMM d, yyyy")}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-8 py-6 max-w-xs">
+                          <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed italic">
+                            {req.reason ? `"${req.reason}"` : "No description provided"}
+                          </p>
+                          {req.manager_comment && (
+                            <div className="mt-2 text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/5 px-2 py-0.5 rounded-full inline-block">
+                              Note: {req.manager_comment}
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-8 py-6">
+                          <StatusBadge status={req.status as any} />
+                        </td>
+                        <td className="px-8 py-6 text-right">
+                          {req.status === "pending" && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  className="h-9 px-4 text-destructive hover:bg-destructive/10 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all"
+                                >
+                                  Cancel
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent className="rounded-xl border-none shadow-float p-8">
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle className="text-2xl font-display font-black text-foreground">Withdraw Request?</AlertDialogTitle>
+                                  <AlertDialogDescription className="text-base text-muted-foreground leading-relaxed mt-2">
+                                    Are you sure you want to cancel this {req.leave_types?.name} request? This action cannot be undone.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter className="mt-8 gap-3">
+                                  <AlertDialogCancel className="rounded-xl bg-muted border-none font-bold uppercase text-[11px] tracking-widest h-12">
+                                    Keep Request
+                                  </AlertDialogCancel>
+                                  <AlertDialogAction
+                                    onClick={() => cancelMutation.mutate(req.id)}
+                                    disabled={cancelMutation.isPending}
+                                    className="rounded-xl bg-destructive text-white font-bold uppercase text-[11px] tracking-widest h-12 shadow-md hover:bg-destructive/90"
+                                  >
+                                    Yes, Cancel
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                </tbody>
+              </table>
             </div>
           )}
 
           {/* Pagination */}
           {requests.length > 0 && (
-            <div className="bg-slate-50/50 dark:bg-white/[0.01] px-8 py-5 border-t border-[color:var(--balance-ghost-border)]">
+            <div className="px-8 py-6 bg-muted/20">
               <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} />
             </div>
           )}
         </div>
-      </motion.div>
+      </section>
 
       <RequestLeaveSheet open={isRequestSheetOpen} onOpenChange={setIsRequestSheetOpen} />
     </motion.div>
   );
 }
 
-function StatusPill({ status }: { status: string }) {
-  let style = "bg-[color:var(--balance-ghost-border)] text-[color:var(--balance-muted)]";
-  
-  if (status === "approved") {
-    style = "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 ring-1 ring-emerald-500/20";
-  }
-  if (status === "rejected") {
-    style = "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400 ring-1 ring-rose-500/20";
-  }
-  if (status === "pending") {
-    style = "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-400 ring-1 ring-amber-500/30";
-  }
-  
+function StatusBadge({ status }: { status: "approved" | "pending" | "rejected" | "cancelled" }) {
+  const styles = {
+    approved: "bg-emerald-500/10 text-emerald-600",
+    pending: "bg-amber-500/10 text-amber-600",
+    rejected: "bg-destructive/10 text-destructive",
+    cancelled: "bg-muted text-muted-foreground",
+  };
+
   return (
-    <span className={`px-4 py-1.5 text-xs font-bold uppercase tracking-widest rounded-full ${style}`}>
+    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.1em] ${styles[status] || styles.cancelled}`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${status === 'pending' ? 'animate-pulse bg-current' : 'bg-current'}`} />
       {status}
     </span>
   );

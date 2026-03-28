@@ -72,7 +72,7 @@ const Auth = () => {
         </div>
 
         <div className="relative z-10 flex w-full flex-col justify-between p-16 text-white">
-          <Logo size="lg" variant="white" showText={true} />
+          <Logo size="lg" variant="white" showText={false} className="w-24 h-24" />
 
           <div className="max-w-md space-y-8">
             <div className="inline-flex items-center gap-2 border border-white/15 bg-white/5 px-4 py-2 rounded-none">

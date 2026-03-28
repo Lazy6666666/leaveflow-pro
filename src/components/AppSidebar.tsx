@@ -93,16 +93,10 @@ export function AppSidebar({ onRequestLeave }: AppSidebarProps) {
   return (
     <SidebarBody className="bg-[#171411] border-r-0 text-white/70 antialiased font-sans">
       <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide py-8">
-        {/* Workspace Header */}
+        {/* Workspace Header: Removed Text, Enriched Logo */}
         <div className="mb-10 px-6 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Logo size="sm" showText={false} variant="white" className="h-7 w-7" />
-            <motion.span
-              animate={{ opacity: open ? 1 : 0, width: open ? "auto" : 0 }}
-              className="font-display text-xl font-bold tracking-tight text-white uppercase overflow-hidden whitespace-nowrap"
-            >
-              Balance.
-            </motion.span>
+            <Logo size="md" showText={false} variant="white" className="h-12 w-12" />
           </div>
           <button
             type="button"

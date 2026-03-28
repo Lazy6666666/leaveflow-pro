@@ -678,4 +678,29 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_singleton", ["singleton"]),
+
+  // TWI-36: Agent configuration table
+  agentConfigs: defineTable({
+    agentName: v.string(),
+    enabled: v.boolean(),
+    modelOverride: v.optional(v.string()),
+    maxTokens: v.optional(v.number()),
+    systemPrompt: v.optional(v.string()),
+    allowedRoles: v.array(v.string()),
+    updatedBy: v.string(),
+    updatedAt: v.number(),
+  }).index("by_agentName", ["agentName"]),
+
+  // TWI-39: Tool call audit log
+  toolCallLogs: defineTable({
+    toolName: v.string(),
+    userId: v.string(),
+    args: v.optional(v.any()),
+    result: v.optional(v.any()),
+    error: v.optional(v.string()),
+    calledAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_toolName", ["toolName"])
+    .index("by_calledAt", ["calledAt"]),
 });

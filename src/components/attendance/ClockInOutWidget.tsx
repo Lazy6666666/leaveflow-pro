@@ -1,10 +1,9 @@
 import { useRef, useState, useEffect } from "react";
 import { AnimatePresence, motion, useDragControls } from "framer-motion";
 import { format } from "date-fns";
-import { ArrowRight, Clock, LogOut, Sparkles } from "lucide-react";
+import { ArrowRight, Clock, LogOut, Sparkles, MapPin, Camera } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
 import { SelfieCaptureDialog } from "./SelfieCaptureDialog";
@@ -14,15 +13,15 @@ const SLIDE_THRESHOLD = 0.8;
 
 function FlipText({ value }: { value: string }) {
   return (
-    <div className="flex min-h-7 items-center overflow-hidden">
+    <div className="flex min-h-8 items-center overflow-hidden">
       <AnimatePresence mode="wait" initial={false}>
         <motion.span
           key={value}
-          initial={{ y: 14, opacity: 0, filter: "blur(8px)" }}
+          initial={{ y: 20, opacity: 0, filter: "blur(4px)" }}
           animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
-          exit={{ y: -14, opacity: 0, filter: "blur(8px)" }}
-          transition={{ type: "spring", stiffness: 260, damping: 28 }}
-          className="text-sm font-medium tabular-nums text-foreground"
+          exit={{ y: -20, opacity: 0, filter: "blur(4px)" }}
+          transition={{ type: "spring", stiffness: 300, damping: 24 }}
+          className="font-display text-lg font-bold text-primary"
         >
           {value}
         </motion.span>
@@ -31,6 +30,10 @@ function FlipText({ value }: { value: string }) {
   );
 }
 
+/**
+ * Redesigned Slide Action: "The Digital Concierge"
+ * Aesthetic: Warm, tactile, depth-based (no lines).
+ */
 function SlideToAction({
   label,
   busyLabel,
@@ -51,7 +54,7 @@ function SlideToAction({
     const resize = () => {
       if (!trackRef.current) return;
       const width = trackRef.current.offsetWidth;
-      setMaxX(Math.max(0, width - 52));
+      setMaxX(Math.max(0, width - 56)); // Handle width
     };
 
     resize();
@@ -63,31 +66,36 @@ function SlideToAction({
   const currentLabel = disabled ? busyLabel : label;
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-4">
       <div
         ref={trackRef}
-        className="relative flex h-14 items-center overflow-hidden rounded-full border bg-card px-2 shadow-sm"
+        className="relative flex h-16 items-center overflow-hidden rounded-xl bg-muted/50 p-1.5"
       >
+        {/* Progress Fill: Terracotta Bloom */}
         <div
           aria-hidden="true"
-          className="absolute inset-y-2 left-2 rounded-full bg-primary/20 transition-[width] duration-300 ease-apple-ease"
-          style={{ width: `calc(${progress * 100}% + 2.5rem)` }}
+          className="absolute inset-y-0 left-0 bg-primary/10 transition-[width] duration-300 ease-concierge"
+          style={{ width: `calc(${progress * 100}% + 2rem)` }}
         />
+
+        {/* Floating Label */}
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <span className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">
+          <span className="text-[11px] font-bold uppercase tracking-[0.25em] text-muted-foreground">
             {currentLabel}
           </span>
         </div>
+
+        {/* Tactile Handle: Terracotta Gradient */}
         <motion.button
           type="button"
           drag="x"
           dragControls={controls}
           dragListener={false}
           dragConstraints={{ left: 0, right: maxX }}
-          dragElastic={0.04}
-          whileTap={{ scale: 0.98 }}
+          dragElastic={0.05}
+          whileTap={{ scale: 0.95 }}
           animate={{ x: dragX }}
-          transition={{ type: "spring", stiffness: 420, damping: 32 }}
+          transition={{ type: "spring", stiffness: 400, damping: 30 }}
           onPointerDown={(event) => {
             if (!disabled) controls.start(event);
           }}
@@ -98,28 +106,26 @@ function SlideToAction({
               return;
             }
 
-            const nextProgress = maxX > 0 ? Math.min(Math.max(info.point.x - (trackRef.current?.getBoundingClientRect().left ?? 0) - 24, 0) / maxX, 1) : 0;
+            const trackLeft = trackRef.current?.getBoundingClientRect().left ?? 0;
+            const currentX = info.point.x - trackLeft - 28;
+            const nextProgress = maxX > 0 ? Math.min(Math.max(currentX, 0) / maxX, 1) : 0;
+
             if (nextProgress >= SLIDE_THRESHOLD) {
               setDragX(maxX);
               onComplete();
             }
-            setTimeout(() => setDragX(0), 220);
-          }}
-          onKeyDown={(event) => {
-            if (disabled) return;
-            if (event.key === "Enter" || event.key === " ") {
-              event.preventDefault();
-              onComplete();
-            }
+            setTimeout(() => setDragX(0), 400);
           }}
           disabled={disabled}
           aria-label={currentLabel}
-          className="relative z-10 flex h-10 w-10 items-center justify-center rounded-full border bg-background text-foreground shadow-sm disabled:cursor-not-allowed"
+          className="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl terracotta-gradient text-white shadow-lg shadow-primary/20 transition-transform active:scale-95 disabled:bg-muted-foreground disabled:cursor-not-allowed"
         >
-          <ArrowRight className="h-4 w-4" />
+          <ArrowRight className="h-5 w-5" />
         </motion.button>
       </div>
-      <p className="text-center text-[11px] text-muted-foreground">Drag to confirm or press Enter.</p>
+      <p className="text-center text-[10px] font-bold uppercase tracking-[0.15em] text-muted-foreground opacity-40 italic">
+        Slide to verify session
+      </p>
     </div>
   );
 }
@@ -143,104 +149,104 @@ export function ClockInOutWidget() {
     acknowledgePermissionRecovered,
   } = useClockInOutController();
 
-  const statusColor = (status: string) => {
-    switch (status) {
-      case "present":
-        return "default";
-      case "late":
-        return "destructive";
-      case "absent":
-        return "secondary";
-      default:
-        return "outline";
-    }
-  };
-
   if (loading) return null;
 
   return (
-    <Card className="rounded-xl border bg-card text-card-foreground shadow-sm">
-      <CardContent className="space-y-4 p-6">
-        <div className="mb-1 flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">Attendance</p>
-            <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+    <div className="flex h-full flex-col bg-card p-10 font-sans">
+        <div className="mb-10 flex items-start justify-between">
+          <div className="space-y-1">
+            <h3 className="font-display text-lg font-bold text-foreground">Attendance Concierge</h3>
+            <div className="flex items-center gap-2 text-[10px] font-bold text-primary uppercase tracking-[0.2em]">
               <Sparkles className="h-3 w-3" />
-              <span>{todayLog?.date ? format(new Date(todayLog.date), "EEEE") : "Today"}</span>
+              <span>{todayLog?.date ? format(new Date(todayLog.date), "EEEE") : format(new Date(), "EEEE")} / Online</span>
             </div>
           </div>
           {todayLog ? (
-            <Badge variant={statusColor(todayLog.status)} className="text-xs capitalize">
+            <div className={`status-badge ${
+              todayLog.status === 'present' ? 'status-approved' :
+              todayLog.status === 'late' ? 'bg-red-500/10 text-red-600' :
+              'bg-muted text-muted-foreground'
+            }`}>
               {todayLog.status}
-            </Badge>
-          ) : null}
+            </div>
+          ) : (
+            <div className="bg-primary/5 text-primary text-[10px] font-bold px-3 py-1 rounded-full animate-pulse tracking-widest uppercase">
+              Awaiting Bio-Auth
+            </div>
+          )}
         </div>
 
-        {!todayLog ? (
-          <div className="space-y-3">
-            <div>
-              <p className="text-sm text-foreground">Ready to start your shift</p>
-              <p className="text-xs text-muted-foreground">Slide once to capture your start time.</p>
+        <div className="flex-1 flex flex-col justify-center">
+          {!todayLog ? (
+            <div className="space-y-8">
+              <div className="space-y-2">
+                <p className="font-display text-2xl font-bold tracking-tight text-foreground">Ready to start your day?</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">System protocols are ready for initialization. Slide to begin your session.</p>
+              </div>
+              <SlideToAction label="Initialize Shift" busyLabel="Processing..." onComplete={handleClockIn} disabled={acting} />
             </div>
-            <SlideToAction label="Slide to Clock In" busyLabel="Clocking In" onComplete={handleClockIn} disabled={acting} />
-          </div>
-        ) : isClockedIn ? (
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <p className="text-sm text-foreground">In since {format(new Date(todayLog.clock_in!), "h:mm a")}</p>
-              {elapsed ? (
-                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <Clock className="h-3 w-3" />
-                  <FlipText value={`${elapsed} elapsed`} />
+          ) : isClockedIn ? (
+            <div className="space-y-8">
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-baseline gap-2">
+                   <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Session Start:</span>
+                   <span className="font-display text-2xl font-bold text-foreground">{format(new Date(todayLog.clock_in!), "h:mm:ss a")}</span>
                 </div>
-              ) : null}
+                {elapsed ? (
+                  <div className="flex items-center gap-4 bg-muted/40 p-5 rounded-xl">
+                    <Clock className="h-5 w-5 text-primary" />
+                    <FlipText value={`${elapsed} Active`} />
+                  </div>
+                ) : null}
+              </div>
+              <SlideToAction label="Terminate Session" busyLabel="Closing Log..." onComplete={handleClockOut} disabled={acting} />
             </div>
-            <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-              <SlideToAction label="Slide to Clock Out" busyLabel="Clocking Out" onComplete={handleClockOut} disabled={acting} />
-              <Button variant="outline" size="icon" className="hidden h-14 w-14 rounded-full sm:flex shadow-sm" onClick={handleClockOut} disabled={acting}>
-                <LogOut className="h-4 w-4" />
-              </Button>
+          ) : (
+            <div className="space-y-8">
+               <div className="bg-muted/40 p-6 rounded-xl space-y-4">
+                  <div className="flex justify-between items-center">
+                     <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Total Duration</span>
+                     <span className="font-display text-xl font-bold text-primary tracking-tight">{sessionTotal}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-muted">
+                     <div>
+                        <span className="block text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Clock In</span>
+                        <span className="font-semibold text-sm">{format(new Date(todayLog.clock_in!), "h:mm a")}</span>
+                     </div>
+                     <div>
+                        <span className="block text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1">Clock Out</span>
+                        <span className="font-semibold text-sm">{format(new Date(todayLog.clock_out!), "h:mm a")}</span>
+                     </div>
+                  </div>
+               </div>
+               <Button
+                 variant="ghost"
+                 className="w-full h-12 rounded-xl bg-muted/50 font-bold uppercase tracking-widest text-[11px] text-primary hover:bg-muted"
+                 onClick={handleClockIn}
+                 disabled={acting}
+               >
+                 Re-enter Environment
+               </Button>
             </div>
-          </div>
-        ) : (
-          <div className="space-y-1">
-            <p className="text-sm text-foreground">
-              {format(new Date(todayLog.clock_in!), "h:mm a")} - {format(new Date(todayLog.clock_out!), "h:mm a")}
-            </p>
-            <p className="text-xs text-muted-foreground">{sessionTotal} total</p>
-          </div>
-        )}
+          )}
+        </div>
 
-        {permissionState === "location_denied" && (
-          <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-center">
-            <p className="text-sm font-medium text-amber-600 dark:text-amber-500">Location Access Required</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Please allow location access in your browser settings, then try again.
+        {(permissionState === "location_denied" || permissionState === "camera_denied") && (
+          <div className="mt-10 p-6 rounded-xl bg-red-500/5 border-0 text-center">
+            <div className="flex justify-center gap-3 mb-3">
+               {permissionState === "location_denied" ? <MapPin className="h-5 w-5 text-red-600" /> : <Camera className="h-5 w-5 text-red-600" />}
+               <p className="text-xs font-bold uppercase tracking-widest text-red-600">Protocol Disrupted</p>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Bio-verification requires {permissionState === "location_denied" ? "spatial telemetry" : "optical data"}. Please enable access.
             </p>
             <Button
-              variant="outline"
+              variant="ghost"
               size="sm"
-              className="mt-3 w-full border-amber-500/30 font-medium text-foreground hover:bg-amber-500/20"
-              onClick={acknowledgePermissionRecovered}
+              className="mt-4 w-full h-10 bg-red-500/10 hover:bg-red-500/20 text-red-700 font-bold uppercase tracking-widest text-[10px]"
+              onClick={permissionState === "location_denied" ? acknowledgePermissionRecovered : requestCameraPermission}
             >
-              I've enabled it
-            </Button>
-          </div>
-        )}
-
-        {permissionState === "camera_denied" && (
-          <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4 text-center">
-            <p className="text-sm font-medium text-amber-600 dark:text-amber-500">Camera Access Required</p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              A selfie is required. Please allow camera access in your browser URL bar.
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-3 w-full border-amber-500/30 font-medium text-foreground hover:bg-amber-500/20"
-              onClick={requestCameraPermission}
-            >
-              Re-request Camera
+              Resolve Access
             </Button>
           </div>
         )}
@@ -252,7 +258,6 @@ export function ClockInOutWidget() {
           onCaptureComplete={handleSelfieCaptureComplete}
           onPermissionDenied={handleSelfiePermissionDenied}
         />
-      </CardContent>
-    </Card>
+    </div>
   );
 }

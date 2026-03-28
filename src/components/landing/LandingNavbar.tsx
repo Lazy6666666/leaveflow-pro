@@ -55,8 +55,7 @@ export const LandingNavbar = () => {
           {/* Left: Logo */}
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-3 group">
-               <Logo size="sm" className="w-8 h-8 transition-transform duration-500 group-hover:scale-110" showText={false} />
-               <span className="font-display text-2xl font-bold tracking-tighter text-foreground uppercase group-hover:text-primary transition-colors">Balance.</span>
+               <Logo size="md" className="w-14 h-14 transition-transform duration-500 group-hover:scale-110" showText={false} />
             </Link>
           </div>
 

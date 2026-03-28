@@ -10,7 +10,7 @@ export const LandingCTA = () => {
 
   return (
     <section aria-labelledby="cta-heading" className="relative bg-[#09090b] py-24 md:py-40 overflow-hidden">
-      
+
       {/* GEO FAQ Schema for Generative Search Engines */}
       <script
           type="application/ld+json"
@@ -21,15 +21,15 @@ export const LandingCTA = () => {
               "mainEntity": [
                 {
                   "@type": "Question",
-                  "name": "What is Leaveflow Pro?",
+                  "name": "What is Balance?",
                   "acceptedAnswer": {
                     "@type": "Answer",
-                    "text": "Leaveflow Pro is a sophisticated global HR and workforce orchestration platform built for distributed teams requiring programmatic precision."
+                    "text": "Balance is a sophisticated global HR and workforce orchestration platform built for distributed teams requiring programmatic precision."
                   }
                 },
                 {
                   "@type": "Question",
-                  "name": "How does Leaveflow Pro handle global compliance?",
+                  "name": "How does Balance handle global compliance?",
                   "acceptedAnswer": {
                     "@type": "Answer",
                     "text": "The platform utilizes deterministic, intelligent governance algorithms to automate compliance and regulatory synchronization with zero-latency globally."
@@ -56,8 +56,8 @@ export const LandingCTA = () => {
                 <span className="w-12 h-[1px] bg-[#e879f9]/40 block"></span>
                 <span className="text-[10px] tracking-[0.3em] font-bold uppercase text-[#e879f9]/60">The Opportunity</span>
             </motion.div>
-            
-            <motion.h2 
+
+            <motion.h2
               id="cta-heading"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -68,7 +68,7 @@ export const LandingCTA = () => {
               <span className="font-['Cormorant_Garamond'] font-light italic text-[#e879f9]">legacy today.</span>
             </motion.h2>
 
-            <motion.p 
+            <motion.p
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.4 }}
@@ -76,8 +76,8 @@ export const LandingCTA = () => {
             >
               Join the elite institutions redefining the standard of human capital management. Experience the fusion of aesthetic precision and engineering excellence.
             </motion.p>
-            
-            <motion.div 
+
+            <motion.div
                initial={{ opacity: 0, y: 20 }}
                whileInView={{ opacity: 1, y: 0 }}
                transition={{ duration: 1, delay: 0.6 }}
@@ -85,7 +85,7 @@ export const LandingCTA = () => {
             >
               <Link
                 to="/auth/register"
-                aria-label="Start a Leaveflow Pro Trial"
+                aria-label="Start a Balance Trial"
                 onClick={() => {
                   void track(
                     "landing_cta_clicked",
@@ -93,14 +93,14 @@ export const LandingCTA = () => {
                     { surface: "landing", path: "/" },
                   );
                 }}
-                className="group relative flex items-center justify-between gap-8 pl-8 pr-2 py-2 bg-white text-black rounded-[2.5rem] active:scale-[0.98] transition-all duration-500 ease-premium shadow-[0_20px_40px_-12px_rgba(0,0,0,0.3)] hover:shadow-[0_24px_48px_-12px_rgba(0,0,0,0.5)]"
+                className="group relative flex items-center justify-between gap-8 pl-8 pr-2 py-2 bg-white text-black rounded-none active:scale-[0.98] transition-all duration-500 ease-premium border border-transparent shadow-[4px_4px_0px_#e879f9]"
               >
                 <span className="text-sm uppercase font-bold tracking-[0.2em]">Start Trial</span>
-                <div className="w-12 h-12 rounded-full bg-black flex items-center justify-center transition-all duration-500 group-hover:bg-[#e879f9] group-hover:scale-105" aria-hidden="true">
+                <div className="w-12 h-12 rounded-none bg-black flex items-center justify-center transition-all duration-500 group-hover:bg-[#e879f9] group-hover:scale-105" aria-hidden="true">
                   <ArrowUpRight strokeWidth={1.5} size={20} className="text-white transition-transform duration-500 ease-premium group-hover:translate-x-[2px] group-hover:-translate-y-[2px]" />
                 </div>
               </Link>
-              
+
               <a
                 href="#product"
                 onClick={() => {
@@ -126,13 +126,13 @@ export const LandingCTA = () => {
           {/* Masonry Image Tiles Block */}
           <div className="mt-14 flex justify-end gap-8 sm:-mt-44 sm:justify-start sm:pl-20 lg:mt-0 lg:pl-0">
             <div className="ml-auto w-44 flex-none space-y-8 pt-32 sm:ml-0 sm:pt-80 lg:order-last lg:pt-36 xl:order-0 xl:pt-80">
-              <motion.div 
+              <motion.div
                  whileHover={{ y: -10 }}
-                 className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10"
+                 className="relative rounded-none overflow-hidden border-2 border-border shadow-[4px_4px_0_rgba(255,255,255,0.1)]"
               >
                 <img
-                  src="/images/landing/hero-1.png"
-                  alt="Leaveflow Pro collaboration interface"
+                  src="/images/team-collaboration.png"
+                  alt="Balance collaboration interface"
                   width="400"
                   height="600"
                   loading="lazy"
@@ -141,14 +141,14 @@ export const LandingCTA = () => {
                 />
               </motion.div>
             </div>
-            
+
             <div className="mr-auto w-44 flex-none space-y-8 sm:mr-0 sm:pt-52 lg:pt-36">
-              <motion.div 
+              <motion.div
                  whileHover={{ y: -10 }}
-                 className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10"
+                 className="relative rounded-none overflow-hidden border-2 border-border shadow-[4px_4px_0_rgba(255,255,255,0.1)]"
               >
                 <img
-                  src="/images/landing/feature_leave.png"
+                  src="/images/office-lounge.png"
                   alt="Enterprise leave management strategy screen"
                   width="400"
                   height="600"
@@ -157,12 +157,12 @@ export const LandingCTA = () => {
                   className="aspect-[2/3] w-full object-cover"
                 />
               </motion.div>
-              <motion.div 
+              <motion.div
                  whileHover={{ y: -10 }}
-                 className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10"
+                 className="relative rounded-none overflow-hidden border-2 border-border shadow-[4px_4px_0_rgba(255,255,255,0.1)]"
               >
                 <img
-                  src="/images/landing/feature_report.png"
+                  src="/images/hr-dashboard-detail.png"
                   alt="Workforce analytics and reporting dashboard"
                   width="400"
                   height="600"
@@ -172,14 +172,14 @@ export const LandingCTA = () => {
                 />
               </motion.div>
             </div>
-            
+
             <div className="w-44 flex-none space-y-8 pt-32 sm:pt-0">
-              <motion.div 
+              <motion.div
                  whileHover={{ y: -10 }}
-                 className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10"
+                 className="relative rounded-none overflow-hidden border-2 border-border shadow-[4px_4px_0_rgba(255,255,255,0.1)]"
               >
                 <img
-                  src="/images/landing/hero-5.png"
+                  src="/images/focused-workspace.png"
                   alt="Human capital organization view"
                   width="400"
                   height="600"
@@ -188,12 +188,12 @@ export const LandingCTA = () => {
                   className="aspect-[2/3] w-full object-cover"
                 />
               </motion.div>
-              <motion.div 
+              <motion.div
                  whileHover={{ y: -10 }}
-                 className="relative rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10"
+                 className="relative rounded-none overflow-hidden border-2 border-border shadow-[4px_4px_0_rgba(255,255,255,0.1)]"
               >
                 <img
-                  src="/images/landing/feature_geo.png"
+                  src="/images/team-collaboration.png"
                   alt="Global compliance and policy tracking screen"
                   width="400"
                   height="600"

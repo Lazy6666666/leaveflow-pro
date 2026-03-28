@@ -16,6 +16,7 @@ const routerFuture = {
 vi.mock("@/components/AppSidebar", () => ({
   AppSidebar: () => <div data-testid="app-sidebar">sidebar</div>,
   adminItems: [
+    { href: "/careers", icon: () => null, label: "Careers" },
     { href: "/admin/hr-operations", icon: () => null, label: "HR Operations" },
     { href: "/admin/system", icon: () => null, label: "System Admin" },
   ],

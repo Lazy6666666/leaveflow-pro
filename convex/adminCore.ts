@@ -359,6 +359,8 @@ export const updateEmployee = mutation({
     const nextRoles: AppRole[] = ["employee"];
     if (args.role === "manager") nextRoles.push("manager");
     if (args.role === "hr_admin") nextRoles.push("manager", "hr_admin");
+    if (args.role === "convex_dev") nextRoles.push("convex_dev");
+    if (args.role === "dev") nextRoles.push("dev");
     const nextUniqueRoles = Array.from(new Set(nextRoles)).sort();
     const existingRoleNames = Array.from(new Set(existingRoles.map((roleDoc) => roleDoc.role))).sort();
 

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence, type Variants } from 'framer-motion';
 
-const words = ["LeaveFlow", "Pro", "Optimized", "Loading..."];
+const words = ["Balance", "Pro", "Optimized", "Loading..."];
 
 interface PreloaderProps {
     onComplete: () => void;
@@ -11,7 +11,7 @@ interface PreloaderProps {
 
 /**
  * Preloader Component
- * 
+ *
  * Aesthetic: Minimal, editorial, high-contrast, text-reveal.
  */
 export const Preloader = ({ onComplete }: PreloaderProps) => {
@@ -48,43 +48,43 @@ export const Preloader = ({ onComplete }: PreloaderProps) => {
 
     const containerVariants: Variants = {
         initial: { y: 0 },
-        exit: { 
-            y: "-100vh", 
-            transition: { duration: 1.2, ease: easeOutExpo } 
+        exit: {
+            y: "-100vh",
+            transition: { duration: 1.2, ease: easeOutExpo }
         }
     };
 
     const textVariants: Variants = {
         initial: { opacity: 0, y: 20 },
-        enter: { 
-            opacity: 1, 
-            y: 0, 
-            transition: { duration: 0.6, ease: "easeOut" } 
+        enter: {
+            opacity: 1,
+            y: 0,
+            transition: { duration: 0.6, ease: "easeOut" }
         },
-        exit: { 
-            opacity: 0, 
-            y: -20, 
-            transition: { duration: 0.4, ease: "easeIn" } 
+        exit: {
+            opacity: 0,
+            y: -20,
+            transition: { duration: 0.4, ease: "easeIn" }
         }
     };
 
     if (dimension.width === 0) return <div className="fixed inset-0 bg-background z-[100]" />;
 
     return (
-        <motion.div 
-            variants={containerVariants} 
-            initial="initial" 
-            animate={isExiting ? "exit" : "initial"} 
+        <motion.div
+            variants={containerVariants}
+            initial="initial"
+            animate={isExiting ? "exit" : "initial"}
             className="fixed inset-0 z-[100] flex items-center justify-center bg-background"
         >
             <div className="flex flex-col items-center justify-center">
                 <AnimatePresence mode="wait">
                     {index < words.length ? (
-                        <motion.div 
+                        <motion.div
                             key={`word-${index}`}
-                            variants={textVariants} 
-                            initial="initial" 
-                            animate="enter" 
+                            variants={textVariants}
+                            initial="initial"
+                            animate="enter"
                             exit="exit"
                         >
                             <p className="text-4xl md:text-6xl font-black tracking-tighter uppercase text-foreground">

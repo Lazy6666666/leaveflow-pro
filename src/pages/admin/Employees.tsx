@@ -19,7 +19,7 @@ import { buildCSV, downloadCSV } from "@/lib/csv";
 import { getErrorMessage } from "@/lib/errors";
 import type { DepartmentId } from "@/lib/convexTypes";
 
-type AppRole = "employee" | "manager" | "hr_admin" | "convex_dev";
+type AppRole = "employee" | "manager" | "hr_admin" | "convex_dev" | "dev";
 
 interface Employee {
   id: string;
@@ -130,6 +130,8 @@ const Employees = () => {
     setEditRole(
       employeeRoles.includes("hr_admin")
         ? "hr_admin"
+        : employeeRoles.includes("dev")
+          ? "dev"
         : employeeRoles.includes("convex_dev")
           ? "convex_dev"
         : employeeRoles.includes("manager")
@@ -157,7 +159,7 @@ const Employees = () => {
           ? "base_salary"
           : null,
         !getRoles(editEmployee.id).includes(editRole) ||
-        getRoles(editEmployee.id).length !== (editRole === "hr_admin" || editRole === "convex_dev" ? 2 : editRole === "manager" ? 2 : 1)
+        getRoles(editEmployee.id).length !== (editRole === "hr_admin" || editRole === "convex_dev" || editRole === "dev" ? 2 : editRole === "manager" ? 2 : 1)
           ? "role"
           : null,
       ].filter((value): value is string => Boolean(value));
@@ -193,6 +195,7 @@ const Employees = () => {
     switch (role) {
       case "hr_admin":
         return "destructive" as const;
+      case "dev":
       case "convex_dev":
         return "default" as const;
       case "manager":
@@ -341,7 +344,8 @@ const Employees = () => {
                   <SelectItem value="employee">Employee</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>
                   <SelectItem value="hr_admin">HR Admin</SelectItem>
-                  <SelectItem value="convex_dev">DEV</SelectItem>
+                  <SelectItem value="convex_dev">Legacy DEV</SelectItem>
+                  <SelectItem value="dev">DEV</SelectItem>
                 </SelectContent>
               </Select>
             </div>

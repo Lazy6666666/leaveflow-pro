@@ -8,14 +8,14 @@ import { ArrowRight } from "lucide-react";
 export const FinalCTA = () => {
   /**
    * High-Impact Vertical Masonry
-   * 
-   * Adjusted for high-visibility: Base heights increased to fill space 
+   *
+   * Adjusted for high-visibility: Base heights increased to fill space
    * and ensure density across the entire vertical axis.
    */
   const images = useMemo(() => [
     {
       src: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=1000&q=80",
-      className: "h-[450px]", 
+      className: "h-[450px]",
     },
     {
       src: "https://images.unsplash.com/photo-1497215728101-856f4ea42174?auto=format&fit=crop&w=1000&q=80",
@@ -49,7 +49,7 @@ export const FinalCTA = () => {
 
       <div className="max-w-[1440px] mx-auto px-6 md:px-10 w-full lg:pr-0 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-[45%_55%] gap-16 lg:gap-0 items-center">
-          
+
           {/* Left Content Column */}
           <motion.div
             initial={{ opacity: 0, x: -40 }}
@@ -63,7 +63,7 @@ export const FinalCTA = () => {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-teal-500/10 border border-teal-500/20 mb-10 w-fit"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-none bg-teal-500/10 border border-teal-500/20 mb-10 w-fit"
             >
               <span className="text-[10px] font-black uppercase tracking-[0.25em] text-teal-600">Join the workforce evolution</span>
             </motion.div>
@@ -75,16 +75,16 @@ export const FinalCTA = () => {
             <p className="text-[#5A6270] text-lg md:text-2xl mb-14 max-w-lg leading-relaxed font-medium">
               Infrastructure built for clarity. Scale your team with confidence while we handle the complexities of workforce management.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-6">
               <Link
                 to="/auth?signup=true"
-                className="group inline-flex items-center justify-center gap-3 bg-[#171411] text-white px-12 py-6 rounded-full font-black text-[15px] uppercase tracking-widest transition-all hover:bg-black/95 hover:shadow-2xl hover:shadow-teal-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FDFDFB]"
+                className="group inline-flex items-center justify-center gap-3 bg-[#171411] text-white px-12 py-6 rounded-none font-black text-[15px] uppercase tracking-widest transition-all hover:bg-black/95 hover:shadow-2xl hover:shadow-teal-500/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 focus-visible:ring-offset-[#FDFDFB]"
               >
                 Get Started Now
                 <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1.5" strokeWidth={3} />
               </Link>
-              <button className="px-12 py-6 bg-transparent border-2 border-[#171411]/10 text-[#171411] hover:bg-[#171411]/5 rounded-full font-black text-[15px] uppercase tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171411] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FDFDFB]">
+              <button className="px-12 py-6 bg-transparent border-2 border-[#171411]/10 text-[#171411] hover:bg-[#171411]/5 rounded-none font-black text-[15px] uppercase tracking-widest transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#171411] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FDFDFB]">
                 Book a Demo
               </button>
             </div>
@@ -92,7 +92,7 @@ export const FinalCTA = () => {
             <div className="mt-20 flex items-center gap-8">
               <div className="flex -space-x-4">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <div key={i} className="w-14 h-14 rounded-full border-[5px] border-[#FDFDFB] bg-neutral-200 flex items-center justify-center overflow-hidden shadow-lg">
+                  <div key={i} className="w-14 h-14 rounded-none border-[5px] border-[#FDFDFB] bg-neutral-200 flex items-center justify-center overflow-hidden shadow-lg">
                      <div className="w-full h-full bg-gradient-to-br from-neutral-300 to-neutral-500" />
                   </div>
                 ))}
@@ -112,15 +112,15 @@ export const FinalCTA = () => {
                   key={idx}
                   initial={{ opacity: 0, y: 60 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ 
-                    duration: 1, 
+                  transition={{
+                    duration: 1,
                     delay: idx * 0.1,
-                    ease: [0.23, 1, 0.32, 1] 
+                    ease: [0.23, 1, 0.32, 1]
                   }}
                   viewport={{ once: true }}
                   className="break-inside-avoid"
                 >
-                  <div className="relative group overflow-hidden rounded-[48px] border border-[#171411]/10 shadow-xl bg-white">
+                  <div className="relative group overflow-hidden rounded-none border border-[#171411]/10 shadow-xl bg-white">
                     <img
                       src={img.src}
                       alt={`Balance visual ${idx + 1}`}
@@ -132,19 +132,19 @@ export const FinalCTA = () => {
                     />
                     {/* Softened overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-[#FDFDFB]/60 via-transparent to-transparent opacity-40 group-hover:opacity-0 transition-opacity duration-700" />
-                    
+
                     {/* Inner highlight */}
-                    <div className="absolute inset-0 border border-black/5 rounded-[48px] pointer-events-none" />
+                    <div className="absolute inset-0 border border-black/5 rounded-none pointer-events-none" />
                   </div>
                 </motion.div>
               ))}
             </div>
-            
+
             {/* Soft Gradient Masks */}
             <div className="absolute top-0 left-0 right-0 h-[20vh] bg-gradient-to-b from-[#FDFDFB] via-[#FDFDFB]/80 to-transparent z-10" />
             <div className="absolute bottom-0 left-0 right-0 h-[20vh] bg-gradient-to-t from-[#FDFDFB] via-[#FDFDFB]/80 to-transparent z-10" />
             <div className="absolute inset-0 bg-gradient-to-r from-[#FDFDFB] via-[#FDFDFB]/40 to-transparent z-10 hidden lg:block" />
-            
+
             {/* Ambient Edge Glow */}
             <div className="absolute -right-20 top-1/2 -translate-y-1/2 w-96 h-full bg-teal-500/5 blur-[180px] pointer-events-none" />
           </div>

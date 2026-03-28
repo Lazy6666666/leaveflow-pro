@@ -7,7 +7,7 @@ import { filterRecordsBySiteScope } from "../siteScope";
 type ReadCtx = QueryCtx | MutationCtx;
 
 export function hasConvexDeveloperRole(roles: AppRole[]) {
-  return roles.includes("convex_dev");
+  return roles.includes("convex_dev") || roles.includes("dev");
 }
 
 export function hasHrAdminAccess(roles: AppRole[]) {

@@ -62,21 +62,27 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({ onOpenChange, on
   const navigate = useNavigate();
   const location = useLocation();
   const auth = useAuth();
-  const hasFeature = auth.hasFeature ?? ((feature: AppFeature) => {
-    switch (feature) {
-      case "manager_hub":
-        return auth.hasManagerAccess ?? false;
-      case "admin_system":
-      case "hr_operations":
-      case "document_expiry":
-      case "agent_workspace":
-        return auth.hasRole?.("hr_admin") ?? false;
-      case "admin_setup":
-        return (auth.needsAdminSetup ?? false) && !(auth.hasRole?.("hr_admin") ?? false);
-      default:
-        return false;
+  const hasFeature = useMemo(() => {
+    if (auth.hasFeature) {
+      return auth.hasFeature;
     }
-  });
+
+    return (feature: AppFeature) => {
+      switch (feature) {
+        case "manager_hub":
+          return auth.hasManagerAccess ?? false;
+        case "admin_system":
+        case "hr_operations":
+        case "document_expiry":
+        case "agent_workspace":
+          return auth.hasRole?.("hr_admin") ?? false;
+        case "admin_setup":
+          return (auth.needsAdminSetup ?? false) && !(auth.hasRole?.("hr_admin") ?? false);
+        default:
+          return false;
+      }
+    };
+  }, [auth.hasFeature, auth.hasManagerAccess, auth.hasRole, auth.needsAdminSetup]);
   const { track } = useAnalytics();
 
   const entries = useMemo(() => {

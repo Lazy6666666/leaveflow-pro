@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { format, parseISO, startOfMonth, endOfMonth, subMonths } from "date-fns";
-import { Clock, CalendarDays, Camera, MapPin } from "lucide-react";
+import { Clock, CalendarDays, Camera, MapPin, ArrowRight } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { SelfieLightbox } from "@/components/attendance/SelfieLightbox";
@@ -26,6 +26,14 @@ type AttendanceLog = {
   status: string;
   source: string;
   notes: string | null;
+};
+
+const formatDuration = (start: string | null, end: string | null) => {
+  if (!start || !end) return "—";
+  const duration = new Date(end).getTime() - new Date(start).getTime();
+  const hours = Math.floor(duration / (1000 * 60 * 60));
+  const minutes = Math.floor((duration % (1000 * 60 * 60)) / (1000 * 60));
+  return `${hours}h ${minutes}m`;
 };
 
 const AttendanceHistory = () => {
@@ -52,24 +60,7 @@ const AttendanceHistory = () => {
     }
   }, [loading, logs.length, monthOffsetNumber, trackOnce]);
 
-  const statusColor = (s: string) => {
-    switch (s) {
-      case "present": return "default";
-      case "late": return "destructive";
-      case "absent": return "secondary";
-      case "half_day": return "outline";
-      case "on_leave": return "outline";
-      default: return "outline";
-    }
-  };
-
-  const formatDuration = (clockIn: string | null, clockOut: string | null) => {
-    if (!clockIn || !clockOut) return "—";
-    const mins = Math.round((new Date(clockOut).getTime() - new Date(clockIn).getTime()) / 60000);
-    const h = Math.floor(mins / 60);
-    const m = mins % 60;
-    return `${h}h ${m}m`;
-  };
+  const targetDate = subMonths(new Date(), parseInt(monthOffset));
 
   const stats = {
     present: logs.filter(l => l.status === "present").length,
@@ -78,159 +69,183 @@ const AttendanceHistory = () => {
     total: logs.length,
   };
 
-  const targetDate = subMonths(new Date(), parseInt(monthOffset));
-
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">Attendance</p>
-          <h1 className="text-2xl font-serif font-semibold tracking-tight text-foreground">
-            Attendance History
+    <div className="mx-auto max-w-7xl space-y-12 pb-24 px-4 md:px-8">
+      {/* Header */}
+      <div className="flex flex-col gap-8 sm:flex-row sm:items-end sm:justify-between pb-12">
+        <div className="space-y-4">
+          <div className="inline-flex items-center gap-2 bg-primary/10 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase tracking-wider text-primary">
+            <Clock className="h-3.5 w-3.5" />
+            <span>Time Ledger & Presence</span>
+          </div>
+          <h1 className="text-5xl sm:text-6xl font-display font-black tracking-tight text-foreground leading-[1.1]">
+            Attendance <br />
+            <span className="text-primary/40 italic font-light">History.</span>
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {format(targetDate, "MMMM yyyy")}
+          <p className="max-w-[45ch] text-lg text-muted-foreground font-sans leading-relaxed">
+            A comprehensive audit trail of your professional presence for <span className="text-foreground font-bold">{format(targetDate, "MMMM yyyy")}</span>.
           </p>
         </div>
+
         <Select value={monthOffset} onValueChange={setMonthOffset}>
-          <SelectTrigger className="h-11 w-full sm:w-[180px]">
+          <SelectTrigger className="h-12 w-full sm:w-[220px] rounded-xl border-none shadow-sm font-bold uppercase text-[11px] tracking-widest bg-white">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="0">This Month</SelectItem>
-            <SelectItem value="1">Last Month</SelectItem>
-            <SelectItem value="2">{format(subMonths(new Date(), 2), "MMM yyyy")}</SelectItem>
-            <SelectItem value="3">{format(subMonths(new Date(), 3), "MMM yyyy")}</SelectItem>
+          <SelectContent className="rounded-xl border-none shadow-float">
+            <SelectItem value="0" className="rounded-lg">Current Cycle</SelectItem>
+            <SelectItem value="1" className="rounded-lg">Previous Cycle</SelectItem>
+            <SelectItem value="2" className="rounded-lg">{format(subMonths(new Date(), 2), "MMM yyyy")}</SelectItem>
+            <SelectItem value="3" className="rounded-lg">{format(subMonths(new Date(), 3), "MMM yyyy")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Days Logged</p>
-            <p className="text-2xl font-semibold tabular-nums text-foreground">{stats.total}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Present</p>
-            <p className="text-2xl font-semibold tabular-nums text-foreground">{stats.present}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Late</p>
-            <p className="text-2xl font-semibold tabular-nums text-foreground">{stats.late}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Absent</p>
-            <p className="text-2xl font-semibold tabular-nums text-muted-foreground">{stats.absent}</p>
-          </CardContent>
-        </Card>
+      {/* Stats Bento Grid - Layered Approach */}
+      <div className="grid gap-6 grid-cols-2 lg:grid-cols-4">
+        {[
+          { label: "Total Logs", value: stats.total, unit: "Entries" },
+          { label: "Present", value: stats.present, unit: "Cycles", color: "text-primary" },
+          { label: "Late", value: stats.late, unit: "Incidents", color: "text-amber-600" },
+          { label: "Absent", value: stats.absent, unit: "Missed", color: "text-destructive" }
+        ].map((s, i) => (
+          <div key={i} className="bg-white p-8 rounded-xl shadow-float group hover:shadow-lg transition-all duration-300">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary/60 mb-4">{s.label}</p>
+            <div className="flex items-baseline gap-2">
+              <span className={`text-5xl font-display font-black tracking-tighter tabular-nums ${s.color || 'text-foreground'}`}>
+                {s.value}
+              </span>
+              <span className="text-[11px] font-bold text-muted-foreground uppercase">{s.unit}</span>
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Logs */}
-      <Card>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base font-medium text-foreground flex items-center gap-2">
-            <CalendarDays className="h-4 w-4" />
-            Daily Log
-            <Badge variant="secondary" className="text-xs ml-1">{totalItems}</Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* Daily Logs Ledger - No-Line Table Container */}
+      <section className="space-y-8">
+        <div className="flex items-baseline gap-4">
+          <h2 className="font-display text-xs font-bold uppercase tracking-[0.2em] text-primary/60">Presence Ledger</h2>
+          <div className="h-[2px] flex-1 bg-muted/40 rounded-full" />
+          <Badge variant="secondary" className="rounded-full bg-primary/10 text-primary border-none text-[10px] font-bold px-4 py-1">
+            {totalItems} RECORDS
+          </Badge>
+        </div>
+
+        <div className="bg-white rounded-xl shadow-float overflow-hidden">
           {loading ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">Loading...</p>
+            <div className="py-32 text-center">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-primary animate-pulse">Synchronizing Telemetry...</span>
+            </div>
           ) : logs.length === 0 ? (
-            <p className="text-sm text-muted-foreground py-8 text-center">No attendance records for this month.</p>
+            <div className="py-32 text-center">
+              <CalendarDays className="h-8 w-8 mx-auto mb-6 text-muted-foreground/20" />
+              <p className="text-sm font-bold uppercase tracking-widest text-muted-foreground">No records found for this cycle</p>
+            </div>
           ) : (
-            <>
-              <div className="space-y-1">
-                {paginatedItems.map((log) => (
-                  <div key={log.id} className="flex flex-col gap-3 border-b border-border/40 py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="flex min-w-0 items-start gap-4">
-                      <div className="w-16 text-center">
-                        <p className="text-sm font-medium text-foreground">
-                          {format(parseISO(log.date), "EEE")}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {format(parseISO(log.date), "MMM d")}
-                        </p>
-                      </div>
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-foreground">
-                          <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                          <div className="flex items-center gap-1">
-                            {log.clock_in ? format(new Date(log.clock_in), "h:mm a") : "—"}
-                            {log.selfie_clock_in && (
-                              <div title="View clock-in selfie" className="inline-flex items-center">
-                                <Camera
-                                  className="h-3 w-3 text-primary cursor-pointer hover:opacity-80"
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="bg-muted/30">
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-widest text-primary/60 w-32">Chronology</th>
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-widest text-primary/60">Verification (In/Out)</th>
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-widest text-primary/60 w-40">Duration</th>
+                    <th className="px-8 py-5 text-[11px] font-bold uppercase tracking-widest text-primary/60 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-muted/30">
+                  {paginatedItems.map((log) => (
+                    <tr key={log.id} className="group hover:bg-muted/10 transition-colors">
+                      <td className="px-8 py-6">
+                        <div className="flex flex-col">
+                          <span className="text-sm font-bold text-foreground uppercase tracking-wider">{format(parseISO(log.date), "EEE")}</span>
+                          <span className="text-xs text-muted-foreground">{format(parseISO(log.date), "dd MMM yyyy")}</span>
+                        </div>
+                      </td>
+                      <td className="px-8 py-6">
+                        <div className="flex items-center gap-8 text-sm">
+                          <div className="flex items-center gap-3">
+                            <span className="text-muted-foreground/60 text-[10px] uppercase font-bold tracking-widest">In:</span>
+                            <span className="text-foreground font-semibold">{log.clock_in ? format(new Date(log.clock_in), "HH:mm") : "—"}</span>
+                            <div className="flex gap-2">
+                              {log.selfie_clock_in && (
+                                <button
+                                  type="button"
+                                  title="View clock-in selfie"
+                                  aria-label="View clock-in selfie"
+                                  className="inline-flex items-center text-primary hover:scale-110 transition-transform"
                                   onClick={() => setLightboxPath(log.selfie_clock_in)}
-                                />
-                              </div>
-                            )}
-                            {log.location_clock_in && (
-                              <a
-                                href={`https://www.google.com/maps?q=${log.location_clock_in.lat},${log.location_clock_in.lng}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title="View clock-in location"
-                                className="inline-flex items-center text-primary hover:opacity-80"
-                              >
-                                <MapPin className="h-3 w-3" />
-                              </a>
-                            )}
+                                >
+                                  <Camera className="h-4 w-4" />
+                                </button>
+                              )}
+                              {log.location_clock_in && (
+                                <a
+                                  href={`https://www.google.com/maps?q=${log.location_clock_in.lat},${log.location_clock_in.lng}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:scale-110 transition-transform"
+                                >
+                                  <MapPin className="h-4 w-4" />
+                                </a>
+                              )}
+                            </div>
                           </div>
-                          <span className="text-muted-foreground">→</span>
-                          <div className="flex items-center gap-1">
-                            {log.clock_out ? format(new Date(log.clock_out), "h:mm a") : "—"}
-                            {log.selfie_clock_out && (
-                              <div title="View clock-out selfie" className="inline-flex items-center">
-                                <Camera
-                                  className="h-3 w-3 text-primary cursor-pointer hover:opacity-80"
+
+                          <ArrowRight className="h-4 w-4 text-muted-foreground/20" />
+
+                          <div className="flex items-center gap-3">
+                            <span className="text-muted-foreground/60 text-[10px] uppercase font-bold tracking-widest">Out:</span>
+                            <span className="text-foreground font-semibold">{log.clock_out ? format(new Date(log.clock_out), "HH:mm") : "—"}</span>
+                            <div className="flex gap-2">
+                              {log.selfie_clock_out && (
+                                <button
+                                  type="button"
+                                  title="View clock-out selfie"
+                                  aria-label="View clock-out selfie"
+                                  className="inline-flex items-center text-primary hover:scale-110 transition-transform"
                                   onClick={() => setLightboxPath(log.selfie_clock_out)}
-                                />
-                              </div>
-                            )}
-                            {log.location_clock_out && (
-                              <a
-                                href={`https://www.google.com/maps?q=${log.location_clock_out.lat},${log.location_clock_out.lng}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                title="View clock-out location"
-                                className="inline-flex items-center text-primary hover:opacity-80"
-                              >
-                                <MapPin className="h-3 w-3" />
-                              </a>
-                            )}
+                                >
+                                  <Camera className="h-4 w-4" />
+                                </button>
+                              )}
+                              {log.location_clock_out && (
+                                <a
+                                  href={`https://www.google.com/maps?q=${log.location_clock_out.lat},${log.location_clock_out.lng}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-primary hover:scale-110 transition-transform"
+                                >
+                                  <MapPin className="h-4 w-4" />
+                                </a>
+                              )}
+                            </div>
                           </div>
                         </div>
                         {log.notes && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{log.notes}</p>
+                          <p className="text-[11px] text-muted-foreground mt-3 italic bg-muted/40 px-3 py-1.5 rounded-lg inline-block leading-relaxed">{log.notes}</p>
                         )}
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3 sm:justify-end">
-                      <span className="text-xs text-muted-foreground tabular-nums">
-                        {formatDuration(log.clock_in, log.clock_out)}
-                      </span>
-                      <Badge variant={statusColor(log.status)} className="capitalize text-xs">
-                        {log.status.replace("_", " ")}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} />
-            </>
+                      </td>
+                      <td className="px-8 py-6">
+                        <span className="text-sm font-bold text-foreground">
+                          {formatDuration(log.clock_in, log.clock_out)}
+                        </span>
+                      </td>
+                      <td className="px-8 py-6 text-right">
+                        <StatusBadge status={log.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
-        </CardContent>
-      </Card>
+
+          {logs.length > 0 && (
+            <div className="px-8 py-6 bg-muted/20">
+              <PaginationControls page={page} totalPages={totalPages} onPageChange={setPage} totalItems={totalItems} />
+            </div>
+          )}
+        </div>
+      </section>
 
       <SelfieLightbox
         path={lightboxPath}
@@ -239,5 +254,22 @@ const AttendanceHistory = () => {
     </div>
   );
 };
+
+function StatusBadge({ status }: { status: string }) {
+  const styles: Record<string, string> = {
+    present: "bg-emerald-500/10 text-emerald-600",
+    late: "bg-amber-500/10 text-amber-600",
+    absent: "bg-destructive/10 text-destructive",
+    half_day: "bg-zinc-500/10 text-zinc-600",
+    on_leave: "bg-indigo-500/10 text-indigo-600",
+  };
+
+  return (
+    <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.1em] ${styles[status] || 'bg-muted text-muted-foreground'}`}>
+      <span className={`w-1.5 h-1.5 rounded-full bg-current`} />
+      {status.replace("_", " ")}
+    </span>
+  );
+}
 
 export default AttendanceHistory;

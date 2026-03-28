@@ -15,7 +15,7 @@ const RoleGuard = ({
   requiredFeature?: AppFeature;
   fallbackTo?: string;
 }) => {
-  const { hasExplicitRole, hasFeature = () => true, hasRole, loading } = useAuth();
+  const { hasExplicitRole, hasFeature = () => true, hasRole, isDev, loading } = useAuth();
 
   if (loading) {
     return (
@@ -36,6 +36,8 @@ const RoleGuard = ({
 
     return hasRole(role);
   });
+
+  if (isDev) return <>{children}</>;
 
   if (!hasAccess || (requiredFeature && !hasFeature(requiredFeature))) {
     return <Navigate to={fallbackTo} replace />;

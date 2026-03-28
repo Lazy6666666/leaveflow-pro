@@ -37,10 +37,10 @@ const AIChatPanel = ({ initialPrompt, initialPromptRequest, mode = "floating" }:
 
   const panel = (
     <div
-      className={`flex flex-col overflow-hidden border bg-card shadow-2xl ${
+      className={`flex flex-col overflow-hidden border-2 border-border bg-card shadow-[0_12px_48px_rgba(0,0,0,0.12)] ${
         isEmbedded
-          ? "h-full min-h-[720px] rounded-[1.75rem]"
-          : "fixed bottom-6 right-6 z-50 h-[560px] max-h-[calc(100vh-4rem)] w-[400px] max-w-[calc(100vw-2rem)] rounded-xl animate-fade-in"
+          ? "h-full min-h-[720px] rounded-none"
+          : "fixed bottom-6 right-6 z-50 h-[560px] max-h-[calc(100vh-4rem)] w-[400px] max-w-[calc(100vw-2rem)] rounded-none animate-fade-in"
       }`}
     >
       <ChatHeader

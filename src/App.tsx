@@ -104,7 +104,7 @@ const App = () => {
                       path="/admin-setup"
                       element={(
                         <RoleGuard
-                          allowedRoles={["employee", "manager", "hr_admin", "convex_dev"]}
+                          allowedRoles={["employee", "manager", "convex_dev", "dev"]}
                           requiredFeature="admin_setup"
                         >
                           {lazyRoute(<AdminSetup />)}
@@ -134,7 +134,7 @@ const App = () => {
                       path="/admin/system"
                       element={(
                         <RoleGuard
-                          allowedRoles={["hr_admin", "convex_dev"]}
+                          allowedRoles={["hr_admin", "convex_dev", "dev"]}
                           requiredFeature="admin_system"
                         >
                           {lazyRoute(<SystemHub />)}
@@ -145,7 +145,7 @@ const App = () => {
                       path="/admin/hr-operations"
                       element={(
                         <RoleGuard
-                          allowedRoles={["hr_admin", "convex_dev"]}
+                          allowedRoles={["hr_admin", "convex_dev", "dev"]}
                           requiredFeature="hr_operations"
                         >
                           {lazyRoute(<HROperationsHub />)}
@@ -156,7 +156,7 @@ const App = () => {
                       path="/admin/agent-workspace"
                       element={(
                         <RoleGuard
-                          allowedRoles={["hr_admin", "convex_dev"]}
+                          allowedRoles={["hr_admin", "convex_dev", "dev"]}
                           requiredFeature="agent_workspace"
                         >
                           {lazyRoute(<AgentWorkspaceHub />)}
@@ -167,7 +167,7 @@ const App = () => {
                       path="/admin/document-expiry"
                       element={(
                         <RoleGuard
-                          allowedRoles={["hr_admin", "convex_dev"]}
+                          allowedRoles={["hr_admin", "convex_dev", "dev"]}
                           requiredFeature="document_expiry"
                         >
                           {lazyRoute(<DocumentExpiryHub />)}
